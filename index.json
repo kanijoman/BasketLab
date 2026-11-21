@@ -1,0 +1,7247 @@
+{
+ "v": 2,
+ "generated_at": "2026-11-21T13:57:37.794670+00:00",
+ "open_key": "vvMbb4hyH/9ICNunP6B/5vj6lO8QsncmxkPTGFgZMxo=",
+ "packages": [
+  {
+   "team_id": "1008631",
+   "rival_id": "1008402",
+   "rival": "MCR LIMA-HORTA BARCELONA",
+   "collection": "LF_CHALLENGE_2026_2027_Liga_Regular_Único",
+   "match": {
+    "code": "2524505",
+    "start": "2026-11-21T20:30",
+    "round": 7,
+    "home": {
+     "id": "1008631",
+     "name": "MIPELLETYMAS B.F. LEON"
+    },
+    "away": {
+     "id": "1008402",
+     "name": "MCR LIMA-HORTA BARCELONA"
+    }
+   },
+   "file": "1008631/1008402.bpkg",
+   "sha256": "ac1d31851b0107510677ddc30562181f2ad32cabe01055eba0f95f18f91db32a",
+   "bytes": 53075,
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "2CeNcF7yQAHXvnYk",
+     "key": "+FbT+w7AcvZBTP2WO7Q6SMYxQ+H3csSLwqXmMsBxzgbn7VDFUQj3V+84eh5IHdkU"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "bcPwRHWePUgmCnJl",
+     "key": "tvDt9natMw6QzGoIcAGsY0+wMOflRR8MyJt2qwQn1+HY8kJb/04RDZYbb+hxkM8t"
+    },
+    {
+     "scope": "competicion:LF_CHALLENGE_2026_2027_Liga_Regular_Único",
+     "iv": "ITCBXaX/Qg4Q8MlO",
+     "key": "TGUkFX6Wb5ofOuPVZHUnImJfD8QFjk0H44UDfO2BlKZW2yBqH8Ujk2/85jDBSc7/"
+    }
+   ],
+   "competition": {
+    "key": "LF_CHALLENGE_2026_2027_Liga_Regular_Único",
+    "label": "LF CHALLENGE · Liga Regular Único",
+    "competition": "LF CHALLENGE",
+    "group": "Liga Regular Único",
+    "season": "2026/2027",
+    "level": 2,
+    "gender": "F",
+    "league": "FEB"
+   }
+  },
+  {
+   "team_id": "1008631",
+   "rival_id": "1008968",
+   "rival": "C.B. AL-QAZERES EXTREMADURA",
+   "collection": "LF_CHALLENGE_2026_2027_Liga_Regular_Único",
+   "match": {
+    "code": "2524511",
+    "start": "2026-11-28T18:00",
+    "round": 8,
+    "home": {
+     "id": "1008968",
+     "name": "C.B. AL-QAZERES EXTREMADURA"
+    },
+    "away": {
+     "id": "1008631",
+     "name": "MIPELLETYMAS B.F. LEON"
+    }
+   },
+   "file": "1008631/1008968.bpkg",
+   "sha256": "52faf2d7a5c301ef6993f6f12a044393936542c9912b61ca7536329ed2d6df38",
+   "bytes": 52875,
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "3TlvsGxT+Zzbzfo5",
+     "key": "W5a/l6fHviYlnRe8PYclKg9cROgDbOB6yxjzpNbrv75tUT+I2Z0KF2As3tyolG5G"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "K5ZcdDpMJGFRsdR9",
+     "key": "wdwqrHKG/bHjiyp5+EJVALy+IX3hZAhcV7QmZKBca56VwHYuFK5srrFvVuzQ+uNn"
+    },
+    {
+     "scope": "competicion:LF_CHALLENGE_2026_2027_Liga_Regular_Único",
+     "iv": "oNuU8IG8MerDR6H7",
+     "key": "tfcSNG4uGPCjI6iIxHNMEI5I9uxLqRLM8KQilYhmJx48nhAiIhrdnvlYBPuML9j0"
+    }
+   ],
+   "competition": {
+    "key": "LF_CHALLENGE_2026_2027_Liga_Regular_Único",
+    "label": "LF CHALLENGE · Liga Regular Único",
+    "competition": "LF CHALLENGE",
+    "group": "Liga Regular Único",
+    "season": "2026/2027",
+    "level": 2,
+    "gender": "F",
+    "league": "FEB"
+   }
+  },
+  {
+   "team_id": "1008631",
+   "rival_id": "1008392",
+   "rival": "DOMUSA TEKNIK ISB",
+   "collection": "LF_CHALLENGE_2026_2027_Liga_Regular_Único",
+   "match": {
+    "code": "2524521",
+    "start": "2026-12-05T20:30",
+    "round": 9,
+    "home": {
+     "id": "1008631",
+     "name": "MIPELLETYMAS B.F. LEON"
+    },
+    "away": {
+     "id": "1008392",
+     "name": "DOMUSA TEKNIK ISB"
+    }
+   },
+   "file": "1008631/1008392.bpkg",
+   "sha256": "e0cbe548251a885ded0b4066b5d9671113793002038abc3f7e8d97ea9d107e3a",
+   "bytes": 53495,
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "stID/AzlVnsN3Za2",
+     "key": "kRRy0pzydoU2r/9qq98JqmIMeHiuUdHQw7Et3DW265ynl4EaCQ+s/dWlm+Ndy/cp"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "dywopH2BP0kmD/16",
+     "key": "ASA7M1w3Fz/a93DwzMXeimbIyvEQt3OfBiijep9ryeUtEGl2JRK/p/XjQD3hX2UB"
+    },
+    {
+     "scope": "competicion:LF_CHALLENGE_2026_2027_Liga_Regular_Único",
+     "iv": "kztwgTxwhS+GBxJY",
+     "key": "NRkML1chVinsh8idMGrWvlEGX3kD5w1FoifdN/cu6p2Pu/VFlR29V4La77AXq2UR"
+    }
+   ],
+   "competition": {
+    "key": "LF_CHALLENGE_2026_2027_Liga_Regular_Único",
+    "label": "LF CHALLENGE · Liga Regular Único",
+    "competition": "LF CHALLENGE",
+    "group": "Liga Regular Único",
+    "season": "2026/2027",
+    "level": 2,
+    "gender": "F",
+    "league": "FEB"
+   }
+  },
+  {
+   "team_id": "1008857",
+   "rival_id": "1010194",
+   "rival": "JAEN PARAISO INTERIOR FS",
+   "collection": "SEGUNDA_FEB_2026_2027_Liga_Regular_A",
+   "match": {
+    "code": "2536169",
+    "start": "2026-11-22T12:30",
+    "round": 8,
+    "home": {
+     "id": "1010194",
+     "name": "JAEN PARAISO INTERIOR FS"
+    },
+    "away": {
+     "id": "1008857",
+     "name": "CULTURAL Y DEPORTIVA LEONESA"
+    }
+   },
+   "file": "1008857/1010194.bpkg",
+   "sha256": "518e1e671bd6745a3f44f3c88551aa9089f04ffc7f671106c38f337716bab14c",
+   "bytes": 64123,
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "mLFD1DC4Mwu7cWyb",
+     "key": "W1tex+7+fwE++DzmJqBVJlRfYrmF8OS1pd1FzdTXI03iUdJtL2donelSpii4SFEJ"
+    },
+    {
+     "scope": "club:1008857",
+     "iv": "/qwqueEL9RqbKDkq",
+     "key": "2InWQEbgR1aLRq63EZUTOG3hghRXZ7MiNQPROCXwy0UL5bYMFansDWwiBAkAcgx2"
+    },
+    {
+     "scope": "competicion:SEGUNDA_FEB_2026_2027_Liga_Regular_A",
+     "iv": "kHUOUUaFFUU0l+bS",
+     "key": "IXmFDudknLC5Y6aF/fodgzbs7tXqayYU/ZQlY2KhFYXLVNYi/mX9npMCD5wlRAYR"
+    }
+   ],
+   "competition": {
+    "key": "SEGUNDA_FEB_2026_2027_Liga_Regular_A",
+    "label": "SEGUNDA FEB · Liga Regular \"A\"",
+    "competition": "SEGUNDA FEB",
+    "group": "Liga Regular \"A\"",
+    "season": "2026/2027",
+    "level": 3,
+    "gender": "M",
+    "league": "FEB"
+   }
+  },
+  {
+   "team_id": "1008857",
+   "rival_id": "1008643",
+   "rival": "CLÍNICA PONFERRADA SDP",
+   "collection": "SEGUNDA_FEB_2026_2027_Liga_Regular_A",
+   "match": {
+    "code": "2536184",
+    "start": "2026-12-05T19:30",
+    "round": 10,
+    "home": {
+     "id": "1008643",
+     "name": "CLÍNICA PONFERRADA SDP"
+    },
+    "away": {
+     "id": "1008857",
+     "name": "CULTURAL Y DEPORTIVA LEONESA"
+    }
+   },
+   "file": "1008857/1008643.bpkg",
+   "sha256": "0039dcfc2ed904c3d56f47bf7716211bdc3b919cd2d2ead4d961ccb5997500df",
+   "bytes": 66711,
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "1+NLh7ouPF9r8BlG",
+     "key": "DQsBpVIWIXjqSsgfY+E5zVeEYQyv3uRIj0+wEGd8Cx5plR/pC6fxzNluoofVmJ2l"
+    },
+    {
+     "scope": "club:1008857",
+     "iv": "Rl42uYIi506yqO6P",
+     "key": "mEvnMzn46QDnLnIl3ncFftdit9wk5KkXR51uFwS9NYRCBhtWG9HeduiLmULG2chK"
+    },
+    {
+     "scope": "competicion:SEGUNDA_FEB_2026_2027_Liga_Regular_A",
+     "iv": "8nNeg2SwTm+X+Tab",
+     "key": "D8R4e+hqAOTSRloQtdbWWg3DmP5Sp8KMGYRPc+4q82k+MA/QSrL+NoCt4VC6yP3c"
+    }
+   ],
+   "competition": {
+    "key": "SEGUNDA_FEB_2026_2027_Liga_Regular_A",
+    "label": "SEGUNDA FEB · Liga Regular \"A\"",
+    "competition": "SEGUNDA FEB",
+    "group": "Liga Regular \"A\"",
+    "season": "2026/2027",
+    "level": 3,
+    "gender": "M",
+    "league": "FEB"
+   }
+  },
+  {
+   "team_id": "1008857",
+   "rival_id": "1009588",
+   "rival": "UEMC BALONCESTO VALLADOLID",
+   "collection": "SEGUNDA_FEB_2026_2027_Liga_Regular_A",
+   "match": {
+    "code": "2536172",
+    "start": "2026-12-09T20:00",
+    "round": 9,
+    "home": {
+     "id": "1008857",
+     "name": "CULTURAL Y DEPORTIVA LEONESA"
+    },
+    "away": {
+     "id": "1009588",
+     "name": "UEMC BALONCESTO VALLADOLID"
+    }
+   },
+   "file": "1008857/1009588.bpkg",
+   "sha256": "3d5f5ab8e1f821b857f437102cf2cd149478432aa58a948b0436119f20b6baf2",
+   "bytes": 67939,
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "Y5s2OA+cHBjYlROi",
+     "key": "BT3X/5J8NSLkNY157HB+KE1+wOyi+B+kO0s1IhjFsUZYXxhHEtO0V6vlz+t7drXL"
+    },
+    {
+     "scope": "club:1008857",
+     "iv": "4iTxPphRKOIQV5HU",
+     "key": "aJbkAbRA/ZiBVwhfoaQluc2eZ4ErA8Ph8y/zhHJbXIWIeUn8xUWP/3zhw6F0pI4q"
+    },
+    {
+     "scope": "competicion:SEGUNDA_FEB_2026_2027_Liga_Regular_A",
+     "iv": "LgUj+G+S5CNWwWR3",
+     "key": "E5Rfo3kDn0phrgHuwukpFfJVi75pE4JfZ27Fcf+MhI45+7M8ABayz3w/YsIe4IMK"
+    }
+   ],
+   "competition": {
+    "key": "SEGUNDA_FEB_2026_2027_Liga_Regular_A",
+    "label": "SEGUNDA FEB · Liga Regular \"A\"",
+    "competition": "SEGUNDA FEB",
+    "group": "Liga Regular \"A\"",
+    "season": "2026/2027",
+    "level": 3,
+    "gender": "M",
+    "league": "FEB"
+   }
+  },
+  {
+   "team_id": "1008978",
+   "rival_id": "1009133",
+   "rival": "C.B. ZARAGOZA",
+   "collection": "SEGUNDA_FEB_2026_2027_Liga_Regular_B",
+   "match": {
+    "code": "2536350",
+    "start": "2026-11-21T18:30",
+    "round": 8,
+    "home": {
+     "id": "1008978",
+     "name": "CLUB ESPORTIU BÀSQUET LLÍRIA"
+    },
+    "away": {
+     "id": "1009133",
+     "name": "C.B. ZARAGOZA"
+    }
+   },
+   "file": "1008978/1009133.bpkg",
+   "sha256": "eac86e8fc3bb1c434f63499869fc50cd2cfd259106b877a91c3fc604bcef8f5a",
+   "bytes": 56619,
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "n0mfN4029s5mBApf",
+     "key": "FVzrJywFNNLP93iePSwC5EovsrT6OusPbnYTu4llXHFA1xE4sOjdfOFpMFlbhEWJ"
+    },
+    {
+     "scope": "club:1008978",
+     "iv": "c8z2we05dM98uPh/",
+     "key": "Vy9m6eZOV68O4e3qoeAfB1q/mqmtQWaxhEiJdAtGz4/5VePT2PVdamsGRkT142Ck"
+    },
+    {
+     "scope": "competicion:SEGUNDA_FEB_2026_2027_Liga_Regular_B",
+     "iv": "k8FytIapfsv8Bl29",
+     "key": "psDcbqwLX/MfRzgbO352fJ51PFBcMT6aF8ZZeXoyFCqPXeoCq2sIHxsSD837tvBK"
+    }
+   ],
+   "competition": {
+    "key": "SEGUNDA_FEB_2026_2027_Liga_Regular_B",
+    "label": "SEGUNDA FEB · Liga Regular \"B\"",
+    "competition": "SEGUNDA FEB",
+    "group": "Liga Regular \"B\"",
+    "season": "2026/2027",
+    "level": 3,
+    "gender": "M",
+    "league": "FEB"
+   }
+  },
+  {
+   "team_id": "1008978",
+   "rival_id": "1009441",
+   "rival": "SOL GIRONÈS BISBAL BÀSQUET",
+   "collection": "SEGUNDA_FEB_2026_2027_Liga_Regular_B",
+   "match": {
+    "code": "2536356",
+    "start": "2026-11-28T18:10",
+    "round": 9,
+    "home": {
+     "id": "1009441",
+     "name": "SOL GIRONÈS BISBAL BÀSQUET"
+    },
+    "away": {
+     "id": "1008978",
+     "name": "CLUB ESPORTIU BÀSQUET LLÍRIA"
+    }
+   },
+   "file": "1008978/1009441.bpkg",
+   "sha256": "4f40b3e3d5e5061ea3d2864d657ba5ebb5acb09fa62165772e5c05b10732fceb",
+   "bytes": 57131,
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "wOqXmt9pSzhEnpqD",
+     "key": "OF8baKChghtJayXjbxenHUema+jlLqIn1KDdwnl4CymW6IycCMHSEDjp0vgOWjl8"
+    },
+    {
+     "scope": "club:1008978",
+     "iv": "FzHxMEm8LphNFkvs",
+     "key": "PnBJAn4W02fMJL2/ax7aHMgl4+5fvyFWHB8RZI8yadWTMTDo68I9DkMBanAaMR1a"
+    },
+    {
+     "scope": "competicion:SEGUNDA_FEB_2026_2027_Liga_Regular_B",
+     "iv": "CdTM6y2HOhFY+MDR",
+     "key": "dX9JasoiigGi4ZVgB3rlqJV1pu2+kvj67f817FmIVyVj38FLhNqTuYIgzLxw+oPu"
+    }
+   ],
+   "competition": {
+    "key": "SEGUNDA_FEB_2026_2027_Liga_Regular_B",
+    "label": "SEGUNDA FEB · Liga Regular \"B\"",
+    "competition": "SEGUNDA FEB",
+    "group": "Liga Regular \"B\"",
+    "season": "2026/2027",
+    "level": 3,
+    "gender": "M",
+    "league": "FEB"
+   }
+  },
+  {
+   "team_id": "1008978",
+   "rival_id": "1010208",
+   "rival": "AMICS CASTELLÓ",
+   "collection": "SEGUNDA_FEB_2026_2027_Liga_Regular_B",
+   "match": {
+    "code": "2536363",
+    "start": "2026-12-05T18:30",
+    "round": 10,
+    "home": {
+     "id": "1008978",
+     "name": "CLUB ESPORTIU BÀSQUET LLÍRIA"
+    },
+    "away": {
+     "id": "1010208",
+     "name": "AMICS CASTELLÓ"
+    }
+   },
+   "file": "1008978/1010208.bpkg",
+   "sha256": "fc2ea1b2517b103684abd40616c22b5c9e9122355e03d8f4900b7c50ae5a0c51",
+   "bytes": 57987,
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "tq0g8eal4xvLA07b",
+     "key": "ZX+q50LumeSeeO9N23Xai9MT57lxiOU2+aDkU2xrmGuavcv6fI2LgXsRcYig/pIz"
+    },
+    {
+     "scope": "club:1008978",
+     "iv": "PtlHhH9jrvWklVTQ",
+     "key": "Oqz8AwUnP/9zpIMNzy5GyAXHuUj1ZcyR9iQwrgR3WGKdlOXOsLZPFK+pvaOOdEep"
+    },
+    {
+     "scope": "competicion:SEGUNDA_FEB_2026_2027_Liga_Regular_B",
+     "iv": "mLGQjuJZPedPPHuB",
+     "key": "eJeez2W+17XP7i6Zq8IjD8msQVgkE7Cr+kwZnbIr2I+NVS94xiEJfSceF+FjNW4h"
+    }
+   ],
+   "competition": {
+    "key": "SEGUNDA_FEB_2026_2027_Liga_Regular_B",
+    "label": "SEGUNDA FEB · Liga Regular \"B\"",
+    "competition": "SEGUNDA FEB",
+    "group": "Liga Regular \"B\"",
+    "season": "2026/2027",
+    "level": 3,
+    "gender": "M",
+    "league": "FEB"
+   }
+  },
+  {
+   "team_id": "1010490",
+   "rival_id": "1008632",
+   "rival": "UNIVERSIDAD DE OVIEDO",
+   "collection": "TERCERA_FEB_2026_2027_Liga_Regular_A-B",
+   "match": {
+    "code": "2536896",
+    "start": "2026-11-21T19:00",
+    "round": 8,
+    "home": {
+     "id": "1008632",
+     "name": "UNIVERSIDAD DE OVIEDO"
+    },
+    "away": {
+     "id": "1010490",
+     "name": "CAJA RURAL RDL"
+    }
+   },
+   "file": "1010490/1008632.bpkg",
+   "sha256": "b624566afa13b9ea83ca22ed4815f4ceab06ea7aa47c428179f802584697f834",
+   "bytes": 58943,
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "7+qv970s/BJhz33I",
+     "key": "H37WxZApIgXmnfbewpu8PrAwdi9AFfBfVfdIj6NpaseJr4nKqTqF8yXCFegF8eb2"
+    },
+    {
+     "scope": "club:1010490",
+     "iv": "g3PnomhEho45JTPc",
+     "key": "OwoqNNDpj92iOftHyM0xjWfp5yU1/sVamUYID8/rrNXRxtxK2Hq1gykUZfZ3TN0V"
+    },
+    {
+     "scope": "competicion:TERCERA_FEB_2026_2027_Liga_Regular_A-B",
+     "iv": "Vlo2ADD9JJi4KYSX",
+     "key": "XUOToR3lPRwow1MqYcBKuf+CE/ccj9M5DlwcbYF4/ijj8qWaib0Z+zTUXp17vrGy"
+    }
+   ],
+   "competition": {
+    "key": "TERCERA_FEB_2026_2027_Liga_Regular_A-B",
+    "label": "TERCERA FEB · Liga Regular \"A-B\"",
+    "competition": "TERCERA FEB",
+    "group": "Liga Regular \"A-B\"",
+    "season": "2026/2027",
+    "level": 4,
+    "gender": "M",
+    "league": "FEB"
+   }
+  },
+  {
+   "team_id": "1010490",
+   "rival_id": "1009817",
+   "rival": "RECOLETAS SALUD SALAMANCA",
+   "collection": "TERCERA_FEB_2026_2027_Liga_Regular_A-B",
+   "match": {
+    "code": "2536901",
+    "start": "2026-11-27T20:30",
+    "round": 9,
+    "home": {
+     "id": "1010490",
+     "name": "CAJA RURAL RDL"
+    },
+    "away": {
+     "id": "1009817",
+     "name": "RECOLETAS SALUD SALAMANCA"
+    }
+   },
+   "file": "1010490/1009817.bpkg",
+   "sha256": "86646f7de1c0c5194b07f7a58ebb264019dbec80fb0a7f3e048c1598e04565ce",
+   "bytes": 57763,
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "c8KG6VJc4Mzxaztf",
+     "key": "zRue0XD+pL3UASptIfu1kD++IV4ybEI96WYQEo//c3Ldt51KdG6b+I59jRpBcCgj"
+    },
+    {
+     "scope": "club:1010490",
+     "iv": "QGHcVfVL3nHLMCz7",
+     "key": "hypVm5bED+pO0GFjhDGwWecVxSbYjTs/5e6inJjQ8f8b4qzgsi3RWpkT3exxlgBw"
+    },
+    {
+     "scope": "competicion:TERCERA_FEB_2026_2027_Liga_Regular_A-B",
+     "iv": "ecJsT/xPHfne/Jps",
+     "key": "HKBHugArxUohgbpsdvF5thH5hlS2iKJz52xCKNzQw1DNUYpECoJOuuFzrYOtqNQE"
+    }
+   ],
+   "competition": {
+    "key": "TERCERA_FEB_2026_2027_Liga_Regular_A-B",
+    "label": "TERCERA FEB · Liga Regular \"A-B\"",
+    "competition": "TERCERA FEB",
+    "group": "Liga Regular \"A-B\"",
+    "season": "2026/2027",
+    "level": 4,
+    "gender": "M",
+    "league": "FEB"
+   }
+  },
+  {
+   "team_id": "1010490",
+   "rival_id": "1009920",
+   "rival": "TRAUMACOR CULLEREDO",
+   "collection": "TERCERA_FEB_2026_2027_Liga_Regular_A-B",
+   "match": {
+    "code": "2536911",
+    "start": "2026-12-05T19:30",
+    "round": 10,
+    "home": {
+     "id": "1009920",
+     "name": "TRAUMACOR CULLEREDO"
+    },
+    "away": {
+     "id": "1010490",
+     "name": "CAJA RURAL RDL"
+    }
+   },
+   "file": "1010490/1009920.bpkg",
+   "sha256": "af4f369d741a58582a61d89499d6b2a3f6117c90d647c958fda16ae847e80662",
+   "bytes": 55351,
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "wYmJHeibUL026ueP",
+     "key": "0NhJwdaW9BxZWeYD9ADtOb9ccGN9SvxAJP0yLeja5AgQtd3f30FTtRooOgljt/BB"
+    },
+    {
+     "scope": "club:1010490",
+     "iv": "Dpd0ieUKF9+CpVRQ",
+     "key": "jxzn5fpv0jURvoqvgncQndwbT/BRNhwWDHsDQXj6F57C98YxqOeGGcTxYdKEB2xr"
+    },
+    {
+     "scope": "competicion:TERCERA_FEB_2026_2027_Liga_Regular_A-B",
+     "iv": "UkxB2K6pKddaLcTE",
+     "key": "GaTR7pOZ1WyJK1AJKH3UOTLNHyVbU3HiJQCHXGF+yHDQWzheL4Cct5lvrLoi3yNQ"
+    }
+   ],
+   "competition": {
+    "key": "TERCERA_FEB_2026_2027_Liga_Regular_A-B",
+    "label": "TERCERA FEB · Liga Regular \"A-B\"",
+    "competition": "TERCERA FEB",
+    "group": "Liga Regular \"A-B\"",
+    "season": "2026/2027",
+    "level": 4,
+    "gender": "M",
+    "league": "FEB"
+   }
+  }
+ ],
+ "rounds": [
+  {
+   "collection": "LF_ENDESA_2026_2027_Liga_Regular_Único",
+   "round": 8,
+   "file": "rounds/LF_ENDESA_2026_2027_Liga_Regular_nico__r8.bpkgz",
+   "sha256": "755cc5a23c274b7ff53270b5adcc8c19fdf04a3b297d6c4d48191ec4bab0bcf7",
+   "bytes": 198814,
+   "club": false,
+   "matches": [
+    {
+     "code": "2522831",
+     "start": "2026-11-22T18:00",
+     "home": {
+      "id": "1008971",
+      "name": "KUTXABANK ARASKI"
+     },
+     "away": {
+      "id": "1008381",
+      "name": "MEINS AVENIDA"
+     },
+     "own_id": "1008971",
+     "is_club": false,
+     "own_ids": [
+      "1008971",
+      "1008381"
+     ]
+    },
+    {
+     "code": "2522832",
+     "start": "2026-11-22T12:00",
+     "home": {
+      "id": "1008918",
+      "name": "BAXI FERROL"
+     },
+     "away": {
+      "id": "1008705",
+      "name": "AZULMARINO MALLORCA PALMA"
+     },
+     "own_id": "1008918",
+     "is_club": false,
+     "own_ids": [
+      "1008918",
+      "1008705"
+     ]
+    },
+    {
+     "code": "2522833",
+     "start": "2026-11-22T18:00",
+     "home": {
+      "id": "1008404",
+      "name": "MIRAI EUSKOTREN"
+     },
+     "away": {
+      "id": "1008630",
+      "name": "CASADEMONT ZARAGOZA"
+     },
+     "own_id": "1008404",
+     "is_club": false,
+     "own_ids": [
+      "1008404",
+      "1008630"
+     ]
+    },
+    {
+     "code": "2522834",
+     "start": "2026-11-22T12:00",
+     "home": {
+      "id": "1008982",
+      "name": "DURÁN MAQUINARIA ENSINO"
+     },
+     "away": {
+      "id": "1008963",
+      "name": "SPAR GIRONA"
+     },
+     "own_id": "1008982",
+     "is_club": false,
+     "own_ids": [
+      "1008982",
+      "1008963"
+     ]
+    },
+    {
+     "code": "2522835",
+     "start": "2026-11-22T12:30",
+     "home": {
+      "id": "1008986",
+      "name": "IMPULSO 360 ESTEPONA"
+     },
+     "away": {
+      "id": "1008959",
+      "name": "CELTA  FEMXA ZORKA"
+     },
+     "own_id": "1008986",
+     "is_club": false,
+     "own_ids": [
+      "1008986",
+      "1008959"
+     ]
+    },
+    {
+     "code": "2522836",
+     "start": "2026-11-22T17:00",
+     "home": {
+      "id": "1008894",
+      "name": "HOZONO GLOBAL JAIRIS"
+     },
+     "away": {
+      "id": "1008993",
+      "name": "MOVISTAR ESTUDIANTES"
+     },
+     "own_id": "1008894",
+     "is_club": false,
+     "own_ids": [
+      "1008894",
+      "1008993"
+     ]
+    },
+    {
+     "code": "2522837",
+     "start": "2026-11-22T12:30",
+     "home": {
+      "id": "1008686",
+      "name": "VALENCIA B.C."
+     },
+     "away": {
+      "id": "1008992",
+      "name": "INNOVA-TSN LEGANÉS"
+     },
+     "own_id": "1008686",
+     "is_club": false,
+     "own_ids": [
+      "1008686",
+      "1008992"
+     ]
+    },
+    {
+     "code": "2522838",
+     "start": "2026-11-22T12:00",
+     "home": {
+      "id": "1008628",
+      "name": "INVERSUS GERNIKA BIZKAIA"
+     },
+     "away": {
+      "id": "1008401",
+      "name": "CADI LA SEU"
+     },
+     "own_id": "1008628",
+     "is_club": false,
+     "own_ids": [
+      "1008628",
+      "1008401"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "eZKz7OTQXVJWKFsg",
+     "key": "+pKBjAdU18SUxVD1E6V6sZZFUQgglxOPreVOK9h+mawhyFqBc0iZO/BLHzLWdLoq"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "PRZQa2JDG64n2trT",
+     "key": "pR2IH2AsMyJjihzE13EIOsqkoSaQW39RnD8tiD8A5vMvg7qnE7t8sHSN1dHZvxep"
+    },
+    {
+     "scope": "competicion:LF_ENDESA_2026_2027_Liga_Regular_Único",
+     "iv": "tWSIjm7cSQiyPX+/",
+     "key": "mzyo/xdvSY46SLV5K99lhJ3o64dsVnXBMpefBZuj4GQOxSkWvrBd6Jx5qpAkgRRW"
+    }
+   ],
+   "competition": {
+    "key": "LF_ENDESA_2026_2027_Liga_Regular_Único",
+    "label": "LF ENDESA · Liga Regular Único",
+    "competition": "LF ENDESA",
+    "group": "Liga Regular Único",
+    "season": "2026/2027",
+    "level": 1,
+    "gender": "F",
+    "league": "FEB"
+   }
+  },
+  {
+   "collection": "PRIMERA_FEB_2026_2027_Liga_Regular_Único",
+   "round": 9,
+   "file": "rounds/PRIMERA_FEB_2026_2027_Liga_Regular_nico__r9.bpkgz",
+   "sha256": "2649664a0622ad13d2ab1515e9a68a2a28834a652cffbd54fad08a2d9ea3176d",
+   "bytes": 250778,
+   "club": false,
+   "matches": [
+    {
+     "code": "2535797",
+     "start": "2026-11-22T12:00",
+     "home": {
+      "id": "1009716",
+      "name": "BUENO ARENAS ALBACETE BASKET"
+     },
+     "away": {
+      "id": "1008378",
+      "name": "INVEREADY ASKATUAK GIPUZKOA"
+     },
+     "own_id": "1009716",
+     "is_club": false,
+     "own_ids": [
+      "1009716",
+      "1008378"
+     ]
+    },
+    {
+     "code": "2535798",
+     "start": "2026-11-22T18:00",
+     "home": {
+      "id": "1009072",
+      "name": "FIBWI MALLORCA BASQUET PALMA"
+     },
+     "away": {
+      "id": "1009110",
+      "name": "CAJASOL COTO CÓRDOBA"
+     },
+     "own_id": "1009072",
+     "is_club": false,
+     "own_ids": [
+      "1009072",
+      "1009110"
+     ]
+    },
+    {
+     "code": "2535799",
+     "start": "2026-11-22T12:00",
+     "home": {
+      "id": "1010493",
+      "name": "MOVISTAR ESTUDIANTES"
+     },
+     "away": {
+      "id": "1009095",
+      "name": "CLUB OURENSE BALONCESTO"
+     },
+     "own_id": "1010493",
+     "is_club": false,
+     "own_ids": [
+      "1010493",
+      "1009095"
+     ]
+    },
+    {
+     "code": "2535800",
+     "start": "2026-11-21T18:30",
+     "home": {
+      "id": "1010494",
+      "name": "PARTIZÁN DE FUENLABRADA"
+     },
+     "away": {
+      "id": "1008400",
+      "name": "GRUPO URETA TIZONA BURGOS"
+     },
+     "own_id": "1010494",
+     "is_club": false,
+     "own_ids": [
+      "1010494",
+      "1008400"
+     ]
+    },
+    {
+     "code": "2535801",
+     "start": "2026-11-22T12:30",
+     "home": {
+      "id": "1009837",
+      "name": "ALIMERKA OVIEDO BALONCESTO"
+     },
+     "away": {
+      "id": "1008687",
+      "name": "HLA ALICANTE"
+     },
+     "own_id": "1009837",
+     "is_club": false,
+     "own_ids": [
+      "1009837",
+      "1008687"
+     ]
+    },
+    {
+     "code": "2535802",
+     "start": "2026-11-21T19:00",
+     "home": {
+      "id": "1010207",
+      "name": "IBEROLEA PALENCIA"
+     },
+     "away": {
+      "id": "1009713",
+      "name": "PALMER BASKET MALLORCA PALMA"
+     },
+     "own_id": "1010207",
+     "is_club": false,
+     "own_ids": [
+      "1010207",
+      "1009713"
+     ]
+    },
+    {
+     "code": "2535803",
+     "start": "2026-11-22T13:00",
+     "home": {
+      "id": "1008797",
+      "name": "CAJASIETE GRAN CANARIA"
+     },
+     "away": {
+      "id": "1009929",
+      "name": "BÀSQUET MENORCA"
+     },
+     "own_id": "1008797",
+     "is_club": false,
+     "own_ids": [
+      "1008797",
+      "1009929"
+     ]
+    },
+    {
+     "code": "2535804",
+     "start": "2026-11-22T12:30",
+     "home": {
+      "id": "1009584",
+      "name": "GRUPO ALEGA CANTABRIA"
+     },
+     "away": {
+      "id": "1009109",
+      "name": "COVIRAN GRANADA"
+     },
+     "own_id": "1009584",
+     "is_club": false,
+     "own_ids": [
+      "1009584",
+      "1009109"
+     ]
+    },
+    {
+     "code": "2535805",
+     "start": "2026-11-22T12:30",
+     "home": {
+      "id": "1010324",
+      "name": "INSOLAC CAJA 87"
+     },
+     "away": {
+      "id": "1008900",
+      "name": "CAJA RURAL CB ZAMORA"
+     },
+     "own_id": "1010324",
+     "is_club": false,
+     "own_ids": [
+      "1010324",
+      "1008900"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "wt495Tnl6c0+TMZ2",
+     "key": "Cs7YTUmAICEoUEc1H7wTNcb27oyZ23iNlzeXw7jCSe8fZmL3lFcqqe1U+uOpg8z3"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "ROvPX5DGnsxQjqVU",
+     "key": "K7MzcN1MpUHAA+WNNgu7A1xniYT0zi1ADyAMkVNBpX2et9R7vdIJEDvEOiYCzia8"
+    },
+    {
+     "scope": "competicion:PRIMERA_FEB_2026_2027_Liga_Regular_Único",
+     "iv": "CVhZijpocXj+FfGq",
+     "key": "dWVqlzJ8ii+AzTYHuf4eaXzTIojDRjAK3J9t+1BnlxDytYlAzcD8evN/vO0l8F2i"
+    }
+   ],
+   "competition": {
+    "key": "PRIMERA_FEB_2026_2027_Liga_Regular_Único",
+    "label": "PRIMERA FEB · Liga Regular Único",
+    "competition": "PRIMERA FEB",
+    "group": "Liga Regular Único",
+    "season": "2026/2027",
+    "level": 2,
+    "gender": "M",
+    "league": "FEB"
+   }
+  },
+  {
+   "collection": "LF_CHALLENGE_2026_2027_Liga_Regular_Único",
+   "round": 7,
+   "file": "rounds/LF_CHALLENGE_2026_2027_Liga_Regular_nico__r7.bpkgz",
+   "sha256": "efad5eea646c150dd1065b794421b3c38a7d5eb9f16c8b7be1121c812fa1b515",
+   "bytes": 186538,
+   "club": true,
+   "matches": [
+    {
+     "code": "2524503",
+     "start": "2026-11-22T12:30",
+     "home": {
+      "id": "1008811",
+      "name": "CLUB JOVENTUT BADALONA"
+     },
+     "away": {
+      "id": "1008685",
+      "name": "FUSTECMA NBF CASTELLÓ"
+     },
+     "own_id": "1008811",
+     "is_club": false,
+     "own_ids": [
+      "1008811",
+      "1008685"
+     ]
+    },
+    {
+     "code": "2524504",
+     "start": "2026-11-22T17:00",
+     "home": {
+      "id": "1008392",
+      "name": "DOMUSA TEKNIK ISB"
+     },
+     "away": {
+      "id": "1008968",
+      "name": "C.B. AL-QAZERES EXTREMADURA"
+     },
+     "own_id": "1008392",
+     "is_club": false,
+     "own_ids": [
+      "1008392",
+      "1008968"
+     ]
+    },
+    {
+     "code": "2524505",
+     "start": "2026-11-21T20:30",
+     "home": {
+      "id": "1008631",
+      "name": "MIPELLETYMAS B.F. LEON"
+     },
+     "away": {
+      "id": "1008402",
+      "name": "MCR LIMA-HORTA BARCELONA"
+     },
+     "own_id": "1008631",
+     "is_club": true,
+     "own_ids": [
+      "1008631",
+      "1008402"
+     ]
+    },
+    {
+     "code": "2524506",
+     "start": "2026-11-21T19:00",
+     "home": {
+      "id": "1008895",
+      "name": "BOSONIT UNIBASKET"
+     },
+     "away": {
+      "id": "1008920",
+      "name": "SPARKING TRUTH MARISTAS"
+     },
+     "own_id": "1008895",
+     "is_club": false,
+     "own_ids": [
+      "1008895",
+      "1008920"
+     ]
+    },
+    {
+     "code": "2524507",
+     "start": "2026-11-22T12:00",
+     "home": {
+      "id": "1008708",
+      "name": "SPAR GRAN CANARIA"
+     },
+     "away": {
+      "id": "1008898",
+      "name": "RECOLETAS ZAMORA"
+     },
+     "own_id": "1008708",
+     "is_club": false,
+     "own_ids": [
+      "1008708",
+      "1008898"
+     ]
+    },
+    {
+     "code": "2524508",
+     "start": "2026-11-21T20:00",
+     "home": {
+      "id": "1008777",
+      "name": "LA LAGUNA TOYOTA  ADAREVA"
+     },
+     "away": {
+      "id": "1008987",
+      "name": "UNICAJA MIJAS"
+     },
+     "own_id": "1008777",
+     "is_club": false,
+     "own_ids": [
+      "1008777",
+      "1008987"
+     ]
+    },
+    {
+     "code": "2524509",
+     "start": "2026-11-21T19:00",
+     "home": {
+      "id": "1008988",
+      "name": "SEVILLA CAJASOL GARDENSTORE BALONCESTO"
+     },
+     "away": {
+      "id": "1008868",
+      "name": "VALENCIA BASKET"
+     },
+     "own_id": "1008988",
+     "is_club": false,
+     "own_ids": [
+      "1008988",
+      "1008868"
+     ]
+    },
+    {
+     "code": "2524510",
+     "start": "2026-11-22T11:00",
+     "home": {
+      "id": "1009061",
+      "name": "MELILLA CIUDAD DEL DEPORTE LA SALLE"
+     },
+     "away": {
+      "id": "1008377",
+      "name": "OSES CONSTRUCCION"
+     },
+     "own_id": "1009061",
+     "is_club": false,
+     "own_ids": [
+      "1009061",
+      "1008377"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "wS4J85XXeM0z/iav",
+     "key": "yX8lQ46Muz4dmExj1+ULNI4ei2FQkenfpVAEoPoC42ifQjeTc7Aaxabb838ttlRi"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "AbulCRKcq0zxNe+m",
+     "key": "rQSZVuAnZBvqTqlUA4e8q0r7UqgamH/M0ufNFIsbLYtEGcXN8OePcJvWFUPjXSo4"
+    },
+    {
+     "scope": "competicion:LF_CHALLENGE_2026_2027_Liga_Regular_Único",
+     "iv": "bzfguaiiEMiGe2JE",
+     "key": "t+3pTu/vcUt+bXWCEaZrHWYm79vo3VT3o8KnS3Eu8DOPvryrlMcytIsNyVaUyoG8"
+    }
+   ],
+   "competition": {
+    "key": "LF_CHALLENGE_2026_2027_Liga_Regular_Único",
+    "label": "LF CHALLENGE · Liga Regular Único",
+    "competition": "LF CHALLENGE",
+    "group": "Liga Regular Único",
+    "season": "2026/2027",
+    "level": 2,
+    "gender": "F",
+    "league": "FEB"
+   }
+  },
+  {
+   "collection": "SEGUNDA_FEB_2026_2027_Liga_Regular_A",
+   "round": 8,
+   "file": "rounds/SEGUNDA_FEB_2026_2027_Liga_Regular_A__r8.bpkgz",
+   "sha256": "32fdfe8da8564f16df6ae1332491dce554746964ac2e2e041c57913bf7e7581d",
+   "bytes": 166270,
+   "club": false,
+   "matches": [
+    {
+     "code": "2536164",
+     "start": "2026-11-22T12:00",
+     "home": {
+      "id": "1010352",
+      "name": "MELILLA CIUDAD DEL DEPORTE"
+     },
+     "away": {
+      "id": "1010318",
+      "name": "CLUB BALONCESTO TOLEDO BASKET"
+     },
+     "own_id": "1010352",
+     "is_club": false,
+     "own_ids": [
+      "1010352",
+      "1010318"
+     ]
+    },
+    {
+     "code": "2536166",
+     "start": "2026-11-21T19:00",
+     "home": {
+      "id": "1010320",
+      "name": "IREN BCBADAJOZ"
+     },
+     "away": {
+      "id": "1010193",
+      "name": "C.B. STARLABS MORÓN"
+     },
+     "own_id": "1010320",
+     "is_club": false,
+     "own_ids": [
+      "1010320",
+      "1010193"
+     ]
+    },
+    {
+     "code": "2536167",
+     "start": "2026-11-21T19:00",
+     "home": {
+      "id": "1010321",
+      "name": "CACERES PATRIMONIO DE LA HUMANIDAD"
+     },
+     "away": {
+      "id": "1010496",
+      "name": "MOVISTAR ESTUDIANTES"
+     },
+     "own_id": "1010321",
+     "is_club": false,
+     "own_ids": [
+      "1010321",
+      "1010496"
+     ]
+    },
+    {
+     "code": "2536168",
+     "start": "2026-11-21T19:30",
+     "home": {
+      "id": "1010192",
+      "name": "CB ALGECIRAS"
+     },
+     "away": {
+      "id": "1009723",
+      "name": "C.B. TRES CANTOS"
+     },
+     "own_id": "1010192",
+     "is_club": false,
+     "own_ids": [
+      "1010192",
+      "1009723"
+     ]
+    },
+    {
+     "code": "2536169",
+     "start": "2026-11-22T12:30",
+     "home": {
+      "id": "1010194",
+      "name": "JAEN PARAISO INTERIOR FS"
+     },
+     "away": {
+      "id": "1008857",
+      "name": "CULTURAL Y DEPORTIVA LEONESA"
+     },
+     "own_id": "1010194",
+     "is_club": false,
+     "own_ids": [
+      "1010194",
+      "1008857"
+     ]
+    },
+    {
+     "code": "2536170",
+     "start": "2026-11-21T19:00",
+     "home": {
+      "id": "1009588",
+      "name": "UEMC BALONCESTO VALLADOLID"
+     },
+     "away": {
+      "id": "1008643",
+      "name": "CLÍNICA PONFERRADA SDP"
+     },
+     "own_id": "1009588",
+     "is_club": false,
+     "own_ids": [
+      "1009588",
+      "1008643"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "+5xL37cbOGFtJZY9",
+     "key": "Chzu1/1a1PVgVPAhRn6lyHIADWb/UMugQLSlt/xXHfK8eNvY7h2R5KDdjliTjkrW"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "+zKV3u0rS3ZNY6R1",
+     "key": "fWYgQZuONk3rSt+kOfuAyV4swxICFdwb/BBodGXVkM3Uy4Vmrgb0GxHZnL9kzPCN"
+    },
+    {
+     "scope": "competicion:SEGUNDA_FEB_2026_2027_Liga_Regular_A",
+     "iv": "beavWShPRJuHZrk2",
+     "key": "pWIiU/fBea9FJBe/bvOXd+0TXSEr9L3q49KxKimhfqlZu7rJ84M5P6a7UsuiQ+pz"
+    }
+   ],
+   "competition": {
+    "key": "SEGUNDA_FEB_2026_2027_Liga_Regular_A",
+    "label": "SEGUNDA FEB · Liga Regular \"A\"",
+    "competition": "SEGUNDA FEB",
+    "group": "Liga Regular \"A\"",
+    "season": "2026/2027",
+    "level": 3,
+    "gender": "M",
+    "league": "FEB"
+   }
+  },
+  {
+   "collection": "SEGUNDA_FEB_2026_2027_Liga_Regular_B",
+   "round": 8,
+   "file": "rounds/SEGUNDA_FEB_2026_2027_Liga_Regular_B__r8.bpkgz",
+   "sha256": "6d302cb468ed8f7e5a00a9f1418a93ed0c23d0592dcf4201326a4eff899e3e5e",
+   "bytes": 188934,
+   "club": false,
+   "matches": [
+    {
+     "code": "2536346",
+     "start": "2026-11-22T18:30",
+     "home": {
+      "id": "1008985",
+      "name": "LOGROBASKET LOGI7"
+     },
+     "away": {
+      "id": "1008706",
+      "name": "CLASS BASQUET SANT ANTONI"
+     },
+     "own_id": "1008985",
+     "is_club": false,
+     "own_ids": [
+      "1008985",
+      "1008706"
+     ]
+    },
+    {
+     "code": "2536347",
+     "start": "2026-11-21T18:00",
+     "home": {
+      "id": "1008636",
+      "name": "TQ-CB PRAT"
+     },
+     "away": {
+      "id": "1008391",
+      "name": "BIELE ISB"
+     },
+     "own_id": "1008636",
+     "is_club": false,
+     "own_ids": [
+      "1008636",
+      "1008391"
+     ]
+    },
+    {
+     "code": "2536348",
+     "start": "2026-11-21T20:15",
+     "home": {
+      "id": "1008899",
+      "name": "LOBE TU PROVINCIA HUESCA LA MAGIA"
+     },
+     "away": {
+      "id": "1010208",
+      "name": "AMICS CASTELLÓ"
+     },
+     "own_id": "1008899",
+     "is_club": false,
+     "own_ids": [
+      "1008899",
+      "1010208"
+     ]
+    },
+    {
+     "code": "2536349",
+     "start": "2026-11-22T17:00",
+     "home": {
+      "id": "1010200",
+      "name": "INTERMAQUINAS BENICARLO"
+     },
+     "away": {
+      "id": "1009441",
+      "name": "SOL GIRONÈS BISBAL BÀSQUET"
+     },
+     "own_id": "1010200",
+     "is_club": false,
+     "own_ids": [
+      "1010200",
+      "1009441"
+     ]
+    },
+    {
+     "code": "2536350",
+     "start": "2026-11-21T18:30",
+     "home": {
+      "id": "1008978",
+      "name": "CLUB ESPORTIU BÀSQUET LLÍRIA"
+     },
+     "away": {
+      "id": "1009133",
+      "name": "C.B. ZARAGOZA"
+     },
+     "own_id": "1008978",
+     "is_club": false,
+     "own_ids": [
+      "1008978",
+      "1009133"
+     ]
+    },
+    {
+     "code": "2536351",
+     "start": "2026-11-22T12:00",
+     "home": {
+      "id": "1010350",
+      "name": "REINA PROTEÍNAS CLAVIJO"
+     },
+     "away": {
+      "id": "1010351",
+      "name": "PROINBENI UPB GANDIA"
+     },
+     "own_id": "1010350",
+     "is_club": false,
+     "own_ids": [
+      "1010350",
+      "1010351"
+     ]
+    },
+    {
+     "code": "2536352",
+     "start": "2026-11-21T18:30",
+     "home": {
+      "id": "1010348",
+      "name": "VIDAL GOLOSINAS CIUDAD MOLINA BASKET"
+     },
+     "away": {
+      "id": "1010502",
+      "name": "LA SALUD CARTAGENA C.B."
+     },
+     "own_id": "1010348",
+     "is_club": false,
+     "own_ids": [
+      "1010348",
+      "1010502"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "mMjZyWzx5uhu4wb4",
+     "key": "K/0tIpHHXVcJFKww1F7lxJBh2oTCO94nmN+vKCWjG8o3ZQ9saqcDWUcUQIEmA4WI"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "cZAa864D4sCeBGHo",
+     "key": "lKEZr0nWOhiyMhVBTA9zGFpiVlSIMRiCGXvq3h1FcxawcMy2GvExXc9ErbwVKwoe"
+    },
+    {
+     "scope": "competicion:SEGUNDA_FEB_2026_2027_Liga_Regular_B",
+     "iv": "FDgSmFGrYcffHyu1",
+     "key": "9e3lLyJMoJfcWb+/kCbSyHsEKhka8JRTmgVFAgNf1eP+ii1qwdrEdcqk6XpBDfha"
+    }
+   ],
+   "competition": {
+    "key": "SEGUNDA_FEB_2026_2027_Liga_Regular_B",
+    "label": "SEGUNDA FEB · Liga Regular \"B\"",
+    "competition": "SEGUNDA FEB",
+    "group": "Liga Regular \"B\"",
+    "season": "2026/2027",
+    "level": 3,
+    "gender": "M",
+    "league": "FEB"
+   }
+  },
+  {
+   "collection": "L_F_-2_2026_2027_Liga_Regular_A",
+   "round": 8,
+   "file": "rounds/L_F_2_2026_2027_Liga_Regular_A__r8.bpkgz",
+   "sha256": "0c703c72d8319832b0b21fda8b7a614cbf55f71f1f12b0ad370bb0d193573005",
+   "bytes": 183046,
+   "club": false,
+   "matches": [
+    {
+     "code": "2524746",
+     "start": "2026-11-22T12:00",
+     "home": {
+      "id": "1008994",
+      "name": "CESUR DISTRITO OLIMPICO"
+     },
+     "away": {
+      "id": "1008779",
+      "name": "CB ISLA BONITA SANO SANO CATERING"
+     },
+     "own_id": "1008994",
+     "is_club": false,
+     "own_ids": [
+      "1008994",
+      "1008779"
+     ]
+    },
+    {
+     "code": "2524747",
+     "start": "2026-11-21T17:30",
+     "home": {
+      "id": "1008973",
+      "name": "HIERROS DÍAZ EXTREMADURA MIRALVALLE"
+     },
+     "away": {
+      "id": "1008893",
+      "name": "DPES-SUMIALKI CB CIUDAD DE MOSTOLES"
+     },
+     "own_id": "1008973",
+     "is_club": false,
+     "own_ids": [
+      "1008973",
+      "1008893"
+     ]
+    },
+    {
+     "code": "2524748",
+     "start": "2026-11-21T19:30",
+     "home": {
+      "id": "1008644",
+      "name": "EL COCHINILLO SEGOVIANO SL"
+     },
+     "away": {
+      "id": "1008710",
+      "name": "SPAR GRAN CANARIA"
+     },
+     "own_id": "1008644",
+     "is_club": false,
+     "own_ids": [
+      "1008644",
+      "1008710"
+     ]
+    },
+    {
+     "code": "2524749",
+     "start": "2026-11-21T17:00",
+     "home": {
+      "id": "1008995",
+      "name": "GRUPO INTERBUS ALCOBENDAS"
+     },
+     "away": {
+      "id": "1008791",
+      "name": "ACEITES ABRIL ADBA SANFER"
+     },
+     "own_id": "1008995",
+     "is_club": false,
+     "own_ids": [
+      "1008995",
+      "1008791"
+     ]
+    },
+    {
+     "code": "2524750",
+     "start": "2026-11-21T19:30",
+     "home": {
+      "id": "1008864",
+      "name": "SERNOVA RENOVABLES REAL CANOE"
+     },
+     "away": {
+      "id": "1008863",
+      "name": "CB POZUELO"
+     },
+     "own_id": "1008864",
+     "is_club": false,
+     "own_ids": [
+      "1008864",
+      "1008863"
+     ]
+    },
+    {
+     "code": "2524751",
+     "start": "2026-11-21T20:00",
+     "home": {
+      "id": "1008805",
+      "name": "SIROKO GIJON BASKETBALL"
+     },
+     "away": {
+      "id": "1008709",
+      "name": "MAGEC TÍAS LANZAROTE CONTRA LA VIOLENCIA DE GÉNERO"
+     },
+     "own_id": "1008805",
+     "is_club": false,
+     "own_ids": [
+      "1008805",
+      "1008709"
+     ]
+    },
+    {
+     "code": "2524752",
+     "start": "2026-11-21T17:00",
+     "home": {
+      "id": "1008974",
+      "name": "MARISCOS ANTÓN CORTEGADA"
+     },
+     "away": {
+      "id": "1009132",
+      "name": "C.B. LAS ROZAS"
+     },
+     "own_id": "1008974",
+     "is_club": false,
+     "own_ids": [
+      "1008974",
+      "1009132"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "+Y70FcPa0f/Ozx7W",
+     "key": "TLxr54BsaVlTbOl9bEj8+eo6pXktVOivYyWyTyqs4dsEWN1joSlcj/bjyqV9BATt"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "6WUuGg1rbQAvV2EP",
+     "key": "GshbEn6eDUTZh5XnmQVCQiMYrQm3I31J7SMkr32NYHobrXVLzQ6QW2MCZj2k8L4Z"
+    },
+    {
+     "scope": "competicion:L_F_-2_2026_2027_Liga_Regular_A",
+     "iv": "baKaBRDYyB3zYCx9",
+     "key": "C+h/jyku5slSOSSy5JhkMhI0FMXEwZWabUDxzb+f22C7p4V9G7Wgzhu+BhC8FHto"
+    }
+   ],
+   "competition": {
+    "key": "L_F_-2_2026_2027_Liga_Regular_A",
+    "label": "L.F.-2 · Liga Regular \"A\"",
+    "competition": "L.F.-2",
+    "group": "Liga Regular \"A\"",
+    "season": "2026/2027",
+    "level": 3,
+    "gender": "F",
+    "league": "FEB"
+   }
+  },
+  {
+   "collection": "L_F_-2_2026_2027_Liga_Regular_A",
+   "round": 7,
+   "file": "rounds/L_F_2_2026_2027_Liga_Regular_A__r7.bpkgz",
+   "sha256": "b7e6a6f15927bc0249f0e7a2bc94024c9a5f5bf2e0b205ea2af7aebe7bcf5855",
+   "bytes": 27334,
+   "club": false,
+   "matches": [
+    {
+     "code": "2524742",
+     "start": "2026-11-22T17:00",
+     "home": {
+      "id": "1008863",
+      "name": "CB POZUELO"
+     },
+     "away": {
+      "id": "1008995",
+      "name": "GRUPO INTERBUS ALCOBENDAS"
+     },
+     "own_id": "1008863",
+     "is_club": false,
+     "own_ids": [
+      "1008863",
+      "1008995"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "QPgVk4SEg2yvlvSM",
+     "key": "kzjumvrl0N6N0qUzLVayXoIBZ7JtCCuR6ouXOQEw6PgajIpYhkWUytCrINpfW/C1"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "fckIZ53kYRUeqHjQ",
+     "key": "t0D3A0jCHCY5DEacAJz3HvbKc1WHQSKMovpuX1gQqoyKNtlzMTih+GtTq/RmRjUx"
+    },
+    {
+     "scope": "competicion:L_F_-2_2026_2027_Liga_Regular_A",
+     "iv": "MymPGNjXyC37bppW",
+     "key": "tSn1yRWdOh3pJWuHtGhgasld0i8ClLP/DXeGbSSQVu/8TiqW2PXeML66fsoQyt96"
+    }
+   ],
+   "competition": {
+    "key": "L_F_-2_2026_2027_Liga_Regular_A",
+    "label": "L.F.-2 · Liga Regular \"A\"",
+    "competition": "L.F.-2",
+    "group": "Liga Regular \"A\"",
+    "season": "2026/2027",
+    "level": 3,
+    "gender": "F",
+    "league": "FEB"
+   }
+  },
+  {
+   "collection": "L_F_-2_2026_2027_Liga_Regular_B",
+   "round": 8,
+   "file": "rounds/L_F_2_2026_2027_Liga_Regular_B__r8.bpkgz",
+   "sha256": "532e6605b785ec20a534800bfa00978b06b6b269956810c7c7f1d53cf9d0ef05",
+   "bytes": 147578,
+   "club": false,
+   "matches": [
+    {
+     "code": "2524928",
+     "start": "2026-11-21T17:00",
+     "home": {
+      "id": "1008923",
+      "name": "TGN BASQUET A"
+     },
+     "away": {
+      "id": "1008861",
+      "name": "KINES IBAIZABAL GDKO"
+     },
+     "own_id": "1008923",
+     "is_club": false,
+     "own_ids": [
+      "1008923",
+      "1008861"
+     ]
+    },
+    {
+     "code": "2524929",
+     "start": "2026-11-22T11:00",
+     "home": {
+      "id": "1008849",
+      "name": "GEIEG PACISA"
+     },
+     "away": {
+      "id": "1008415",
+      "name": "HORBISA SPIRIT AUSARTA BARAKALDO"
+     },
+     "own_id": "1008849",
+     "is_club": false,
+     "own_ids": [
+      "1008849",
+      "1008415"
+     ]
+    },
+    {
+     "code": "2524930",
+     "start": "2026-11-21T18:10",
+     "home": {
+      "id": "1008949",
+      "name": "ROMAKURUMA U.E.MATARÓ"
+     },
+     "away": {
+      "id": "1009096",
+      "name": "STADIUM CASABLANCA-PATATAS GÓMEZ"
+     },
+     "own_id": "1008949",
+     "is_club": false,
+     "own_ids": [
+      "1008949",
+      "1009096"
+     ]
+    },
+    {
+     "code": "2524932",
+     "start": "2026-11-21T17:30",
+     "home": {
+      "id": "1008939",
+      "name": "BALONCESTO CLARET BENIMACLET"
+     },
+     "away": {
+      "id": "1009104",
+      "name": "XEREZ CLUB DEPORTIVO"
+     },
+     "own_id": "1008939",
+     "is_club": false,
+     "own_ids": [
+      "1008939",
+      "1009104"
+     ]
+    },
+    {
+     "code": "2524933",
+     "start": "2026-11-22T12:15",
+     "home": {
+      "id": "1008862",
+      "name": "MANRESA CBF A"
+     },
+     "away": {
+      "id": "1008887",
+      "name": "BASKET ALMEDA"
+     },
+     "own_id": "1008862",
+     "is_club": false,
+     "own_ids": [
+      "1008862",
+      "1008887"
+     ]
+    },
+    {
+     "code": "2524934",
+     "start": "2026-11-21T18:00",
+     "home": {
+      "id": "1008938",
+      "name": "DISHELEC 65 VILADECANS"
+     },
+     "away": {
+      "id": "1008684",
+      "name": "LUCENTUM ALICANTE"
+     },
+     "own_id": "1008938",
+     "is_club": false,
+     "own_ids": [
+      "1008938",
+      "1008684"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "Y1mNrAOgUN1MfW5D",
+     "key": "Oo17qBuETk+i+jcb0mJ2nNjm5aXrcnXSFCW4Gli6jFB1oiCs/gIbUI8qtjrhF7O1"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "h1oF6bBBWy7cU5HM",
+     "key": "Uqyq9JZ7YMsqRVaAOkQQ0wro4nHSFAj+i22ukqYyi6QeKzErmbeNVNRZgLJAufLA"
+    },
+    {
+     "scope": "competicion:L_F_-2_2026_2027_Liga_Regular_B",
+     "iv": "mguFqlHHYkTebyuW",
+     "key": "wV4TDRD19xPZnGg2hF67uBExDBg2Ihm2h+GqOp7+nfbXzSTI1K3izfdCI+13fC7c"
+    }
+   ],
+   "competition": {
+    "key": "L_F_-2_2026_2027_Liga_Regular_B",
+    "label": "L.F.-2 · Liga Regular \"B\"",
+    "competition": "L.F.-2",
+    "group": "Liga Regular \"B\"",
+    "season": "2026/2027",
+    "level": 3,
+    "gender": "F",
+    "league": "FEB"
+   }
+  },
+  {
+   "collection": "LIGA_U_2026_2027_LIGA_REGULAR_GRUPO_A",
+   "round": 9,
+   "file": "rounds/LIGA_U_2026_2027_LIGA_REGULAR_GRUPO_A__r9.bpkgz",
+   "sha256": "ae84f20f0f03409e2038020f273c8e1fa0d31f318d10bcf7d78ac7c7919ec640",
+   "bytes": 27022,
+   "club": false,
+   "matches": [
+    {
+     "code": "2538943",
+     "start": "2026-11-24T20:30",
+     "home": {
+      "id": "1009917",
+      "name": "REAL MADRID"
+     },
+     "away": {
+      "id": "1008629",
+      "name": "CASADEMONT ZARAGOZA"
+     },
+     "own_id": "1009917",
+     "is_club": false,
+     "own_ids": [
+      "1009917",
+      "1008629"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "pbLQcx7R+cAJyXxa",
+     "key": "NVdd9RyNblBDuja1JELkG1ZTuC4Pt02H5RRBVbyIxRikkEyCkSEoZfbyRrUnBPlr"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "GKVCKWc0tf7MlyJK",
+     "key": "R2B6j9aY/+I9nA6qNTkk1HWHzRNOcQReDMDvPLFzfzpwe/iZYrUzcvOhnODTKWqP"
+    },
+    {
+     "scope": "competicion:LIGA_U_2026_2027_LIGA_REGULAR_GRUPO_A",
+     "iv": "ouRjW5SFIaKKeZDs",
+     "key": "fh/7Kl+2guTC9NZq+729oCbw5C8Mifydu/R4IKuVQ6sd0j9IZziQDDJBFSN6Oz9z"
+    }
+   ],
+   "competition": {
+    "key": "LIGA_U_2026_2027_LIGA_REGULAR_GRUPO_A",
+    "label": "LIGA U · LIGA REGULAR GRUPO \"A\"",
+    "competition": "LIGA U",
+    "group": "LIGA REGULAR GRUPO \"A\"",
+    "season": "2026/2027",
+    "level": null,
+    "gender": "M",
+    "league": "FEB"
+   }
+  },
+  {
+   "collection": "LIGA_U_2026_2027_LIGA_REGULAR_GRUPO_A",
+   "round": 10,
+   "file": "rounds/LIGA_U_2026_2027_LIGA_REGULAR_GRUPO_A__r10.bpkgz",
+   "sha256": "dc93a13cc7bc48a48bf6cff57d7599394326177020e9e37dee41434187434eeb",
+   "bytes": 87250,
+   "club": false,
+   "matches": [
+    {
+     "code": "2538947",
+     "start": "2026-11-27T16:00",
+     "home": {
+      "id": "1009145",
+      "name": "BARÇA ATLÈTIC"
+     },
+     "away": {
+      "id": "1009590",
+      "name": "BURGOS GRUPO DE SANTIAGO"
+     },
+     "own_id": "1009145",
+     "is_club": false,
+     "own_ids": [
+      "1009145",
+      "1009590"
+     ]
+    },
+    {
+     "code": "2538948",
+     "start": "2026-11-27T17:00",
+     "home": {
+      "id": "1008629",
+      "name": "CASADEMONT ZARAGOZA"
+     },
+     "away": {
+      "id": "1009059",
+      "name": "BÀSQUET GIRONA"
+     },
+     "own_id": "1008629",
+     "is_club": false,
+     "own_ids": [
+      "1008629",
+      "1009059"
+     ]
+    },
+    {
+     "code": "2538949",
+     "start": "2026-11-27T19:00",
+     "home": {
+      "id": "1009917",
+      "name": "REAL MADRID"
+     },
+     "away": {
+      "id": "1009916",
+      "name": "FUNDACIÓN CB CANARIAS"
+     },
+     "own_id": "1009917",
+     "is_club": false,
+     "own_ids": [
+      "1009917",
+      "1009916"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "X5coqo+d4t5k8pfV",
+     "key": "fcPQhLe5eOYtqYlFrtq3CLW7uN9SPFWqYzgHYXmT821AYrvPHCvBrHJZn5ZAmtHd"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "lTI9mh7nCcDgc70r",
+     "key": "PnKn84kOz1gza8qgS2eljcKl9pZs+Oqt4H+Ffub4gtXVgpnBw3ZiWrx2OPm0NNxD"
+    },
+    {
+     "scope": "competicion:LIGA_U_2026_2027_LIGA_REGULAR_GRUPO_A",
+     "iv": "5TvFcwwVdLmgiVvr",
+     "key": "a3XePrfRV8l55Z2eon1/6IKa6gxiLX0qM+TQtCXJV1WyTzerguOsFen+1sfB3xRD"
+    }
+   ],
+   "competition": {
+    "key": "LIGA_U_2026_2027_LIGA_REGULAR_GRUPO_A",
+    "label": "LIGA U · LIGA REGULAR GRUPO \"A\"",
+    "competition": "LIGA U",
+    "group": "LIGA REGULAR GRUPO \"A\"",
+    "season": "2026/2027",
+    "level": null,
+    "gender": "M",
+    "league": "FEB"
+   }
+  },
+  {
+   "collection": "LIGA_U_2026_2027_LIGA_REGULAR_GRUPO_B",
+   "round": 9,
+   "file": "rounds/LIGA_U_2026_2027_LIGA_REGULAR_GRUPO_B__r9.bpkgz",
+   "sha256": "27fd1e721e3fd3c1e0a1c58d5ae0f645292b0e7fa182d0b3617b09a485dd594b",
+   "bytes": 57734,
+   "club": false,
+   "matches": [
+    {
+     "code": "2538999",
+     "start": "2026-11-22T17:00",
+     "home": {
+      "id": "1009924",
+      "name": "OBRADOIRO"
+     },
+     "away": {
+      "id": "1009930",
+      "name": "UCAM MURCIA CAR"
+     },
+     "own_id": "1009924",
+     "is_club": false,
+     "own_ids": [
+      "1009924",
+      "1009930"
+     ]
+    },
+    {
+     "code": "2539001",
+     "start": "2026-11-22T16:00",
+     "home": {
+      "id": "1009080",
+      "name": "EUSKALTAX BILBAO BASKET"
+     },
+     "away": {
+      "id": "1009135",
+      "name": "UNICAJA ALHAURÍN DE LA TORRE"
+     },
+     "own_id": "1009080",
+     "is_club": false,
+     "own_ids": [
+      "1009080",
+      "1009135"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "2Vn51fqu/rC/cbsU",
+     "key": "PlCFqq9zXkvjCXRjxt1dAtHX11tEz3yjQVU3+t/pD8S2KRZrbMDqMzrT8PsGH2d5"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "0OGWP4DyExKpNLbn",
+     "key": "GsoE1Dm14Yie9NiVm1jUDeW2humpnd8ZCY3Q1RURka8ETCl/0o+9gnyPuL1LH/Kz"
+    },
+    {
+     "scope": "competicion:LIGA_U_2026_2027_LIGA_REGULAR_GRUPO_B",
+     "iv": "rL1X/Z9u+qBunLJW",
+     "key": "cBx9UtpcDzV1CMnBQFtqaTrWZlXpSKEwJoTD6l11pmROg/jFrl+xozSZf0FdZi+8"
+    }
+   ],
+   "competition": {
+    "key": "LIGA_U_2026_2027_LIGA_REGULAR_GRUPO_B",
+    "label": "LIGA U · LIGA REGULAR GRUPO \"B\"",
+    "competition": "LIGA U",
+    "group": "LIGA REGULAR GRUPO \"B\"",
+    "season": "2026/2027",
+    "level": null,
+    "gender": "M",
+    "league": "FEB"
+   }
+  },
+  {
+   "collection": "COPA_ESPAÑA_2026_2027_Play-offs_1_4_Final",
+   "round": 1,
+   "file": "rounds/COPA_ESPA_A_2026_2027_Play_offs_1_4_Final__r1.bpkgz",
+   "sha256": "80a062ea006c0588e4e7fe6eb5926c3fb4e4f9767917504781e01f2b8ad12834",
+   "bytes": 59222,
+   "club": false,
+   "matches": [
+    {
+     "code": "2551414",
+     "start": "2026-12-16T20:00",
+     "home": {
+      "id": "1008400",
+      "name": "GRUPO URETA TIZONA BURGOS"
+     },
+     "away": {
+      "id": "1010493",
+      "name": "MOVISTAR ESTUDIANTES"
+     },
+     "own_id": "1008400",
+     "is_club": false,
+     "own_ids": [
+      "1008400",
+      "1010493"
+     ]
+    },
+    {
+     "code": "2551417",
+     "start": "2026-12-16T20:30",
+     "home": {
+      "id": "1009588",
+      "name": "UEMC BALONCESTO VALLADOLID"
+     },
+     "away": {
+      "id": "1009584",
+      "name": "GRUPO ALEGA CANTABRIA"
+     },
+     "own_id": "1009588",
+     "is_club": false,
+     "own_ids": [
+      "1009588",
+      "1009584"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "KI/XADIx/eyP71+F",
+     "key": "cEtV7uV+o+oRj9c42JSXQRxqG9ro5R7MgLJeNAUmUTT0lIpo9Lw0Pyu4TKcJ3jsF"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "7kqe3R67vi4XriwY",
+     "key": "IHv1JVL9sYPiPnrin/tksf3UWJTVyLuR65G0zjgVYZDG6LGbu5d9zVlx4a4MT6tD"
+    },
+    {
+     "scope": "competicion:COPA_ESPAÑA_2026_2027_Play-offs_1_4_Final",
+     "iv": "aKzksOEXxiqfftSY",
+     "key": "IO/W2h7Kqv6sIN6hSEK8VTPrVP0sXkITwzx05p+bPFMwZQj3DegnRud/HwFwnx4L"
+    }
+   ],
+   "competition": {
+    "key": "COPA_ESPAÑA_2026_2027_Play-offs_1_4_Final",
+    "label": "COPA ESPAÑA · Play-offs 1/4 Final",
+    "competition": "COPA ESPAÑA",
+    "group": "Play-offs 1/4 Final",
+    "season": "2026/2027",
+    "level": null,
+    "gender": "M",
+    "league": "FEB"
+   }
+  },
+  {
+   "collection": "TERCERA_FEB_2026_2027_Liga_Regular_A-A",
+   "round": 8,
+   "file": "rounds/TERCERA_FEB_2026_2027_Liga_Regular_A_A__r8.bpkgz",
+   "sha256": "c0856270ddc9d1f87552c12ac48d9375b01b2a778ec9a387eebbbccb01779a3a",
+   "bytes": 184574,
+   "club": false,
+   "matches": [
+    {
+     "code": "2536710",
+     "start": "2026-11-21T19:00",
+     "home": {
+      "id": "1009179",
+      "name": "HOTEL 4POSTES - ÁVILA AUTÉNTICA - EL BULEVAR"
+     },
+     "away": {
+      "id": "1008897",
+      "name": "TABIRAKO BAQUE"
+     },
+     "own_id": "1009179",
+     "is_club": false,
+     "own_ids": [
+      "1009179",
+      "1008897"
+     ]
+    },
+    {
+     "code": "2536711",
+     "start": "2026-11-22T19:00",
+     "home": {
+      "id": "1008627",
+      "name": "BALONCESTO LA FLECHA"
+     },
+     "away": {
+      "id": "1010898",
+      "name": "LISDATA BEZANA"
+     },
+     "own_id": "1008627",
+     "is_club": false,
+     "own_ids": [
+      "1008627",
+      "1010898"
+     ]
+    },
+    {
+     "code": "2536712",
+     "start": "2026-11-22T18:30",
+     "home": {
+      "id": "1009106",
+      "name": "ULACIA ZKE"
+     },
+     "away": {
+      "id": "1008735",
+      "name": "ELABORADOS NATURALES VALLE DE EGÜÉS"
+     },
+     "own_id": "1009106",
+     "is_club": false,
+     "own_ids": [
+      "1009106",
+      "1008735"
+     ]
+    },
+    {
+     "code": "2536713",
+     "start": "2026-11-21T18:00",
+     "home": {
+      "id": "1008399",
+      "name": "IRUKI TAKE"
+     },
+     "away": {
+      "id": "1008679",
+      "name": "SAN PRUDENCIO"
+     },
+     "own_id": "1008399",
+     "is_club": false,
+     "own_ids": [
+      "1008399",
+      "1008679"
+     ]
+    },
+    {
+     "code": "2536714",
+     "start": "2026-11-21T19:45",
+     "home": {
+      "id": "1008869",
+      "name": "MEGACALZADO ARDOI"
+     },
+     "away": {
+      "id": "1008697",
+      "name": "RESTAURANTE LOS ARCOS CB SOLARES"
+     },
+     "own_id": "1008869",
+     "is_club": false,
+     "own_ids": [
+      "1008869",
+      "1008697"
+     ]
+    },
+    {
+     "code": "2536715",
+     "start": "2026-11-22T18:00",
+     "home": {
+      "id": "1010577",
+      "name": "CONSTRUCCIONES GONZALO CRESPO PAS PIÉLAGOS"
+     },
+     "away": {
+      "id": "1009714",
+      "name": "TEKNEI BIZKAIA ZORNOTZA"
+     },
+     "own_id": "1010577",
+     "is_club": false,
+     "own_ids": [
+      "1010577",
+      "1009714"
+     ]
+    },
+    {
+     "code": "2536716",
+     "start": "2026-11-21T19:00",
+     "home": {
+      "id": "1009704",
+      "name": "DE MORRO FINO CANTBASKET04"
+     },
+     "away": {
+      "id": "1009137",
+      "name": "UNIVERSIDAD DEUSTO LOIOLA INDAUTXU"
+     },
+     "own_id": "1009704",
+     "is_club": false,
+     "own_ids": [
+      "1009704",
+      "1009137"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "BRZH1NYKE7obtKNn",
+     "key": "RMRjJ6skfJZz60Wb3PR41ie7HBC9zfOsKDyRmwTD9Dt9smzgL5jbXZpiY3WR4nPK"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "eenrEWijmeNv/46h",
+     "key": "/wNUbkvFFaTYWF6SwVvP806/+Cdnd+FpuRx7rzyepYTm1LbtU3mvNr+lSDBpOvRo"
+    },
+    {
+     "scope": "competicion:TERCERA_FEB_2026_2027_Liga_Regular_A-A",
+     "iv": "Va0orV9SygBdlELQ",
+     "key": "2iJvxhyT1c4aFVQCtY0QHa/tlUOJ6QIynlEg5/FJ8GVzpKwrXhAV7++Y1Piq1V/E"
+    }
+   ],
+   "competition": {
+    "key": "TERCERA_FEB_2026_2027_Liga_Regular_A-A",
+    "label": "TERCERA FEB · Liga Regular \"A-A\"",
+    "competition": "TERCERA FEB",
+    "group": "Liga Regular \"A-A\"",
+    "season": "2026/2027",
+    "level": 4,
+    "gender": "M",
+    "league": "FEB"
+   }
+  },
+  {
+   "collection": "TERCERA_FEB_2026_2027_Liga_Regular_A-B",
+   "round": 8,
+   "file": "rounds/TERCERA_FEB_2026_2027_Liga_Regular_A_B__r8.bpkgz",
+   "sha256": "39aa829043ff6a84f07432db0bd3dc600a2cc3bf1b125a3c69a17524ed1af750",
+   "bytes": 187510,
+   "club": false,
+   "matches": [
+    {
+     "code": "2536892",
+     "start": "2026-11-21T18:00",
+     "home": {
+      "id": "1010503",
+      "name": "CALVO BASKET XIRIA"
+     },
+     "away": {
+      "id": "1009919",
+      "name": "UCOGA SEGUROS C.B. CHANTADA"
+     },
+     "own_id": "1010503",
+     "is_club": false,
+     "own_ids": [
+      "1010503",
+      "1009919"
+     ]
+    },
+    {
+     "code": "2536893",
+     "start": "2026-11-21T19:00",
+     "home": {
+      "id": "1008382",
+      "name": "USAL MEINS AVENIDA"
+     },
+     "away": {
+      "id": "1010574",
+      "name": "SIGALTEC BBC"
+     },
+     "own_id": "1008382",
+     "is_club": false,
+     "own_ids": [
+      "1008382",
+      "1010574"
+     ]
+    },
+    {
+     "code": "2536894",
+     "start": "2026-11-22T17:00",
+     "home": {
+      "id": "1010206",
+      "name": "TERRITORIO MINERO BALONCESTO VILLA DE MIERES"
+     },
+     "away": {
+      "id": "1008981",
+      "name": "OKTICKET CIRCULO GIJON"
+     },
+     "own_id": "1010206",
+     "is_club": false,
+     "own_ids": [
+      "1010206",
+      "1008981"
+     ]
+    },
+    {
+     "code": "2536895",
+     "start": "2026-11-22T17:00",
+     "home": {
+      "id": "1009446",
+      "name": "INELTRON SANTO DOMINGO BETANZOS"
+     },
+     "away": {
+      "id": "1010578",
+      "name": "NAIWAN DETAILING NOVOBASKET"
+     },
+     "own_id": "1009446",
+     "is_club": false,
+     "own_ids": [
+      "1009446",
+      "1010578"
+     ]
+    },
+    {
+     "code": "2536896",
+     "start": "2026-11-21T19:00",
+     "home": {
+      "id": "1008632",
+      "name": "UNIVERSIDAD DE OVIEDO"
+     },
+     "away": {
+      "id": "1010490",
+      "name": "CAJA RURAL RDL"
+     },
+     "own_id": "1008632",
+     "is_club": false,
+     "own_ids": [
+      "1008632",
+      "1010490"
+     ]
+    },
+    {
+     "code": "2536897",
+     "start": "2026-11-21T20:00",
+     "home": {
+      "id": "1009817",
+      "name": "RECOLETAS SALUD SALAMANCA"
+     },
+     "away": {
+      "id": "1010897",
+      "name": "ULLA OIL ROSALIA"
+     },
+     "own_id": "1009817",
+     "is_club": false,
+     "own_ids": [
+      "1009817",
+      "1010897"
+     ]
+    },
+    {
+     "code": "2536898",
+     "start": "2026-11-21T19:30",
+     "home": {
+      "id": "1009920",
+      "name": "TRAUMACOR CULLEREDO"
+     },
+     "away": {
+      "id": "1008919",
+      "name": "MARÍN ENCE PEIXEGALEGO"
+     },
+     "own_id": "1009920",
+     "is_club": false,
+     "own_ids": [
+      "1009920",
+      "1008919"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "K1+aFqxul8rDwAr8",
+     "key": "wwdpJz/TUVMMli7oSew5Jug9Q/R8+i4BM0OKdyhfmtOAGgLE7fmXwqfHSUNmeCco"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "gRefa3IVyVFSLYuA",
+     "key": "A4uzykH21Cm0vn2OEUXSXEJV4QR2fWRp1yDRyqfjA0GWwO6P4A+58Z3SKwam6QEP"
+    },
+    {
+     "scope": "competicion:TERCERA_FEB_2026_2027_Liga_Regular_A-B",
+     "iv": "aW3I9OUXX+hSxUCL",
+     "key": "2iRgcW30UCuu6+YHT8IfFM+dVLQOpjo+IGOStNEuCIKLJsmXEC5623vyROUldjBU"
+    }
+   ],
+   "competition": {
+    "key": "TERCERA_FEB_2026_2027_Liga_Regular_A-B",
+    "label": "TERCERA FEB · Liga Regular \"A-B\"",
+    "competition": "TERCERA FEB",
+    "group": "Liga Regular \"A-B\"",
+    "season": "2026/2027",
+    "level": 4,
+    "gender": "M",
+    "league": "FEB"
+   }
+  },
+  {
+   "collection": "TERCERA_FEB_2026_2027_Liga_Regular_B-A",
+   "round": 8,
+   "file": "rounds/TERCERA_FEB_2026_2027_Liga_Regular_B_A__r8.bpkgz",
+   "sha256": "4257bafc8b9e299549756e591cb5a8067eb0ed0290146393952bf0c3d6fd88a9",
+   "bytes": 189146,
+   "club": false,
+   "matches": [
+    {
+     "code": "2537074",
+     "start": "2026-11-21T19:00",
+     "home": {
+      "id": "1009702",
+      "name": "FUNDACION GLOBALCAJA LA RODA"
+     },
+     "away": {
+      "id": "1009835",
+      "name": "AG MOVIALSA QUALITYSPORT CRIPTANA"
+     },
+     "own_id": "1009702",
+     "is_club": false,
+     "own_ids": [
+      "1009702",
+      "1009835"
+     ]
+    },
+    {
+     "code": "2537075",
+     "start": "2026-11-22T19:30",
+     "home": {
+      "id": "1010190",
+      "name": "C.B. LAS ROZAS"
+     },
+     "away": {
+      "id": "1010498",
+      "name": "ARISTOS PARTIZÁN DE FUENLABRADA"
+     },
+     "own_id": "1010190",
+     "is_club": false,
+     "own_ids": [
+      "1010190",
+      "1010498"
+     ]
+    },
+    {
+     "code": "2537076",
+     "start": "2026-11-21T20:00",
+     "home": {
+      "id": "1008407",
+      "name": "CB ARIDANE"
+     },
+     "away": {
+      "id": "1008408",
+      "name": "C. D. MENSAJERO ISLA DE LA PALMA"
+     },
+     "own_id": "1008407",
+     "is_club": false,
+     "own_ids": [
+      "1008407",
+      "1008408"
+     ]
+    },
+    {
+     "code": "2537077",
+     "start": "2026-11-21T13:15",
+     "home": {
+      "id": "1010497",
+      "name": "ZENTRO BASKET MADRID"
+     },
+     "away": {
+      "id": "1010189",
+      "name": "C.B. DADARMO DE GÜIMAR"
+     },
+     "own_id": "1010497",
+     "is_club": false,
+     "own_ids": [
+      "1010497",
+      "1010189"
+     ]
+    },
+    {
+     "code": "2537078",
+     "start": "2026-11-21T18:30",
+     "home": {
+      "id": "1010196",
+      "name": "STOP BIOGÁS TOBARRA"
+     },
+     "away": {
+      "id": "1008778",
+      "name": "EB FELIPE ANTÓN"
+     },
+     "own_id": "1010196",
+     "is_club": false,
+     "own_ids": [
+      "1010196",
+      "1008778"
+     ]
+    },
+    {
+     "code": "2537079",
+     "start": "2026-11-21T20:30",
+     "home": {
+      "id": "1009575",
+      "name": "QUALIS C.B VILLA DE VALDEMORO"
+     },
+     "away": {
+      "id": "1009119",
+      "name": "CESUR DISTRITO OLIMPICO"
+     },
+     "own_id": "1009575",
+     "is_club": false,
+     "own_ids": [
+      "1009575",
+      "1009119"
+     ]
+    },
+    {
+     "code": "2537080",
+     "start": "2026-11-21T19:00",
+     "home": {
+      "id": "1010323",
+      "name": "BASKET GLOBALCAJA QUINTANAR"
+     },
+     "away": {
+      "id": "1009591",
+      "name": "EL VENTERO CBV"
+     },
+     "own_id": "1010323",
+     "is_club": false,
+     "own_ids": [
+      "1010323",
+      "1009591"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "UW7pvtzIFnu8R6AF",
+     "key": "Jqb7IFanTLlYgTkilNjQknlXj0fL6uoUUiBSwmGIPAmjZxEeHrpl1GEZRJ86IqFx"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "+vP72rkWUo5KzjZa",
+     "key": "9bhjrNLVbYQNE1hS0Sd1Rj18euTu+M3MZeVrX8+F0d1oc702uLIbqe2IAjykoAiL"
+    },
+    {
+     "scope": "competicion:TERCERA_FEB_2026_2027_Liga_Regular_B-A",
+     "iv": "lOyTWUp7O8rHHJef",
+     "key": "Huz2T6XDLw55z+eLcWoOTguAyu8+82Wt1A+4mLNueX3aD/QPOkwl7W9RWuI9YcB4"
+    }
+   ],
+   "competition": {
+    "key": "TERCERA_FEB_2026_2027_Liga_Regular_B-A",
+    "label": "TERCERA FEB · Liga Regular \"B-A\"",
+    "competition": "TERCERA FEB",
+    "group": "Liga Regular \"B-A\"",
+    "season": "2026/2027",
+    "level": 4,
+    "gender": "M",
+    "league": "FEB"
+   }
+  },
+  {
+   "collection": "TERCERA_FEB_2026_2027_Liga_Regular_B-B",
+   "round": 8,
+   "file": "rounds/TERCERA_FEB_2026_2027_Liga_Regular_B_B__r8.bpkgz",
+   "sha256": "09c5ebc9b07ce7400476193bda57751ebd9e59b1fe2aee7e07eb1b0ec285327b",
+   "bytes": 188926,
+   "club": false,
+   "matches": [
+    {
+     "code": "2537256",
+     "start": "2026-11-21T20:30",
+     "home": {
+      "id": "1010580",
+      "name": "BALONCESTO TALAVERA"
+     },
+     "away": {
+      "id": "1009706",
+      "name": "NÁUTICO TENERIFE"
+     },
+     "own_id": "1010580",
+     "is_club": false,
+     "own_ids": [
+      "1010580",
+      "1009706"
+     ]
+    },
+    {
+     "code": "2537257",
+     "start": "2026-11-22T12:00",
+     "home": {
+      "id": "1008946",
+      "name": "BASKET CERVANTES CIUDAD REAL"
+     },
+     "away": {
+      "id": "1009931",
+      "name": "LUJISA GUADALAJARA BASKET"
+     },
+     "own_id": "1008946",
+     "is_club": false,
+     "own_ids": [
+      "1008946",
+      "1009931"
+     ]
+    },
+    {
+     "code": "2537258",
+     "start": "2026-11-22T17:00",
+     "home": {
+      "id": "1008707",
+      "name": "CB 7 PALMAS"
+     },
+     "away": {
+      "id": "1008935",
+      "name": "RECUCYM BAZU"
+     },
+     "own_id": "1008707",
+     "is_club": false,
+     "own_ids": [
+      "1008707",
+      "1008935"
+     ]
+    },
+    {
+     "code": "2537259",
+     "start": "2026-11-21T19:30",
+     "home": {
+      "id": "1009178",
+      "name": "GRUPO EGIDO PINTOBASKET"
+     },
+     "away": {
+      "id": "1008865",
+      "name": "IMPLICA REAL CANOE"
+     },
+     "own_id": "1009178",
+     "is_club": false,
+     "own_ids": [
+      "1009178",
+      "1008865"
+     ]
+    },
+    {
+     "code": "2537260",
+     "start": "2026-11-21T19:30",
+     "home": {
+      "id": "1009120",
+      "name": "FUNDAL ALCOBENDAS"
+     },
+     "away": {
+      "id": "1008866",
+      "name": "UROS DE RIVAS"
+     },
+     "own_id": "1009120",
+     "is_club": false,
+     "own_ids": [
+      "1009120",
+      "1008866"
+     ]
+    },
+    {
+     "code": "2537261",
+     "start": "2026-11-21T20:30",
+     "home": {
+      "id": "1008941",
+      "name": "GINELUX TELDE"
+     },
+     "away": {
+      "id": "1010499",
+      "name": "BALONCESTO ALCALA"
+     },
+     "own_id": "1008941",
+     "is_club": false,
+     "own_ids": [
+      "1008941",
+      "1010499"
+     ]
+    },
+    {
+     "code": "2537262",
+     "start": "2026-11-21T17:45",
+     "home": {
+      "id": "1008409",
+      "name": "INMOBILIARIA GÁLVEZ SANTA CRUZ"
+     },
+     "away": {
+      "id": "1009825",
+      "name": "GRAN CANARIA"
+     },
+     "own_id": "1008409",
+     "is_club": false,
+     "own_ids": [
+      "1008409",
+      "1009825"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "DE0o2a/IfDo2SvT8",
+     "key": "XwK0Mo8Kwh3Eyiumg3qzJJphW1zoccTrqM/93/SlRUfky94M7228DA8g8nFP10X5"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "yV9KteHZAp5l9AnN",
+     "key": "Dsb6lmzcxyPH0DmD8SPGFeLCRQCIsvlDoIqRtI4v/jJCKcJ7Xr+YxugJwec7JNnw"
+    },
+    {
+     "scope": "competicion:TERCERA_FEB_2026_2027_Liga_Regular_B-B",
+     "iv": "mFkfQmKHyaufiXNP",
+     "key": "ZnhvL26mGMLoNYFuWs1KF+mWNjjqXplpg1iMBvRA5CK+Mxy3ikBqwDp4KStcZpmU"
+    }
+   ],
+   "competition": {
+    "key": "TERCERA_FEB_2026_2027_Liga_Regular_B-B",
+    "label": "TERCERA FEB · Liga Regular \"B-B\"",
+    "competition": "TERCERA FEB",
+    "group": "Liga Regular \"B-B\"",
+    "season": "2026/2027",
+    "level": 4,
+    "gender": "M",
+    "league": "FEB"
+   }
+  },
+  {
+   "collection": "TERCERA_FEB_2026_2027_Liga_Regular_C-A",
+   "round": 8,
+   "file": "rounds/TERCERA_FEB_2026_2027_Liga_Regular_C_A__r8.bpkgz",
+   "sha256": "7a3761f7865acf502dd20379edf22f0496883bc09fcbf453414159d6af7638c3",
+   "bytes": 180550,
+   "club": false,
+   "matches": [
+    {
+     "code": "2525800",
+     "start": "2026-11-21T20:15",
+     "home": {
+      "id": "1009918",
+      "name": "C.B. VIC - UNIVERSITAT DE VIC"
+     },
+     "away": {
+      "id": "1008948",
+      "name": "FLORANGE U.E.MATARÓ"
+     },
+     "own_id": "1009918",
+     "is_club": false,
+     "own_ids": [
+      "1009918",
+      "1008948"
+     ]
+    },
+    {
+     "code": "2525801",
+     "start": "2026-11-21T18:00",
+     "home": {
+      "id": "1008701",
+      "name": "UE.MONTGAT"
+     },
+     "away": {
+      "id": "1009170",
+      "name": "SESE A"
+     },
+     "own_id": "1008701",
+     "is_club": false,
+     "own_ids": [
+      "1008701",
+      "1009170"
+     ]
+    },
+    {
+     "code": "2525802",
+     "start": "2026-11-21T16:30",
+     "home": {
+      "id": "1008403",
+      "name": "TENEA-C.B. ESPARREGUERA"
+     },
+     "away": {
+      "id": "1010575",
+      "name": "IBERSOL CB TARRAGONA"
+     },
+     "own_id": "1008403",
+     "is_club": false,
+     "own_ids": [
+      "1008403",
+      "1010575"
+     ]
+    },
+    {
+     "code": "2525803",
+     "start": "2026-11-21T17:00",
+     "home": {
+      "id": "1009062",
+      "name": "CB QUART FAI BERTI"
+     },
+     "away": {
+      "id": "1008789",
+      "name": "IMMO SA MARINA CIUTAT D’INCA BASQUET"
+     },
+     "own_id": "1009062",
+     "is_club": false,
+     "own_ids": [
+      "1009062",
+      "1008789"
+     ]
+    },
+    {
+     "code": "2525804",
+     "start": "2026-11-21T20:00",
+     "home": {
+      "id": "1008788",
+      "name": "BÀSQUET CALVIÀ"
+     },
+     "away": {
+      "id": "1009154",
+      "name": "C.B. CUARTE DE HUERVA"
+     },
+     "own_id": "1008788",
+     "is_club": false,
+     "own_ids": [
+      "1008788",
+      "1009154"
+     ]
+    },
+    {
+     "code": "2525805",
+     "start": "2026-11-21T18:30",
+     "home": {
+      "id": "1009074",
+      "name": "SHAD MOLLET"
+     },
+     "away": {
+      "id": "1009587",
+      "name": "EGLOBE TECLA SALA"
+     },
+     "own_id": "1009074",
+     "is_club": false,
+     "own_ids": [
+      "1009074",
+      "1009587"
+     ]
+    },
+    {
+     "code": "2525806",
+     "start": "2026-11-22T18:15",
+     "home": {
+      "id": "1008680",
+      "name": "MUSEU DEL CÒMIC CASTELLDEFELS"
+     },
+     "away": {
+      "id": "1010191",
+      "name": "C.B. GRANOLLERS"
+     },
+     "own_id": "1008680",
+     "is_club": false,
+     "own_ids": [
+      "1008680",
+      "1010191"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "XOTd/GXXwy8lxP+B",
+     "key": "sTevCVYrjrGLzOkanXTfgD+w27nw25U1B1ZS+T6XVXpCfVRSDtNwzFkuYzEQee90"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "bwYAg03Y8H5BEEe8",
+     "key": "lGBjO/otfFK3gZgagnwCGGi6Y4v2sVWqbi3Ltx4JxOnZRE72uhWqY3W/uDE9Ax8o"
+    },
+    {
+     "scope": "competicion:TERCERA_FEB_2026_2027_Liga_Regular_C-A",
+     "iv": "9q/mzDNj2SzWEwu8",
+     "key": "SWPGmTxjckSofTRvu6mDPksX+ru5pA6616q9hgCe3zp9O3zu8Ua7bDUj1jMNL5RU"
+    }
+   ],
+   "competition": {
+    "key": "TERCERA_FEB_2026_2027_Liga_Regular_C-A",
+    "label": "TERCERA FEB · Liga Regular \"C-A\"",
+    "competition": "TERCERA FEB",
+    "group": "Liga Regular \"C-A\"",
+    "season": "2026/2027",
+    "level": 4,
+    "gender": "M",
+    "league": "FEB"
+   }
+  },
+  {
+   "collection": "TERCERA_FEB_2026_2027_Liga_Regular_C-A",
+   "round": 1,
+   "file": "rounds/TERCERA_FEB_2026_2027_Liga_Regular_C_A__r1.bpkgz",
+   "sha256": "a461a0cb5f4d275e6b882f448a2a037298fd5ecf225e066f158719a229192e1d",
+   "bytes": 21966,
+   "club": false,
+   "matches": [
+    {
+     "code": "2525752",
+     "start": "2026-11-22T12:00",
+     "home": {
+      "id": "1008788",
+      "name": "BÀSQUET CALVIÀ"
+     },
+     "away": {
+      "id": "1008403",
+      "name": "TENEA-C.B. ESPARREGUERA"
+     },
+     "own_id": "1008788",
+     "is_club": false,
+     "own_ids": [
+      "1008788",
+      "1008403"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "EqMDZRsK1mX5qnlf",
+     "key": "psWBbEhtqiqRE/6buf6DN44S6rA+B6yV31O2xcXGM6twojB/LZDUDMhcMtu6ARa+"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "c7PWNL0yqaA0ic4g",
+     "key": "rWI55gT+QGZ1EjywB1jwlqDlKTDf5ESjU3ADeYlCGl8ZK9Vd5cpiVJ+JvJh6HMjt"
+    },
+    {
+     "scope": "competicion:TERCERA_FEB_2026_2027_Liga_Regular_C-A",
+     "iv": "uvjJidOLL9VZHMv5",
+     "key": "dKwOxg5N1hDl3bO8eeXCyQWeRh2hi801IgR+0X8cgHCQrvZdJ1NmnvPeOvzsRar7"
+    }
+   ],
+   "competition": {
+    "key": "TERCERA_FEB_2026_2027_Liga_Regular_C-A",
+    "label": "TERCERA FEB · Liga Regular \"C-A\"",
+    "competition": "TERCERA FEB",
+    "group": "Liga Regular \"C-A\"",
+    "season": "2026/2027",
+    "level": 4,
+    "gender": "M",
+    "league": "FEB"
+   }
+  },
+  {
+   "collection": "TERCERA_FEB_2026_2027_Liga_Regular_C-B",
+   "round": 8,
+   "file": "rounds/TERCERA_FEB_2026_2027_Liga_Regular_C_B__r8.bpkgz",
+   "sha256": "f9761eb07dafa7cf482c4ab902140a1d0d572a437a3f9764eead5e4c8ab05c4a",
+   "bytes": 181714,
+   "club": false,
+   "matches": [
+    {
+     "code": "2528296",
+     "start": "2026-11-21T20:15",
+     "home": {
+      "id": "1009815",
+      "name": "C.B.ROSER"
+     },
+     "away": {
+      "id": "1009701",
+      "name": "CB ARTÉS"
+     },
+     "own_id": "1009815",
+     "is_club": false,
+     "own_ids": [
+      "1009815",
+      "1009701"
+     ]
+    },
+    {
+     "code": "2528297",
+     "start": "2026-11-22T13:00",
+     "home": {
+      "id": "1009816",
+      "name": "SANDÁ C.B. L´HOSPITALET"
+     },
+     "away": {
+      "id": "1009928",
+      "name": "SUPERMERCADOS DISKONT - CB CIUTADELLA PONENT"
+     },
+     "own_id": "1009816",
+     "is_club": false,
+     "own_ids": [
+      "1009816",
+      "1009928"
+     ]
+    },
+    {
+     "code": "2528298",
+     "start": "2026-11-21T18:30",
+     "home": {
+      "id": "1008936",
+      "name": "PUJOL MOLLERUSSA"
+     },
+     "away": {
+      "id": "1009932",
+      "name": "OCA GLOBAL C.B. SALOU"
+     },
+     "own_id": "1008936",
+     "is_club": false,
+     "own_ids": [
+      "1008936",
+      "1009932"
+     ]
+    },
+    {
+     "code": "2528299",
+     "start": "2026-11-21T19:30",
+     "home": {
+      "id": "1009144",
+      "name": "CB NAVÀS VISCOLA"
+     },
+     "away": {
+      "id": "1009083",
+      "name": "FUNDACION GRUPO JORGE BALONCESTO ZUERA"
+     },
+     "own_id": "1009144",
+     "is_club": false,
+     "own_ids": [
+      "1009144",
+      "1009083"
+     ]
+    },
+    {
+     "code": "2528300",
+     "start": "2026-11-21T18:30",
+     "home": {
+      "id": "1010576",
+      "name": "SD ESPANYOL BÀSQUET CORNELLÀ"
+     },
+     "away": {
+      "id": "1008693",
+      "name": "LETRA CORPOREA BARBASTRO"
+     },
+     "own_id": "1010576",
+     "is_club": false,
+     "own_ids": [
+      "1010576",
+      "1008693"
+     ]
+    },
+    {
+     "code": "2528301",
+     "start": "2026-11-21T19:45",
+     "home": {
+      "id": "1008966",
+      "name": "LA PARRÓQUIA - BÁSQUET SAMÁ"
+     },
+     "away": {
+      "id": "1008800",
+      "name": "C.B.VALLS.TALLERS PABLO MARTÍNEZ"
+     },
+     "own_id": "1008966",
+     "is_club": false,
+     "own_ids": [
+      "1008966",
+      "1008800"
+     ]
+    },
+    {
+     "code": "2528302",
+     "start": "2026-11-21T19:30",
+     "home": {
+      "id": "1009146",
+      "name": "SA TINTINA CB ES CASTELL MENORCA"
+     },
+     "away": {
+      "id": "1008699",
+      "name": "MONBUS - CB IGUALADA"
+     },
+     "own_id": "1009146",
+     "is_club": false,
+     "own_ids": [
+      "1009146",
+      "1008699"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "Bmng8rGr+Wg3zi/K",
+     "key": "WUGQzDFon04Jd+tH8/yHXDlWcLFffws67SKXkhwMhlcuz8cRGRrN3fDGswbU2xQl"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "9cH7Y2iITU0p5EX7",
+     "key": "vzdswIb8Yf3WRXNtJq/Hq5VEzCkFUhUT4wf84F+3gMxVMT39sYDEezdTRC8pPcHo"
+    },
+    {
+     "scope": "competicion:TERCERA_FEB_2026_2027_Liga_Regular_C-B",
+     "iv": "EbvoGdlW5Vmf4pcn",
+     "key": "1xIMVFmvp40P32FeJc9Znw7SS14zxcGGu6OVS7lCot3f/BVJEnbt7DU06toIrvxU"
+    }
+   ],
+   "competition": {
+    "key": "TERCERA_FEB_2026_2027_Liga_Regular_C-B",
+    "label": "TERCERA FEB · Liga Regular \"C-B\"",
+    "competition": "TERCERA FEB",
+    "group": "Liga Regular \"C-B\"",
+    "season": "2026/2027",
+    "level": 4,
+    "gender": "M",
+    "league": "FEB"
+   }
+  },
+  {
+   "collection": "TERCERA_FEB_2026_2027_Liga_Regular_D-A",
+   "round": 8,
+   "file": "rounds/TERCERA_FEB_2026_2027_Liga_Regular_D_A__r8.bpkgz",
+   "sha256": "80b54d3b6ef5821e3ddff99460bb539303cb3fd65ac464012e88e07592186bde",
+   "bytes": 157682,
+   "club": false,
+   "matches": [
+    {
+     "code": "2536529",
+     "start": "2026-11-21T19:00",
+     "home": {
+      "id": "1010198",
+      "name": "COLEGIO EL PINAR"
+     },
+     "away": {
+      "id": "1010325",
+      "name": "CB NOVASCHOOL RINCÓN DE LA VICTORIA"
+     },
+     "own_id": "1010198",
+     "is_club": false,
+     "own_ids": [
+      "1010198",
+      "1010325"
+     ]
+    },
+    {
+     "code": "2536530",
+     "start": "2026-11-22T12:00",
+     "home": {
+      "id": "1010328",
+      "name": "MOLINA OLEA CB COSTA MOTRIL"
+     },
+     "away": {
+      "id": "1010199",
+      "name": "DEHESAS REUNIDAS CLIMANAVAS AGROMETAL PEÑARROYA"
+     },
+     "own_id": "1010328",
+     "is_club": false,
+     "own_ids": [
+      "1010328",
+      "1010199"
+     ]
+    },
+    {
+     "code": "2536531",
+     "start": "2026-11-21T17:30",
+     "home": {
+      "id": "1008850",
+      "name": "MELILLA CIUDAD DEL DEPORTE ENRIQUE SOLER"
+     },
+     "away": {
+      "id": "1010327",
+      "name": "HOSPITAL OCHOA CB MARBELLA"
+     },
+     "own_id": "1008850",
+     "is_club": false,
+     "own_ids": [
+      "1008850",
+      "1010327"
+     ]
+    },
+    {
+     "code": "2536532",
+     "start": "2026-11-22T12:00",
+     "home": {
+      "id": "1010896",
+      "name": "LA CARTONERA LUCENTINA COTO  LUCENA"
+     },
+     "away": {
+      "id": "1010894",
+      "name": "ECOCULTURE CB ALMERÍA"
+     },
+     "own_id": "1010896",
+     "is_club": false,
+     "own_ids": [
+      "1010896",
+      "1010894"
+     ]
+    },
+    {
+     "code": "2536533",
+     "start": "2026-11-21T19:30",
+     "home": {
+      "id": "1010895",
+      "name": "BALONCESTO COMARCA DE LA AXARQUIA"
+     },
+     "away": {
+      "id": "1010332",
+      "name": "CAJA RURAL JAEN PARAISO INTERIOR CB"
+     },
+     "own_id": "1010895",
+     "is_club": false,
+     "own_ids": [
+      "1010895",
+      "1010332"
+     ]
+    },
+    {
+     "code": "2536534",
+     "start": "2026-11-22T12:00",
+     "home": {
+      "id": "1010326",
+      "name": "SURSEEDS - B. MURGI"
+     },
+     "away": {
+      "id": "1010331",
+      "name": "CDBO BYSPANIA TÍJOLA"
+     },
+     "own_id": "1010326",
+     "is_club": false,
+     "own_ids": [
+      "1010326",
+      "1010331"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "lrwRHE0P6ReDZR9Z",
+     "key": "vSXgTjqkL8zEx+Rxn7mTQIEz2gYIN5X5z9edqpCeCH10l3EkvUsU2UWyPiqWzB5s"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "nn7V0r9c6F63/Fbo",
+     "key": "dFKWSpWxrlR06teFzHRg2bCbbGUey/dDZETiEqSLU8swhgmJuidODsM1CaK3ScWe"
+    },
+    {
+     "scope": "competicion:TERCERA_FEB_2026_2027_Liga_Regular_D-A",
+     "iv": "pEZ1NoADYs2VGoDG",
+     "key": "wwzda0xja/hdN/fxI+dmeazlZfmoREkVUTK6qFcnjsSX7VlvIeJskcTkh2u8vYBk"
+    }
+   ],
+   "competition": {
+    "key": "TERCERA_FEB_2026_2027_Liga_Regular_D-A",
+    "label": "TERCERA FEB · Liga Regular \"D-A\"",
+    "competition": "TERCERA FEB",
+    "group": "Liga Regular \"D-A\"",
+    "season": "2026/2027",
+    "level": 4,
+    "gender": "M",
+    "league": "FEB"
+   }
+  },
+  {
+   "collection": "TERCERA_FEB_2026_2027_Liga_Regular_D-B",
+   "round": 8,
+   "file": "rounds/TERCERA_FEB_2026_2027_Liga_Regular_D_B__r8.bpkgz",
+   "sha256": "0177ddf7be0c14eb85aca4dd020e5b17673756a6ec365ed8a990ff0e91a9d8c3",
+   "bytes": 169522,
+   "club": false,
+   "matches": [
+    {
+     "code": "2537439",
+     "start": "2026-11-21T19:30",
+     "home": {
+      "id": "1010342",
+      "name": "OH!TELS ULB"
+     },
+     "away": {
+      "id": "1010347",
+      "name": "EIFFAGE CB CIUDAD DE DOS HERMANAS"
+     },
+     "own_id": "1010342",
+     "is_club": false,
+     "own_ids": [
+      "1010342",
+      "1010347"
+     ]
+    },
+    {
+     "code": "2537440",
+     "start": "2026-11-22T18:00",
+     "home": {
+      "id": "1010329",
+      "name": "CLUB BALONCESTO SAN FERNANDO"
+     },
+     "away": {
+      "id": "1010893",
+      "name": "CBA SPAIN"
+     },
+     "own_id": "1010329",
+     "is_club": false,
+     "own_ids": [
+      "1010329",
+      "1010893"
+     ]
+    },
+    {
+     "code": "2537441",
+     "start": "2026-11-21T20:00",
+     "home": {
+      "id": "1010195",
+      "name": "CB CORIA"
+     },
+     "away": {
+      "id": "1010322",
+      "name": "LITHIUM IBERIA SAGRADO CÁCERES"
+     },
+     "own_id": "1010195",
+     "is_club": false,
+     "own_ids": [
+      "1010195",
+      "1010322"
+     ]
+    },
+    {
+     "code": "2537442",
+     "start": "2026-11-21T18:00",
+     "home": {
+      "id": "1009814",
+      "name": "BOSCO MÉRIDA PATRIMONIO DE LA HUMANIDAD"
+     },
+     "away": {
+      "id": "1009724",
+      "name": "BALONCESTO BADAJOZ"
+     },
+     "own_id": "1009814",
+     "is_club": false,
+     "own_ids": [
+      "1009814",
+      "1009724"
+     ]
+    },
+    {
+     "code": "2537443",
+     "start": "2026-11-22T12:00",
+     "home": {
+      "id": "1010353",
+      "name": "SAN ANTONIO CÁCERES"
+     },
+     "away": {
+      "id": "1010573",
+      "name": "INSOLAC CB ALCALÁ"
+     },
+     "own_id": "1010353",
+     "is_club": false,
+     "own_ids": [
+      "1010353",
+      "1010573"
+     ]
+    },
+    {
+     "code": "2537444",
+     "start": "2026-11-22T12:00",
+     "home": {
+      "id": "1010330",
+      "name": "AD REM ONUBA"
+     },
+     "away": {
+      "id": "1010341",
+      "name": "BAUBLOCK GYMNÁSTICA AVANZA EL PUERTO"
+     },
+     "own_id": "1010330",
+     "is_club": false,
+     "own_ids": [
+      "1010330",
+      "1010341"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "rqElkE7QUnwXMBue",
+     "key": "ubmBj3PdviVOFsW3hmUaTFRzyuXyguX7bei4GCp+UCMr83FOkB80qoLy3o/QpWen"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "EC3Zn44Zi4PbS1q8",
+     "key": "1oXz+DtE+VaWNKpHgxcHHknS9Ctz3W/3omzP7rdxYkilE1OwarIocDBY0z7+9u35"
+    },
+    {
+     "scope": "competicion:TERCERA_FEB_2026_2027_Liga_Regular_D-B",
+     "iv": "ALE9gYa0xZqFn/XD",
+     "key": "hzrqhn1ccjhvcD8bLFjGa1/293Udw/I7xbUAPEitvIavGzJ+PDnS2PQ84gf7JPja"
+    }
+   ],
+   "competition": {
+    "key": "TERCERA_FEB_2026_2027_Liga_Regular_D-B",
+    "label": "TERCERA FEB · Liga Regular \"D-B\"",
+    "competition": "TERCERA FEB",
+    "group": "Liga Regular \"D-B\"",
+    "season": "2026/2027",
+    "level": 4,
+    "gender": "M",
+    "league": "FEB"
+   }
+  },
+  {
+   "collection": "TERCERA_FEB_2026_2027_Liga_Regular_E-A",
+   "round": 8,
+   "file": "rounds/TERCERA_FEB_2026_2027_Liga_Regular_E_A__r8.bpkgz",
+   "sha256": "36a33b5843255721c40a5105f8c24a65e09c97837ee53457ad2a8cd8fc334b2e",
+   "bytes": 193394,
+   "club": false,
+   "matches": [
+    {
+     "code": "2537620",
+     "start": "2026-11-21T18:30",
+     "home": {
+      "id": "1009719",
+      "name": "BAUHAUS GODELLA"
+     },
+     "away": {
+      "id": "1009121",
+      "name": "TOPSURFACE NB PATERNA"
+     },
+     "own_id": "1009719",
+     "is_club": false,
+     "own_ids": [
+      "1009719",
+      "1009121"
+     ]
+    },
+    {
+     "code": "2537621",
+     "start": "2026-11-21T18:30",
+     "home": {
+      "id": "1008915",
+      "name": "BURJASSOT CB"
+     },
+     "away": {
+      "id": "1010491",
+      "name": "CB JOVENS ALMÀSSERA"
+     },
+     "own_id": "1008915",
+     "is_club": false,
+     "own_ids": [
+      "1008915",
+      "1010491"
+     ]
+    },
+    {
+     "code": "2537622",
+     "start": "2026-11-21T19:00",
+     "home": {
+      "id": "1008694",
+      "name": "HALAL FOOD QUALITY UIXÓ BÀSQUET"
+     },
+     "away": {
+      "id": "1010203",
+      "name": "FUNDACIÓ CAIXA RURAL VILA-REAL"
+     },
+     "own_id": "1008694",
+     "is_club": false,
+     "own_ids": [
+      "1008694",
+      "1010203"
+     ]
+    },
+    {
+     "code": "2537623",
+     "start": "2026-11-22T19:00",
+     "home": {
+      "id": "1010319",
+      "name": "TRAUMACOKE EL PILAR"
+     },
+     "away": {
+      "id": "1010492",
+      "name": "TURBO MANISES C.B.C M-Q"
+     },
+     "own_id": "1010319",
+     "is_club": false,
+     "own_ids": [
+      "1010319",
+      "1010492"
+     ]
+    },
+    {
+     "code": "2537624",
+     "start": "2026-11-21T18:15",
+     "home": {
+      "id": "1008692",
+      "name": "CB TABERNES BLANQUES - FERNANDO GIL"
+     },
+     "away": {
+      "id": "1009585",
+      "name": "CEMALU ALDAIA"
+     },
+     "own_id": "1008692",
+     "is_club": false,
+     "own_ids": [
+      "1008692",
+      "1009585"
+     ]
+    },
+    {
+     "code": "2537625",
+     "start": "2026-11-21T18:30",
+     "home": {
+      "id": "1008790",
+      "name": "CB MORVEDRE"
+     },
+     "away": {
+      "id": "1010204",
+      "name": "ECOSIONA JOVENS L’ELIANA"
+     },
+     "own_id": "1008790",
+     "is_club": false,
+     "own_ids": [
+      "1008790",
+      "1010204"
+     ]
+    },
+    {
+     "code": "2537626",
+     "start": "2026-11-22T18:45",
+     "home": {
+      "id": "1010899",
+      "name": "AMICS CASTELLÓ B"
+     },
+     "away": {
+      "id": "1008690",
+      "name": "C.B. PUERTO SAGUNTO"
+     },
+     "own_id": "1010899",
+     "is_club": false,
+     "own_ids": [
+      "1010899",
+      "1008690"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "wY9/rm1GlzsiH1gt",
+     "key": "TWiEQqETobijxal+lt6gpf8sxS7QYyEdedXgaHTSho32TfRPZG0GWCD5Z2AZEX2S"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "PIWOuu6vIAeWgNUV",
+     "key": "58OP1+pMm+M4adcolWTNZRPBlaDhPRqzLNUiaZfQKlkKMyR7E5Z6+dJD7iHTOWTA"
+    },
+    {
+     "scope": "competicion:TERCERA_FEB_2026_2027_Liga_Regular_E-A",
+     "iv": "rtf65efhAJ2a+eOD",
+     "key": "egK81PvMHazSYXViVJkfww4CKtcRdrAC1I9aO1n5Xyrw2AXC94HUy0FPTGi0TdXy"
+    }
+   ],
+   "competition": {
+    "key": "TERCERA_FEB_2026_2027_Liga_Regular_E-A",
+    "label": "TERCERA FEB · Liga Regular \"E-A\"",
+    "competition": "TERCERA FEB",
+    "group": "Liga Regular \"E-A\"",
+    "season": "2026/2027",
+    "level": 4,
+    "gender": "M",
+    "league": "FEB"
+   }
+  },
+  {
+   "collection": "TERCERA_FEB_2026_2027_Liga_Regular_E-A",
+   "round": 9,
+   "file": "rounds/TERCERA_FEB_2026_2027_Liga_Regular_E_A__r9.bpkgz",
+   "sha256": "750f94ad44f1673187bbad401ac560d2045d2807cfe1e8ef0ce72f5933086079",
+   "bytes": 193522,
+   "club": false,
+   "matches": [
+    {
+     "code": "2537627",
+     "start": "2026-11-28T19:30",
+     "home": {
+      "id": "1009121",
+      "name": "TOPSURFACE NB PATERNA"
+     },
+     "away": {
+      "id": "1008690",
+      "name": "C.B. PUERTO SAGUNTO"
+     },
+     "own_id": "1009121",
+     "is_club": false,
+     "own_ids": [
+      "1009121",
+      "1008690"
+     ]
+    },
+    {
+     "code": "2537628",
+     "start": "2026-11-29T19:00",
+     "home": {
+      "id": "1010204",
+      "name": "ECOSIONA JOVENS L’ELIANA"
+     },
+     "away": {
+      "id": "1010899",
+      "name": "AMICS CASTELLÓ B"
+     },
+     "own_id": "1010204",
+     "is_club": false,
+     "own_ids": [
+      "1010204",
+      "1010899"
+     ]
+    },
+    {
+     "code": "2537629",
+     "start": "2026-11-29T18:00",
+     "home": {
+      "id": "1009585",
+      "name": "CEMALU ALDAIA"
+     },
+     "away": {
+      "id": "1008790",
+      "name": "CB MORVEDRE"
+     },
+     "own_id": "1009585",
+     "is_club": false,
+     "own_ids": [
+      "1009585",
+      "1008790"
+     ]
+    },
+    {
+     "code": "2537630",
+     "start": "2026-11-29T12:15",
+     "home": {
+      "id": "1010492",
+      "name": "TURBO MANISES C.B.C M-Q"
+     },
+     "away": {
+      "id": "1008692",
+      "name": "CB TABERNES BLANQUES - FERNANDO GIL"
+     },
+     "own_id": "1010492",
+     "is_club": false,
+     "own_ids": [
+      "1010492",
+      "1008692"
+     ]
+    },
+    {
+     "code": "2537631",
+     "start": "2026-11-25T20:30",
+     "home": {
+      "id": "1010203",
+      "name": "FUNDACIÓ CAIXA RURAL VILA-REAL"
+     },
+     "away": {
+      "id": "1010319",
+      "name": "TRAUMACOKE EL PILAR"
+     },
+     "own_id": "1010203",
+     "is_club": false,
+     "own_ids": [
+      "1010203",
+      "1010319"
+     ]
+    },
+    {
+     "code": "2537632",
+     "start": "2026-11-29T19:00",
+     "home": {
+      "id": "1010491",
+      "name": "CB JOVENS ALMÀSSERA"
+     },
+     "away": {
+      "id": "1008694",
+      "name": "HALAL FOOD QUALITY UIXÓ BÀSQUET"
+     },
+     "own_id": "1010491",
+     "is_club": false,
+     "own_ids": [
+      "1010491",
+      "1008694"
+     ]
+    },
+    {
+     "code": "2537633",
+     "start": "2026-11-28T18:15",
+     "home": {
+      "id": "1009719",
+      "name": "BAUHAUS GODELLA"
+     },
+     "away": {
+      "id": "1008915",
+      "name": "BURJASSOT CB"
+     },
+     "own_id": "1009719",
+     "is_club": false,
+     "own_ids": [
+      "1009719",
+      "1008915"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "j+az0foGSqB6zkLJ",
+     "key": "4IFu6aivKaAqlsAt6hMHru4UwTowyL1HTTRmk/AkFDZoveSeMmybvfeAImxc1u5O"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "Y3GoLo4i4JVPJ2HR",
+     "key": "15q4quVvdGtVZSBz1fAjlkolMuYR0Pn1zqp/zbnbs3BdtMZei2GeiG7RNyp51qGE"
+    },
+    {
+     "scope": "competicion:TERCERA_FEB_2026_2027_Liga_Regular_E-A",
+     "iv": "MEBOJKJPR27J1Hsg",
+     "key": "C6E+f0l5/bH8ZLLhsb8HK+Wb3/shi5s+NvxXBrzcQDffFYpF1pRGSuldpke0ptRZ"
+    }
+   ],
+   "competition": {
+    "key": "TERCERA_FEB_2026_2027_Liga_Regular_E-A",
+    "label": "TERCERA FEB · Liga Regular \"E-A\"",
+    "competition": "TERCERA FEB",
+    "group": "Liga Regular \"E-A\"",
+    "season": "2026/2027",
+    "level": 4,
+    "gender": "M",
+    "league": "FEB"
+   }
+  },
+  {
+   "collection": "TERCERA_FEB_2026_2027_Liga_Regular_E-B",
+   "round": 8,
+   "file": "rounds/TERCERA_FEB_2026_2027_Liga_Regular_E_B__r8.bpkgz",
+   "sha256": "fb6655a7debb792416fab87ee4c868edd7620345525fc6c6029af92268a9b824",
+   "bytes": 157578,
+   "club": false,
+   "matches": [
+    {
+     "code": "2537802",
+     "start": "2026-11-21T17:00",
+     "home": {
+      "id": "1008808",
+      "name": "INVERSUS INFANTE"
+     },
+     "away": {
+      "id": "1010579",
+      "name": "C.B. ESTUDIANTES CARTAGENA"
+     },
+     "own_id": "1008808",
+     "is_club": false,
+     "own_ids": [
+      "1008808",
+      "1010579"
+     ]
+    },
+    {
+     "code": "2537803",
+     "start": "2026-11-21T19:00",
+     "home": {
+      "id": "1009720",
+      "name": "CMG HIDRÁULICA NB TORRENT"
+     },
+     "away": {
+      "id": "1009122",
+      "name": "INVERSUS - ACEITUNAS FRUYPER A.D. COSTERA SUR"
+     },
+     "own_id": "1009720",
+     "is_club": false,
+     "own_ids": [
+      "1009720",
+      "1009122"
+     ]
+    },
+    {
+     "code": "2537804",
+     "start": "2026-11-21T19:30",
+     "home": {
+      "id": "1008833",
+      "name": "SERVIGROUP BENIDORM"
+     },
+     "away": {
+      "id": "1008691",
+      "name": "CB IFACH CALPE"
+     },
+     "own_id": "1008833",
+     "is_club": false,
+     "own_ids": [
+      "1008833",
+      "1008691"
+     ]
+    },
+    {
+     "code": "2537805",
+     "start": "2026-11-21T19:30",
+     "home": {
+      "id": "1009593",
+      "name": "DENIA BASQUET"
+     },
+     "away": {
+      "id": "1010201",
+      "name": "PERSONALHOME ADESAVI"
+     },
+     "own_id": "1009593",
+     "is_club": false,
+     "own_ids": [
+      "1009593",
+      "1010201"
+     ]
+    },
+    {
+     "code": "2537807",
+     "start": "2026-11-22T18:00",
+     "home": {
+      "id": "1009586",
+      "name": "RIGALLI-ALGINET"
+     },
+     "away": {
+      "id": "1010202",
+      "name": "SCD CAROLINAS"
+     },
+     "own_id": "1009586",
+     "is_club": false,
+     "own_ids": [
+      "1009586",
+      "1010202"
+     ]
+    },
+    {
+     "code": "2537808",
+     "start": "2026-11-22T18:30",
+     "home": {
+      "id": "1010205",
+      "name": "CBI ELCHE X HOTELES IBIS"
+     },
+     "away": {
+      "id": "1009732",
+      "name": "ESET ONTINET"
+     },
+     "own_id": "1010205",
+     "is_club": false,
+     "own_ids": [
+      "1010205",
+      "1009732"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "DTIhKLA26H9NES1X",
+     "key": "SBZz9MTs2mNrlzOr9hN+MqX89czc8mnXoIlu228tvKBMY3OMa2i+0RaDco2XxiVX"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "tfepWQAvVRGvXMs4",
+     "key": "Yy2IkxCaXUgjvylw9FUs3jR2JALkgWnnAvu07P8uT7WsMRz0eyHB+iMta899QNap"
+    },
+    {
+     "scope": "competicion:TERCERA_FEB_2026_2027_Liga_Regular_E-B",
+     "iv": "ru57p9Gz7uJoyPYN",
+     "key": "xfUrKQp3gpY9vlo4mC0E2+obr1PnHqNJS7E/Hcde3PgsWo1zWixi3MpeP9Tw1Sjv"
+    }
+   ],
+   "competition": {
+    "key": "TERCERA_FEB_2026_2027_Liga_Regular_E-B",
+    "label": "TERCERA FEB · Liga Regular \"E-B\"",
+    "competition": "TERCERA FEB",
+    "group": "Liga Regular \"E-B\"",
+    "season": "2026/2027",
+    "level": 4,
+    "gender": "M",
+    "league": "FEB"
+   }
+  },
+  {
+   "collection": "FBCYL_1ª_FASE-GRUPO_A-1_2026_",
+   "round": 8,
+   "file": "rounds/FBCYL_1_FASE_GRUPO_A_1_2026__r8.bpkgz",
+   "sha256": "a7429de07fe55b9d1eb8e9eae97b8109a812915750b3e3c8edd321d4ba48234b",
+   "bytes": 448126,
+   "club": false,
+   "matches": [
+    {
+     "code": "fbcyl-149413",
+     "start": "2026-11-21T16:30",
+     "home": {
+      "id": "40285",
+      "name": "GRUPO ALEGA CANTABRIA ELOY VILLANUEVA"
+     },
+     "away": {
+      "id": "39675",
+      "name": "UNIVERSIDAD DE BURGOS - BABIECA"
+     },
+     "own_id": "40285",
+     "is_club": false,
+     "own_ids": [
+      "40285",
+      "39675"
+     ]
+    },
+    {
+     "code": "fbcyl-149411",
+     "start": "2026-11-21T17:00",
+     "home": {
+      "id": "40282",
+      "name": "FORMASPACK LA PAZ TORRELAVEGA"
+     },
+     "away": {
+      "id": "39609",
+      "name": "UNILEON IRIEGO BF LEÓN"
+     },
+     "own_id": "40282",
+     "is_club": false,
+     "own_ids": [
+      "40282",
+      "39609"
+     ]
+    },
+    {
+     "code": "fbcyl-149412",
+     "start": "2026-11-21T19:30",
+     "home": {
+      "id": "39731",
+      "name": "UNIVERSIDAD DE SALAMANCA MEINS AVENIDA"
+     },
+     "away": {
+      "id": "39704",
+      "name": "FACTUFIX BALONCESTO VENTA DE BAÑOS"
+     },
+     "own_id": "39731",
+     "is_club": false,
+     "own_ids": [
+      "39731",
+      "39704"
+     ]
+    },
+    {
+     "code": "fbcyl-149414",
+     "start": "2026-11-22T16:00",
+     "home": {
+      "id": "40286",
+      "name": "C.D.ART-CHIVO OVIEDO SAT LOGISTICA"
+     },
+     "away": {
+      "id": "40098",
+      "name": "CAJA RURAL DE ZAMORA PUCELA BASKET"
+     },
+     "own_id": "40286",
+     "is_club": false,
+     "own_ids": [
+      "40286",
+      "40098"
+     ]
+    },
+    {
+     "code": "fbcyl-149415",
+     "start": "2026-11-22T16:00",
+     "home": {
+      "id": "39972",
+      "name": "CSB SEMILLAS ADOLFO MARTÍNEZ"
+     },
+     "away": {
+      "id": "40288",
+      "name": "INTERMODAL SEA SOLUTIONS CBN"
+     },
+     "own_id": "39972",
+     "is_club": false,
+     "own_ids": [
+      "39972",
+      "40288"
+     ]
+    },
+    {
+     "code": "fbcyl-149416",
+     "start": "2026-11-22T18:30",
+     "home": {
+      "id": "40060",
+      "name": "C.B. VILLAMURIEL"
+     },
+     "away": {
+      "id": "39576",
+      "name": "BALONCESTO ARELSA"
+     },
+     "own_id": "40060",
+     "is_club": false,
+     "own_ids": [
+      "40060",
+      "39576"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "ChfNwOxOFts1sdU2",
+     "key": "ZgRLPUV5N5peVr6zcK3Ixg/7Z4t3pytfC9kW8Tq7B9IxMVg7X4hiXA11ioqT63VR"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "SOeXXycUxw3Z/cW2",
+     "key": "u9bzoCj5rahZC5Hup/ZASvReNPHnLfl1XM3nYM9ivxETikRnXbrJ5LX+8xRbRZX+"
+    },
+    {
+     "scope": "competicion:FBCYL_1ª_FASE-GRUPO_A-1_2026_",
+     "iv": "pzELY9fLaRNA1t7t",
+     "key": "Phq3bzZoTxmMVSgYAlyiywqoZwAZ1VycH0IC48TfhtPy9TIuJdiNg2end+gccB54"
+    }
+   ],
+   "competition": {
+    "key": "FBCYL_1ª_FASE-GRUPO_A-1_2026_",
+    "label": "1ª DIVISION FEMENINA · 1ª FASE GRUPO A-1",
+    "competition": "1ª DIVISION FEMENINA",
+    "group": "1ª FASE GRUPO A-1",
+    "season": "2026",
+    "level": null,
+    "gender": "F",
+    "league": "FBCYL"
+   }
+  },
+  {
+   "collection": "FBCYL_1ª_FASE-GRUPO_A-1_2026_",
+   "round": 3,
+   "file": "rounds/FBCYL_1_FASE_GRUPO_A_1_2026__r3.bpkgz",
+   "sha256": "3ce442534a1f4be14c1a73983f92170b03591921a7f574ea27fc15878a8ffaf5",
+   "bytes": 64242,
+   "club": false,
+   "matches": [
+    {
+     "code": "fbcyl-149388",
+     "start": "2026-11-25T20:30",
+     "home": {
+      "id": "39704",
+      "name": "FACTUFIX BALONCESTO VENTA DE BAÑOS"
+     },
+     "away": {
+      "id": "40098",
+      "name": "CAJA RURAL DE ZAMORA PUCELA BASKET"
+     },
+     "own_id": "39704",
+     "is_club": false,
+     "own_ids": [
+      "39704",
+      "40098"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "AxX9R9lKGKiSyJtR",
+     "key": "NKR2qzsl4s2hVcaDHy7d3tQ6ZlcyutbhKDIOcM3bs2zTWBhH+QgSLIqEsPNVfpbI"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "eY5m2A4s5mzQoV3S",
+     "key": "S7jom26Hd8AGyQiZoE11r5mqv48B8k05pl1sds6yeVgASwJl2bnyMqpYVR6c2h1v"
+    },
+    {
+     "scope": "competicion:FBCYL_1ª_FASE-GRUPO_A-1_2026_",
+     "iv": "ayoMr3pS80k/Noag",
+     "key": "0+ShmgC23ITn6ek9p1hTNzXSHkhGJUOUAs0Ee2FdP1w+kRtkXK/PS5lEcSbfE/PC"
+    }
+   ],
+   "competition": {
+    "key": "FBCYL_1ª_FASE-GRUPO_A-1_2026_",
+    "label": "1ª DIVISION FEMENINA · 1ª FASE GRUPO A-1",
+    "competition": "1ª DIVISION FEMENINA",
+    "group": "1ª FASE GRUPO A-1",
+    "season": "2026",
+    "level": null,
+    "gender": "F",
+    "league": "FBCYL"
+   }
+  },
+  {
+   "collection": "FBCYL_1ª_FASE-GRUPO_A-2_2026_",
+   "round": 8,
+   "file": "rounds/FBCYL_1_FASE_GRUPO_A_2_2026__r8.bpkgz",
+   "sha256": "05dc9b9673ed94f7b32d904b4ad67e47074faddc824a0d7bd8e0116599cdfbac",
+   "bytes": 456178,
+   "club": false,
+   "matches": [
+    {
+     "code": "fbcyl-149036",
+     "start": "2026-11-21T16:30",
+     "home": {
+      "id": "40430",
+      "name": "INSTITUTOS DE COMPOSTELA XUNTA DE GALICIA"
+     },
+     "away": {
+      "id": "40428",
+      "name": "A.D.UNIVERSIDAD DE OVIEDO"
+     },
+     "own_id": "40430",
+     "is_club": false,
+     "own_ids": [
+      "40430",
+      "40428"
+     ]
+    },
+    {
+     "code": "fbcyl-149037",
+     "start": "2026-11-22T17:00",
+     "home": {
+      "id": "40438",
+      "name": "CAFÉS CANDELAS USC"
+     },
+     "away": {
+      "id": "40433",
+      "name": "C.B. PUMARIN \"A\""
+     },
+     "own_id": "40438",
+     "is_club": false,
+     "own_ids": [
+      "40438",
+      "40433"
+     ]
+    },
+    {
+     "code": "fbcyl-149038",
+     "start": "2026-11-22T17:00",
+     "home": {
+      "id": "40440",
+      "name": "PELETEIRO CLÍNICA BALTAR"
+     },
+     "away": {
+      "id": "40429",
+      "name": "VASCO SHIPPING SEIS DO NADAL"
+     },
+     "own_id": "40440",
+     "is_club": false,
+     "own_ids": [
+      "40440",
+      "40429"
+     ]
+    },
+    {
+     "code": "fbcyl-149040",
+     "start": "2026-11-22T17:00",
+     "home": {
+      "id": "40441",
+      "name": "COSTA ARTABRA"
+     },
+     "away": {
+      "id": "40435",
+      "name": "BASQUET CORUÑA LEYMA"
+     },
+     "own_id": "40441",
+     "is_club": false,
+     "own_ids": [
+      "40441",
+      "40435"
+     ]
+    },
+    {
+     "code": "fbcyl-149355",
+     "start": "2026-11-22T18:00",
+     "home": {
+      "id": "39642",
+      "name": "EMBUTIDOS PAJARIEL 6,25"
+     },
+     "away": {
+      "id": "40432",
+      "name": "C.B. ARXIL"
+     },
+     "own_id": "39642",
+     "is_club": false,
+     "own_ids": [
+      "39642",
+      "40432"
+     ]
+    },
+    {
+     "code": "fbcyl-149039",
+     "start": "2026-11-22T19:00",
+     "home": {
+      "id": "40437",
+      "name": "MARISTAS CORUÑA"
+     },
+     "away": {
+      "id": "40434",
+      "name": "CLICKFER LARACHA"
+     },
+     "own_id": "40437",
+     "is_club": false,
+     "own_ids": [
+      "40437",
+      "40434"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "7LXn0UROU7qw31uF",
+     "key": "3EMXEQ7ldxiJO/ShkesNyYTKfT/PeJ9w50M2rG2NxloWuIrK+dntWcQodj+KagKb"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "HFVArUgHAU30IXgQ",
+     "key": "hN5oSlAQsXD+RVE3i2yw+p7J5GW06ctiVMXEeNuI6HVQVLo+jAPk3iwXyTCqtUob"
+    },
+    {
+     "scope": "competicion:FBCYL_1ª_FASE-GRUPO_A-2_2026_",
+     "iv": "Gj3RIy7nWVtJ+DXA",
+     "key": "zK1OZP2VZdd8scdRlYsT241G9xA5zUw6WTviUcD+tMyRljOba77DeOQGdQY7w/Fy"
+    }
+   ],
+   "competition": {
+    "key": "FBCYL_1ª_FASE-GRUPO_A-2_2026_",
+    "label": "1ª DIVISION FEMENINA · 1ª FASE GRUPO A-2",
+    "competition": "1ª DIVISION FEMENINA",
+    "group": "1ª FASE GRUPO A-2",
+    "season": "2026",
+    "level": null,
+    "gender": "F",
+    "league": "FBCYL"
+   }
+  },
+  {
+   "collection": "FBCYL_1ª_FASE_-_LIGA_REGULAR_1ªDIV_CAD_MAS-GRUPO_A1_G7284_2026_",
+   "round": 7,
+   "file": "rounds/FBCYL_1_FASE_LIGA_REGULAR_1_DIV_CAD_MAS_GRUPO_A1_G7284_2026__r7.bpkgz",
+   "sha256": "9442fc297027025304ec63d60fc00de16942653dffa6946e8f0495b91eb04ba8",
+   "bytes": 157090,
+   "club": false,
+   "matches": [
+    {
+     "code": "fbcyl-148698",
+     "start": "2026-11-21T18:15",
+     "home": {
+      "id": "39592",
+      "name": "S.P.B. SOTO Y ALONSO"
+     },
+     "away": {
+      "id": "39557",
+      "name": "OYRSA MEINS AVENIDA"
+     },
+     "own_id": "39592",
+     "is_club": false,
+     "own_ids": [
+      "39592",
+      "39557"
+     ]
+    },
+    {
+     "code": "fbcyl-148699",
+     "start": "2026-11-22T11:30",
+     "home": {
+      "id": "39741",
+      "name": "CAVIDEL CBC VALLADOLID A"
+     },
+     "away": {
+      "id": "39769",
+      "name": "CyD LEONESA COLEGIO LEONÉS CADETE A"
+     },
+     "own_id": "39741",
+     "is_club": false,
+     "own_ids": [
+      "39741",
+      "39769"
+     ]
+    },
+    {
+     "code": "fbcyl-148700",
+     "start": "2026-11-22T13:30",
+     "home": {
+      "id": "39710",
+      "name": "ADARSA MARISTAS"
+     },
+     "away": {
+      "id": "39663",
+      "name": "BALONCESTO LA FLECHA"
+     },
+     "own_id": "39710",
+     "is_club": false,
+     "own_ids": [
+      "39710",
+      "39663"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "J51QfJt0rRb17eKw",
+     "key": "MLl7VmjAJIU/IGXup/CkJAKjps3agoBMry3JLKXuNu2upyJmrbAHzns4zvG2wstu"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "t6Tusz6m32Wu7Idr",
+     "key": "jiavFZ5VVMn808VImGeEB7/ILK2P54D21CExc4/X01ck7QTEgJcNTc26s2Ds4ohH"
+    },
+    {
+     "scope": "competicion:FBCYL_1ª_FASE_-_LIGA_REGULAR_1ªDIV_CAD_MAS-GRUPO_A1_G7284_2026_",
+     "iv": "CdGxnCe9GZq83dc6",
+     "key": "mamn/ogYTy2Does+dabUQGnbFbEXGQxQcuT3DPYVF+pIHi/39MXTI7yv9tFSYUPm"
+    }
+   ],
+   "competition": {
+    "key": "FBCYL_1ª_FASE_-_LIGA_REGULAR_1ªDIV_CAD_MAS-GRUPO_A1_G7284_2026_",
+    "label": "1ªDIV. - CAD. MASC.AUT. · 1ª FASE - LIGA REGULAR 1ªDIV CAD MAS GRUPO A1",
+    "competition": "1ªDIV. - CAD. MASC.AUT.",
+    "group": "1ª FASE - LIGA REGULAR 1ªDIV CAD MAS GRUPO A1",
+    "season": "2026",
+    "level": null,
+    "gender": "M",
+    "league": "FBCYL"
+   }
+  },
+  {
+   "collection": "FBCYL_1ª_FASE_-_LIGA_REGULAR_1ªDIV_CAD_MAS-GRUPO_A2_G7285_2026_",
+   "round": 6,
+   "file": "rounds/FBCYL_1_FASE_LIGA_REGULAR_1_DIV_CAD_MAS_GRUPO_A2_G7285_2026__r6.bpkgz",
+   "sha256": "e9902c781acb754efe45e2a1f260fce9229b374bb3160bf20bb7c6bfdbfedc97",
+   "bytes": 182158,
+   "club": false,
+   "matches": [
+    {
+     "code": "fbcyl-152483",
+     "start": "2026-11-21T17:00",
+     "home": {
+      "id": "39900",
+      "name": "CSB CODESIAN"
+     },
+     "away": {
+      "id": "39643",
+      "name": "FILIPENSES"
+     },
+     "own_id": "39900",
+     "is_club": false,
+     "own_ids": [
+      "39900",
+      "39643"
+     ]
+    },
+    {
+     "code": "fbcyl-150830",
+     "start": "2026-11-21T18:00",
+     "home": {
+      "id": "39657",
+      "name": "JUVENTUD ARQUIPLUS"
+     },
+     "away": {
+      "id": "39752",
+      "name": "SAN AGUSTÍN EXFOVA"
+     },
+     "own_id": "39657",
+     "is_club": false,
+     "own_ids": [
+      "39657",
+      "39752"
+     ]
+    },
+    {
+     "code": "fbcyl-150831",
+     "start": "2026-11-21T20:00",
+     "home": {
+      "id": "40041",
+      "name": "CB TIZONA CADETE A"
+     },
+     "away": {
+      "id": "39639",
+      "name": "B&V GANCEDO XESTAL 6,25"
+     },
+     "own_id": "40041",
+     "is_club": false,
+     "own_ids": [
+      "40041",
+      "39639"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "1ItShO9Dy13mOBot",
+     "key": "rrjz4CM3JRqax74RQHR3FmSbnghxAFboZXieFUV5kQTX99w/3v3tMLWZM1+SKo9b"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "KoGiXHzT1CnbPeec",
+     "key": "6U/P4zhPNnZJ4mAfL4fborIblBvCvHxS8HsjvvkiIZDmhGvO/aHkKLvmRX6Za6+G"
+    },
+    {
+     "scope": "competicion:FBCYL_1ª_FASE_-_LIGA_REGULAR_1ªDIV_CAD_MAS-GRUPO_A2_G7285_2026_",
+     "iv": "X9QrzKkKxkWZSpd7",
+     "key": "9pl/f8K6Wqt4KvmjkMyl55VBLPxljjxGK5xXKlcrFXs7E9goKTEg7euR0PBhHgFU"
+    }
+   ],
+   "competition": {
+    "key": "FBCYL_1ª_FASE_-_LIGA_REGULAR_1ªDIV_CAD_MAS-GRUPO_A2_G7285_2026_",
+    "label": "1ªDIV. - CAD. MASC.AUT. · 1ª FASE - LIGA REGULAR 1ªDIV CAD MAS GRUPO A2",
+    "competition": "1ªDIV. - CAD. MASC.AUT.",
+    "group": "1ª FASE - LIGA REGULAR 1ªDIV CAD MAS GRUPO A2",
+    "season": "2026",
+    "level": null,
+    "gender": "M",
+    "league": "FBCYL"
+   }
+  },
+  {
+   "collection": "FBCYL_1ª_FASE_-_LIGA_REGULAR_1ªDIV_INF_MAS-GRUPO_A1_G7286_2026_",
+   "round": 7,
+   "file": "rounds/FBCYL_1_FASE_LIGA_REGULAR_1_DIV_INF_MAS_GRUPO_A1_G7286_2026__r7.bpkgz",
+   "sha256": "99e665d7eb7c822de26ae7bb02bead77cd1e4675c633ec96ddba404990dc0632",
+   "bytes": 156522,
+   "club": false,
+   "matches": [
+    {
+     "code": "fbcyl-148728",
+     "start": "2026-11-21T16:00",
+     "home": {
+      "id": "39594",
+      "name": "S.P.B. ASPURU"
+     },
+     "away": {
+      "id": "39559",
+      "name": "XOBORG MEINS AVENIDA"
+     },
+     "own_id": "39594",
+     "is_club": false,
+     "own_ids": [
+      "39594",
+      "39559"
+     ]
+    },
+    {
+     "code": "fbcyl-148729",
+     "start": "2026-11-22T09:30",
+     "home": {
+      "id": "39743",
+      "name": "CAVIDEL CBC VALLADOLID A"
+     },
+     "away": {
+      "id": "39770",
+      "name": "CyD LEONESA COLEGIO LEONÉS INFANTIL A"
+     },
+     "own_id": "39743",
+     "is_club": false,
+     "own_ids": [
+      "39743",
+      "39770"
+     ]
+    },
+    {
+     "code": "fbcyl-148730",
+     "start": "2026-11-22T11:30",
+     "home": {
+      "id": "39711",
+      "name": "ADARSA MARISTAS"
+     },
+     "away": {
+      "id": "39664",
+      "name": "BALONCESTO LA FLECHA"
+     },
+     "own_id": "39711",
+     "is_club": false,
+     "own_ids": [
+      "39711",
+      "39664"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "lDkgQoR0fHMj1pRV",
+     "key": "mL7auAWtStXZHSH+Uocg4tEppHAhBuFT+GHjiyyVb977FY+vCRAomFqzluu1kwWX"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "iWcz3R0xgF4ucFPn",
+     "key": "29yyohs7tVkftMDyEiZZlbgz/AcubSK+KWTUcWKq6mnIFfie3sFxgW1qTtJeaSMc"
+    },
+    {
+     "scope": "competicion:FBCYL_1ª_FASE_-_LIGA_REGULAR_1ªDIV_INF_MAS-GRUPO_A1_G7286_2026_",
+     "iv": "oRbDxFmomMPfB9kr",
+     "key": "7iiQj9fp47k+Xz1xItKEDEjTBaMKbjV/03gLmeKz6DIhNPfIShqS+/SAvzY31JUy"
+    }
+   ],
+   "competition": {
+    "key": "FBCYL_1ª_FASE_-_LIGA_REGULAR_1ªDIV_INF_MAS-GRUPO_A1_G7286_2026_",
+    "label": "1ªDIV.- INF. MASC. AUT. · 1ª FASE - LIGA REGULAR 1ªDIV INF MAS GRUPO A1",
+    "competition": "1ªDIV.- INF. MASC. AUT.",
+    "group": "1ª FASE - LIGA REGULAR 1ªDIV INF MAS GRUPO A1",
+    "season": "2026",
+    "level": null,
+    "gender": "M",
+    "league": "FBCYL"
+   }
+  },
+  {
+   "collection": "FBCYL_1ª_FASE_-_LIGA_REGULAR_1ªDIV_INF_MAS-GRUPO_A2_G7287_2026_",
+   "round": 6,
+   "file": "rounds/FBCYL_1_FASE_LIGA_REGULAR_1_DIV_INF_MAS_GRUPO_A2_G7287_2026__r6.bpkgz",
+   "sha256": "5b6ed9374c61a7246bb79c75209dcb17f267e825c092f7f1ff35c592a3fb97b2",
+   "bytes": 185006,
+   "club": false,
+   "matches": [
+    {
+     "code": "fbcyl-150860",
+     "start": "2026-11-21T16:00",
+     "home": {
+      "id": "39658",
+      "name": "JUVENTUD CILLAR DE SILOS"
+     },
+     "away": {
+      "id": "39706",
+      "name": "JESUITAS SAN JOSE \"A\""
+     },
+     "own_id": "39658",
+     "is_club": false,
+     "own_ids": [
+      "39658",
+      "39706"
+     ]
+    },
+    {
+     "code": "fbcyl-150861",
+     "start": "2026-11-21T16:00",
+     "home": {
+      "id": "40042",
+      "name": "CB TIZONA INFANTIL A"
+     },
+     "away": {
+      "id": "40117",
+      "name": "CAJA RURAL RDL"
+     },
+     "own_id": "40042",
+     "is_club": false,
+     "own_ids": [
+      "40042",
+      "40117"
+     ]
+    },
+    {
+     "code": "fbcyl-150859",
+     "start": "2026-11-21T18:00",
+     "home": {
+      "id": "39644",
+      "name": "FILIPENSES"
+     },
+     "away": {
+      "id": "39619",
+      "name": "CD BASE DIBAQ"
+     },
+     "own_id": "39644",
+     "is_club": false,
+     "own_ids": [
+      "39644",
+      "39619"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "lhvveJK2rUHO3C66",
+     "key": "7wEaKEduqczkgYdc/Km4VGZXJND2+xFCQQN5Sbq3oxMz9Xkg32tR9CW0OWqor87j"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "K986Q7wVU2dMTfTh",
+     "key": "cWBpTYgzzx7bLoGd3Gxnti6mNHp0CEvKd7gL6ywDcGBkdV3ivVcUbHmccASVNI3P"
+    },
+    {
+     "scope": "competicion:FBCYL_1ª_FASE_-_LIGA_REGULAR_1ªDIV_INF_MAS-GRUPO_A2_G7287_2026_",
+     "iv": "VZZ+kk0tY9CVSy4C",
+     "key": "8gj5MLb9GJaVebNq7kRurRVQ0fivJ1Npq45NSVSU+AQ+E0l+3lfj7+yrGQkzV7E4"
+    }
+   ],
+   "competition": {
+    "key": "FBCYL_1ª_FASE_-_LIGA_REGULAR_1ªDIV_INF_MAS-GRUPO_A2_G7287_2026_",
+    "label": "1ªDIV.- INF. MASC. AUT. · 1ª FASE - LIGA REGULAR 1ªDIV INF MAS GRUPO A2",
+    "competition": "1ªDIV.- INF. MASC. AUT.",
+    "group": "1ª FASE - LIGA REGULAR 1ªDIV INF MAS GRUPO A2",
+    "season": "2026",
+    "level": null,
+    "gender": "M",
+    "league": "FBCYL"
+   }
+  },
+  {
+   "collection": "FBCYL_1ª_FASE_-_LIGA_REGULAR_1ª_DIV_CAD_FEM_-GRUPO_A1_G7294_2026_",
+   "round": 7,
+   "file": "rounds/FBCYL_1_FASE_LIGA_REGULAR_1_DIV_CAD_FEM_GRUPO_A1_G7294_2026__r7.bpkgz",
+   "sha256": "3ffdef711c8da56a58cf00750d2f8bc44979e6da354dd7537d21a602e6bfc5a1",
+   "bytes": 160430,
+   "club": false,
+   "matches": [
+    {
+     "code": "fbcyl-148947",
+     "start": "2026-11-21T16:00",
+     "home": {
+      "id": "40087",
+      "name": "SOMOS HIJOLUSA"
+     },
+     "away": {
+      "id": "40101",
+      "name": "PONCE PUCELA BASKET B"
+     },
+     "own_id": "40087",
+     "is_club": false,
+     "own_ids": [
+      "40087",
+      "40101"
+     ]
+    },
+    {
+     "code": "fbcyl-148948",
+     "start": "2026-11-21T18:00",
+     "home": {
+      "id": "40062",
+      "name": "C.B. VILLAMURIEL"
+     },
+     "away": {
+      "id": "39556",
+      "name": "OYRSA MEINS AVENIDA"
+     },
+     "own_id": "40062",
+     "is_club": false,
+     "own_ids": [
+      "40062",
+      "39556"
+     ]
+    },
+    {
+     "code": "fbcyl-148946",
+     "start": "2026-11-22T10:30",
+     "home": {
+      "id": "40069",
+      "name": "SAN ISIDRO PUCELA BASKET A"
+     },
+     "away": {
+      "id": "39604",
+      "name": "LEÓN TERMAL SPORT B.F.LEÓN"
+     },
+     "own_id": "40069",
+     "is_club": false,
+     "own_ids": [
+      "40069",
+      "39604"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "fr2KREbUvTGPlP8Q",
+     "key": "zmyiqi9nqN9oumLWNRq7mLO2UlZHAvroSMrDER/6DRqN8UovHgqKrDRKsgEaYD6e"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "7RS9RRq8xRRqUUfC",
+     "key": "8RGTaxfkCHnHD1IyCXohV0SZsNn5RNydtpPJfHu+bnyznEfHFBGLFhsS/H1DKr4X"
+    },
+    {
+     "scope": "competicion:FBCYL_1ª_FASE_-_LIGA_REGULAR_1ª_DIV_CAD_FEM_-GRUPO_A1_G7294_2026_",
+     "iv": "GUBSRzv7MecNcdYt",
+     "key": "pZmEHEZmzrJ291UfEH7a+Z6sOYnysyNIX5ZTPOFAUL0B9ZY3Hr6za2KSPJnJzf8o"
+    }
+   ],
+   "competition": {
+    "key": "FBCYL_1ª_FASE_-_LIGA_REGULAR_1ª_DIV_CAD_FEM_-GRUPO_A1_G7294_2026_",
+    "label": "1ªDIV. - CAD. FEM. AUT. · 1ª FASE - LIGA REGULAR 1ª DIV. CAD. FEM. GRUPO A1",
+    "competition": "1ªDIV. - CAD. FEM. AUT.",
+    "group": "1ª FASE - LIGA REGULAR 1ª DIV. CAD. FEM. GRUPO A1",
+    "season": "2026",
+    "level": null,
+    "gender": "F",
+    "league": "FBCYL"
+   }
+  },
+  {
+   "collection": "FBCYL_1ª_FASE_-_LIGA_REGULAR_1ª_DIV_CAD_FEM_-GRUPO_A2_G7295_2026_",
+   "round": 6,
+   "file": "rounds/FBCYL_1_FASE_LIGA_REGULAR_1_DIV_CAD_FEM_GRUPO_A2_G7295_2026__r6.bpkgz",
+   "sha256": "a1038d872eea79a55b11e2383d731938a6c78e6b8fc40f79f5d75e366fe81d97",
+   "bytes": 180906,
+   "club": false,
+   "matches": [
+    {
+     "code": "fbcyl-150919",
+     "start": "2026-11-22T16:00",
+     "home": {
+      "id": "39623",
+      "name": "CD BASE DIBAQ"
+     },
+     "away": {
+      "id": "39725",
+      "name": "BFB A"
+     },
+     "own_id": "39623",
+     "is_club": false,
+     "own_ids": [
+      "39623",
+      "39725"
+     ]
+    },
+    {
+     "code": "fbcyl-152485",
+     "start": "2026-11-22T16:00",
+     "home": {
+      "id": "39762",
+      "name": "MESÓN EL ZURGUÉN A CB CARBAJOSA CARBASKET"
+     },
+     "away": {
+      "id": "39974",
+      "name": "CENTRO ESP. FISIOTERAPIA CBSM 2011"
+     },
+     "own_id": "39762",
+     "is_club": false,
+     "own_ids": [
+      "39762",
+      "39974"
+     ]
+    },
+    {
+     "code": "fbcyl-150920",
+     "start": "2026-11-22T18:30",
+     "home": {
+      "id": "39677",
+      "name": "ETPOS BABIECA"
+     },
+     "away": {
+      "id": "39648",
+      "name": "FILIPENSES"
+     },
+     "own_id": "39677",
+     "is_club": false,
+     "own_ids": [
+      "39677",
+      "39648"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "U+KQiWIt/knfbV9X",
+     "key": "GI5o/WCC5iq9C6nkFjf22ZvJSkN7hVqQNgqUkxqERoF1vMNTXpoILUkPQ7jwuzOQ"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "29yrEhGBPz2at8fK",
+     "key": "S7+xt5/CzocJdTBt49O9c6R1FXfsUttcj5epbwGDALIi7H8BRLy/lMBTaY5iiPvl"
+    },
+    {
+     "scope": "competicion:FBCYL_1ª_FASE_-_LIGA_REGULAR_1ª_DIV_CAD_FEM_-GRUPO_A2_G7295_2026_",
+     "iv": "PIEHz0j5SvQer9NE",
+     "key": "KoDC4FbHvgWWDnA8yHQKRhAbn94L1cbW01Vg6hkaqwYN5Con2Xo7s1+YpdMO91F7"
+    }
+   ],
+   "competition": {
+    "key": "FBCYL_1ª_FASE_-_LIGA_REGULAR_1ª_DIV_CAD_FEM_-GRUPO_A2_G7295_2026_",
+    "label": "1ªDIV. - CAD. FEM. AUT. · 1ª FASE - LIGA REGULAR 1ª DIV. CAD. FEM. GRUPO A2",
+    "competition": "1ªDIV. - CAD. FEM. AUT.",
+    "group": "1ª FASE - LIGA REGULAR 1ª DIV. CAD. FEM. GRUPO A2",
+    "season": "2026",
+    "level": null,
+    "gender": "F",
+    "league": "FBCYL"
+   }
+  },
+  {
+   "collection": "FBCYL_1ª_FASE_-_LIGA_REGULAR_1ª_DIV_INF_FEM_-GRUPO_A1_G7296_2026_",
+   "round": 7,
+   "file": "rounds/FBCYL_1_FASE_LIGA_REGULAR_1_DIV_INF_FEM_GRUPO_A1_G7296_2026__r7.bpkgz",
+   "sha256": "d5d5a325dfd633e210106109892e5671a516e36e874ce4c5a6f1a6dfca5f41c6",
+   "bytes": 158814,
+   "club": false,
+   "matches": [
+    {
+     "code": "fbcyl-148978",
+     "start": "2026-11-21T16:00",
+     "home": {
+      "id": "40063",
+      "name": "C.B. VILLAMURIEL"
+     },
+     "away": {
+      "id": "39558",
+      "name": "OYRSA MEINS AVENIDA"
+     },
+     "own_id": "40063",
+     "is_club": false,
+     "own_ids": [
+      "40063",
+      "39558"
+     ]
+    },
+    {
+     "code": "fbcyl-148976",
+     "start": "2026-11-22T16:00",
+     "home": {
+      "id": "40072",
+      "name": "SAN ISIDRO PUCELA BASKET B"
+     },
+     "away": {
+      "id": "39605",
+      "name": "GESMANCLOR B.F.LEÓN"
+     },
+     "own_id": "40072",
+     "is_club": false,
+     "own_ids": [
+      "40072",
+      "39605"
+     ]
+    },
+    {
+     "code": "fbcyl-148977",
+     "start": "2026-11-22T16:00",
+     "home": {
+      "id": "40088",
+      "name": "SOMOS HIJOLUSA"
+     },
+     "away": {
+      "id": "40104",
+      "name": "PONCE PUCELA BASKET A"
+     },
+     "own_id": "40088",
+     "is_club": false,
+     "own_ids": [
+      "40088",
+      "40104"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "0nUduHqrbkQjTChM",
+     "key": "8Tv0rqxbbopJWeTvCajGiaS1lmFX0xxW2hhujRLBV997rMuEE3jWMFSt3T/8Qejn"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "O53p0LbIJFDyvNg1",
+     "key": "/u/q5U1BvE8ouMrwV5we0t79Uy3SXpHyW+pM+syqjWkq5QEubjr1wAcWRvBM3nOF"
+    },
+    {
+     "scope": "competicion:FBCYL_1ª_FASE_-_LIGA_REGULAR_1ª_DIV_INF_FEM_-GRUPO_A1_G7296_2026_",
+     "iv": "lwuNjZ6eX/zGJqBT",
+     "key": "IHIknMN7fgr1CQZ+3fPOYdWX5i+OyiBVy/Cwrzmb6RA/TOjUJCP377tClTvkcNCZ"
+    }
+   ],
+   "competition": {
+    "key": "FBCYL_1ª_FASE_-_LIGA_REGULAR_1ª_DIV_INF_FEM_-GRUPO_A1_G7296_2026_",
+    "label": "1ªDIV.-  INF. FEM. AUT. · 1ª FASE - LIGA REGULAR 1ª DIV. INF. FEM. GRUPO A1",
+    "competition": "1ªDIV.-  INF. FEM. AUT.",
+    "group": "1ª FASE - LIGA REGULAR 1ª DIV. INF. FEM. GRUPO A1",
+    "season": "2026",
+    "level": null,
+    "gender": "F",
+    "league": "FBCYL"
+   }
+  },
+  {
+   "collection": "FBCYL_1ª_FASE_-_LIGA_REGULAR_1ª_DIV_INF_FEM_-GRUPO_A2_G7297_2026_",
+   "round": 6,
+   "file": "rounds/FBCYL_1_FASE_LIGA_REGULAR_1_DIV_INF_FEM_GRUPO_A2_G7297_2026__r6.bpkgz",
+   "sha256": "d1e89be4427c1355f6b728aa9fe7e911df6539f2ee58755255583360e141cb45",
+   "bytes": 177818,
+   "club": false,
+   "matches": [
+    {
+     "code": "fbcyl-150951",
+     "start": "2026-11-22T11:00",
+     "home": {
+      "id": "39973",
+      "name": "LA RIVERA CBSM 2013"
+     },
+     "away": {
+      "id": "39707",
+      "name": "JESUITAS SAN JOSE \"A\""
+     },
+     "own_id": "39973",
+     "is_club": false,
+     "own_ids": [
+      "39973",
+      "39707"
+     ]
+    },
+    {
+     "code": "fbcyl-150949",
+     "start": "2026-11-22T12:30",
+     "home": {
+      "id": "39624",
+      "name": "CD BASE DIBAQ"
+     },
+     "away": {
+      "id": "39727",
+      "name": "SKODA MOTORCID BFB"
+     },
+     "own_id": "39624",
+     "is_club": false,
+     "own_ids": [
+      "39624",
+      "39727"
+     ]
+    },
+    {
+     "code": "fbcyl-150950",
+     "start": "2026-11-22T16:30",
+     "home": {
+      "id": "39679",
+      "name": "FISIOBUR BABIECA"
+     },
+     "away": {
+      "id": "39649",
+      "name": "FILIPENSES"
+     },
+     "own_id": "39679",
+     "is_club": false,
+     "own_ids": [
+      "39679",
+      "39649"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "rzoEVHIJC90A/IwG",
+     "key": "eTW8+gfedtqf0CXJJck/Xkb/1+u5/fmHDufuTm8ASQCNyJwPMho7gc+72GTsfASP"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "MSv15cvH+hNYXuYO",
+     "key": "lury+GPh/2YCxVUGLuGguqjbDTITSO3UuB00a7YioFQeivnTL5mnOr9N4y/2iZAf"
+    },
+    {
+     "scope": "competicion:FBCYL_1ª_FASE_-_LIGA_REGULAR_1ª_DIV_INF_FEM_-GRUPO_A2_G7297_2026_",
+     "iv": "DoFBifyrXSyh0pPM",
+     "key": "q5TjO4yQ9UO4yBWL3UrntcczLBQ1QFAv/9JswjAUAbQ7D6CBmzilvPgxwe2PWWJy"
+    }
+   ],
+   "competition": {
+    "key": "FBCYL_1ª_FASE_-_LIGA_REGULAR_1ª_DIV_INF_FEM_-GRUPO_A2_G7297_2026_",
+    "label": "1ªDIV.-  INF. FEM. AUT. · 1ª FASE - LIGA REGULAR 1ª DIV. INF. FEM. GRUPO A2",
+    "competition": "1ªDIV.-  INF. FEM. AUT.",
+    "group": "1ª FASE - LIGA REGULAR 1ª DIV. INF. FEM. GRUPO A2",
+    "season": "2026",
+    "level": null,
+    "gender": "F",
+    "league": "FBCYL"
+   }
+  },
+  {
+   "collection": "FBCYL_1ª_FASE_-_LIGA_REGULAR_2ªDIV_CAD_FEM-GRUPO_A_G7436_2026_",
+   "round": 7,
+   "file": "rounds/FBCYL_1_FASE_LIGA_REGULAR_2_DIV_CAD_FEM_GRUPO_A_G7436_2026__r7.bpkgz",
+   "sha256": "fd4fb3a1f6849837fa09818379f538eb883dc114dcfdeae0ec7e65a23db6cd1a",
+   "bytes": 113754,
+   "club": false,
+   "matches": [
+    {
+     "code": "fbcyl-151785",
+     "start": "2026-11-21T18:20",
+     "home": {
+      "id": "39678",
+      "name": "MARQUES BABIECA"
+     },
+     "away": {
+      "id": "39661",
+      "name": "JUVENTUD MERKAMUEBLE"
+     },
+     "own_id": "39678",
+     "is_club": false,
+     "own_ids": [
+      "39678",
+      "39661"
+     ]
+    },
+    {
+     "code": "fbcyl-151784",
+     "start": "2026-11-22T13:30",
+     "home": {
+      "id": "39905",
+      "name": "CSB HOSPITAL LATORRE"
+     },
+     "away": {
+      "id": "39596",
+      "name": "S.P.B. CHOCOLATERIA IBAÑEZ A"
+     },
+     "own_id": "39905",
+     "is_club": false,
+     "own_ids": [
+      "39905",
+      "39596"
+     ]
+    },
+    {
+     "code": "fbcyl-151783",
+     "start": "2026-11-22T18:00",
+     "home": {
+      "id": "39597",
+      "name": "S.P.B. CHOCOLATERIA IBAÑEZ B"
+     },
+     "away": {
+      "id": "40086",
+      "name": "FDR BASKET"
+     },
+     "own_id": "39597",
+     "is_club": false,
+     "own_ids": [
+      "39597",
+      "40086"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "8Jqq1Iai4meYDKW/",
+     "key": "Mz6KpIYFz2siVm2sHGC1Erhf5nSEVcDV5ArHWtV+DChVUxBBOPlx5NmFpHo2lpnP"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "7DyoDfOFsGT+Ys8o",
+     "key": "s9PLptinj7881vE0mjfycISoz7MJH1HnWNs83y3xGVTC2lwoN6P9ZwM09zkSJxbv"
+    },
+    {
+     "scope": "competicion:FBCYL_1ª_FASE_-_LIGA_REGULAR_2ªDIV_CAD_FEM-GRUPO_A_G7436_2026_",
+     "iv": "FSVkn6T5zsnKy0wL",
+     "key": "FbNvqND8EmidjtCWteQkI5VmV9AqamfCVJYYZRY14kP6MGCqxO65Y7o3cHTIZrBO"
+    }
+   ],
+   "competition": {
+    "key": "FBCYL_1ª_FASE_-_LIGA_REGULAR_2ªDIV_CAD_FEM-GRUPO_A_G7436_2026_",
+    "label": "2ªDIV.- CAD. FEM. AUT. · 1ª FASE - LIGA REGULAR 2ªDIV CAD FEM GRUPO A",
+    "competition": "2ªDIV.- CAD. FEM. AUT.",
+    "group": "1ª FASE - LIGA REGULAR 2ªDIV CAD FEM GRUPO A",
+    "season": "2026",
+    "level": null,
+    "gender": "F",
+    "league": "FBCYL"
+   }
+  },
+  {
+   "collection": "FBCYL_1ª_FASE_-_LIGA_REGULAR_2ªDIV_CAD_FEM-GRUPO_B_G7437_2026_",
+   "round": 7,
+   "file": "rounds/FBCYL_1_FASE_LIGA_REGULAR_2_DIV_CAD_FEM_GRUPO_B_G7437_2026__r7.bpkgz",
+   "sha256": "0e50d78f6835cfbf9eb4599079a35ac7baef5120cc7e7f9d0c4c7cfa99f664c2",
+   "bytes": 133294,
+   "club": false,
+   "matches": [
+    {
+     "code": "fbcyl-151851",
+     "start": "2026-11-21T16:30",
+     "home": {
+      "id": "39574",
+      "name": "CAJA RURAL CB ZAMORA A"
+     },
+     "away": {
+      "id": "39582",
+      "name": "ARELSA-CABRERIZOS 2011"
+     },
+     "own_id": "39574",
+     "is_club": false,
+     "own_ids": [
+      "39574",
+      "39582"
+     ]
+    },
+    {
+     "code": "fbcyl-151850",
+     "start": "2026-11-21T20:00",
+     "home": {
+      "id": "40102",
+      "name": "PONCE PUCELA BASKET B2"
+     },
+     "away": {
+      "id": "40090",
+      "name": "SOMOS HIJOLUSA NEGRO"
+     },
+     "own_id": "40102",
+     "is_club": false,
+     "own_ids": [
+      "40102",
+      "40090"
+     ]
+    },
+    {
+     "code": "fbcyl-151848",
+     "start": "2026-11-22T13:30",
+     "home": {
+      "id": "40091",
+      "name": "SOMOS HIJOLUSA VERDE"
+     },
+     "away": {
+      "id": "39575",
+      "name": "CAJA RURAL CB ZAMORA B"
+     },
+     "own_id": "40091",
+     "is_club": false,
+     "own_ids": [
+      "40091",
+      "39575"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "sbTwqD/0T8r8FGcG",
+     "key": "wpcf9F8iDjVHaSsEvqHZrT5o/0s9Lv0oNuIxXGEVsits1rtn9N6L3K4VizZhL/81"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "lbmul6plnTuI1hIg",
+     "key": "6d/NmJCuOvcQjPUFhV1qgmuVF49n4sAEHdX5jY8MVB/3zypAxMQzxkpR1yMD/eq2"
+    },
+    {
+     "scope": "competicion:FBCYL_1ª_FASE_-_LIGA_REGULAR_2ªDIV_CAD_FEM-GRUPO_B_G7437_2026_",
+     "iv": "fLm/sUBGcekEl1c4",
+     "key": "sy5XDDtZ7D+MWK1gUP3yGwLVxSJnt7pmlo1Zk7tS/hXoeUsgV5ncEOyTt390m6vF"
+    }
+   ],
+   "competition": {
+    "key": "FBCYL_1ª_FASE_-_LIGA_REGULAR_2ªDIV_CAD_FEM-GRUPO_B_G7437_2026_",
+    "label": "2ªDIV.- CAD. FEM. AUT. · 1ª FASE - LIGA REGULAR 2ªDIV CAD FEM GRUPO B",
+    "competition": "2ªDIV.- CAD. FEM. AUT.",
+    "group": "1ª FASE - LIGA REGULAR 2ªDIV CAD FEM GRUPO B",
+    "season": "2026",
+    "level": null,
+    "gender": "F",
+    "league": "FBCYL"
+   }
+  },
+  {
+   "collection": "FBCYL_1ª_FASE_-_LIGA_REGULAR_2ªDIV_CAD_FEM-GRUPO_C_G7438_2026_",
+   "round": 7,
+   "file": "rounds/FBCYL_1_FASE_LIGA_REGULAR_2_DIV_CAD_FEM_GRUPO_C_G7438_2026__r7.bpkgz",
+   "sha256": "fc35487d74798028e74c8ff3e292911672b39afe3786c67b9fbbf314d02bc728",
+   "bytes": 101938,
+   "club": false,
+   "matches": [
+    {
+     "code": "fbcyl-151931",
+     "start": "2026-11-21T18:30",
+     "home": {
+      "id": "39975",
+      "name": "LA MILLA CBSM 2012"
+     },
+     "away": {
+      "id": "39583",
+      "name": "ARELSA-CABRERIZOS 2012"
+     },
+     "own_id": "39975",
+     "is_club": false,
+     "own_ids": [
+      "39975",
+      "39583"
+     ]
+    },
+    {
+     "code": "fbcyl-151930",
+     "start": "2026-11-22T10:30",
+     "home": {
+      "id": "40103",
+      "name": "PONCE PUCELA BASKET B3"
+     },
+     "away": {
+      "id": "39560",
+      "name": "LECLERC MEINS AVENIDA"
+     },
+     "own_id": "40103",
+     "is_club": false,
+     "own_ids": [
+      "40103",
+      "39560"
+     ]
+    },
+    {
+     "code": "fbcyl-152370",
+     "start": "2026-11-22T12:30",
+     "home": {
+      "id": "39757",
+      "name": "SAN AGUSTÍN ROYTA SANTOS"
+     },
+     "away": {
+      "id": "40071",
+      "name": "SAN ISIDRO PUCELA BASKET A3"
+     },
+     "own_id": "39757",
+     "is_club": false,
+     "own_ids": [
+      "39757",
+      "40071"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "ywjFfYs5/tsmEepT",
+     "key": "5TrsHssg3eOmv1ncvoNZdMKC9MqS8wD4emegH9yTDB8geQJVkb1895gcqwrDZHp0"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "kpdE/Vg5kkmT+9rN",
+     "key": "6P9OBXQkSI5JFQP8xcfnIaZD2c6mCSGqOWt5Vy5jRrtGVkeex0rJMhx+DDJIPBXY"
+    },
+    {
+     "scope": "competicion:FBCYL_1ª_FASE_-_LIGA_REGULAR_2ªDIV_CAD_FEM-GRUPO_C_G7438_2026_",
+     "iv": "RTO6Iw04gv5jtSHi",
+     "key": "szRKV4TGdlrdst3B6S2hhb6WsXON9BNbeyNAAd0vXUrv3+iS6UHkyubZRGa3LvZp"
+    }
+   ],
+   "competition": {
+    "key": "FBCYL_1ª_FASE_-_LIGA_REGULAR_2ªDIV_CAD_FEM-GRUPO_C_G7438_2026_",
+    "label": "2ªDIV.- CAD. FEM. AUT. · 1ª FASE - LIGA REGULAR 2ªDIV CAD FEM GRUPO C",
+    "competition": "2ªDIV.- CAD. FEM. AUT.",
+    "group": "1ª FASE - LIGA REGULAR 2ªDIV CAD FEM GRUPO C",
+    "season": "2026",
+    "level": null,
+    "gender": "F",
+    "league": "FBCYL"
+   }
+  },
+  {
+   "collection": "FBCYL_1ª_FASE_-_LIGA_REGULAR_2ªDIV_CAD_FEM-GRUPO_C_G7438_2026_",
+   "round": 2,
+   "file": "rounds/FBCYL_1_FASE_LIGA_REGULAR_2_DIV_CAD_FEM_GRUPO_C_G7438_2026__r2.bpkgz",
+   "sha256": "aefcff2c9b081335fa1647bc06bdd95e0c806ae74694165d10c5c4d18726e013",
+   "bytes": 33950,
+   "club": false,
+   "matches": [
+    {
+     "code": "fbcyl-151916",
+     "start": "2026-11-22T12:30",
+     "home": {
+      "id": "39652",
+      "name": "ARYCO SARABRIS"
+     },
+     "away": {
+      "id": "39763",
+      "name": "MESÓN EL ZURGUÉN B CB CARBAJOSA CARBASKET"
+     },
+     "own_id": "39652",
+     "is_club": false,
+     "own_ids": [
+      "39652",
+      "39763"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "vKjvYCrsQvxqfofB",
+     "key": "MOo9bs5c5EsIncMY32pdobUbLZXM37vs4FKJXTns3ZRrgIiMef6Y71hw8fC7hLjb"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "baQ8AtJFNVhClIYq",
+     "key": "y9qVmXK+BqoQZLqgHl3Rq/VBYkKXygPFiCI9RIo5pW3WMQDlUUSX+OQtqIs329yP"
+    },
+    {
+     "scope": "competicion:FBCYL_1ª_FASE_-_LIGA_REGULAR_2ªDIV_CAD_FEM-GRUPO_C_G7438_2026_",
+     "iv": "oTH+zBJPvawmxpBi",
+     "key": "lrNixDrggaLOZrdb/axi1OFKKa8aSposSM67kXvbzE5yv6olYB8pCxZZBy/00TiL"
+    }
+   ],
+   "competition": {
+    "key": "FBCYL_1ª_FASE_-_LIGA_REGULAR_2ªDIV_CAD_FEM-GRUPO_C_G7438_2026_",
+    "label": "2ªDIV.- CAD. FEM. AUT. · 1ª FASE - LIGA REGULAR 2ªDIV CAD FEM GRUPO C",
+    "competition": "2ªDIV.- CAD. FEM. AUT.",
+    "group": "1ª FASE - LIGA REGULAR 2ªDIV CAD FEM GRUPO C",
+    "season": "2026",
+    "level": null,
+    "gender": "F",
+    "league": "FBCYL"
+   }
+  },
+  {
+   "collection": "FBCYL_1ª_FASE_-_LIGA_REGULAR_2ªDIV_CAD_MAS-GRUPO_A_G7428_2026_",
+   "round": 6,
+   "file": "rounds/FBCYL_1_FASE_LIGA_REGULAR_2_DIV_CAD_MAS_GRUPO_A_G7428_2026__r6.bpkgz",
+   "sha256": "2e9cd6bfa4b8244ee82ad04388a210dc8ddb65a5971ba6900ae969b8b8f7e2a6",
+   "bytes": 222402,
+   "club": false,
+   "matches": [
+    {
+     "code": "fbcyl-151101",
+     "start": "2026-11-21T18:00",
+     "home": {
+      "id": "40085",
+      "name": "FDR BASKET"
+     },
+     "away": {
+      "id": "39590",
+      "name": "S.P.B. SALAQUINCE"
+     },
+     "own_id": "40085",
+     "is_club": false,
+     "own_ids": [
+      "40085",
+      "39590"
+     ]
+    },
+    {
+     "code": "fbcyl-151104",
+     "start": "2026-11-21T18:00",
+     "home": {
+      "id": "40057",
+      "name": "MARISTAS BURGOS B"
+     },
+     "away": {
+      "id": "39659",
+      "name": "JUVENTUD BRICOCENTRO"
+     },
+     "own_id": "40057",
+     "is_club": false,
+     "own_ids": [
+      "40057",
+      "39659"
+     ]
+    },
+    {
+     "code": "fbcyl-151102",
+     "start": "2026-11-22T10:00",
+     "home": {
+      "id": "39591",
+      "name": "S.P.B. ASPURU"
+     },
+     "away": {
+      "id": "39733",
+      "name": "BASKET PISONES"
+     },
+     "own_id": "39591",
+     "is_club": false,
+     "own_ids": [
+      "39591",
+      "39733"
+     ]
+    },
+    {
+     "code": "fbcyl-151105",
+     "start": "2026-11-22T11:30",
+     "home": {
+      "id": "40046",
+      "name": "CB TIZONA CADETE C"
+     },
+     "away": {
+      "id": "39901",
+      "name": "CSB FORGASA"
+     },
+     "own_id": "40046",
+     "is_club": false,
+     "own_ids": [
+      "40046",
+      "39901"
+     ]
+    },
+    {
+     "code": "fbcyl-151103",
+     "start": "2026-11-22T16:00",
+     "home": {
+      "id": "40044",
+      "name": "CB TIZONA CADETE B"
+     },
+     "away": {
+      "id": "40056",
+      "name": "MARISTAS BURGOS A"
+     },
+     "own_id": "40044",
+     "is_club": false,
+     "own_ids": [
+      "40044",
+      "40056"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "s1fI4kOPOotR2Nim",
+     "key": "sDsAU+SyEUCI0szk5c8HjWcoL3vkUeEJgX1kVtL/UvRUuLNrHloy1dA+YQ8Lwl3u"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "GAPmaJrT2ZmxCad9",
+     "key": "hFbmg6UY93plsuXzikDzkRWchRhP3L/9Bj6eLjZbg7YII1oamHYEvIc6R8M4QtXO"
+    },
+    {
+     "scope": "competicion:FBCYL_1ª_FASE_-_LIGA_REGULAR_2ªDIV_CAD_MAS-GRUPO_A_G7428_2026_",
+     "iv": "yGiClAOiRa6/yK9u",
+     "key": "mY29NVIXOrtm/VDBoYymvfciqVo++cqg3M6uJmjQofWSABcP2u6J7YUrjtbxCkRB"
+    }
+   ],
+   "competition": {
+    "key": "FBCYL_1ª_FASE_-_LIGA_REGULAR_2ªDIV_CAD_MAS-GRUPO_A_G7428_2026_",
+    "label": "2ªDIV.- CAD. MASC. AUT. · 1ª FASE - LIGA REGULAR 2ªDIV CAD MAS GRUPO A",
+    "competition": "2ªDIV.- CAD. MASC. AUT.",
+    "group": "1ª FASE - LIGA REGULAR 2ªDIV CAD MAS GRUPO A",
+    "season": "2026",
+    "level": null,
+    "gender": "M",
+    "league": "FBCYL"
+   }
+  },
+  {
+   "collection": "FBCYL_1ª_FASE_-_LIGA_REGULAR_2ªDIV_CAD_MAS-GRUPO_B_G7429_2026_",
+   "round": 6,
+   "file": "rounds/FBCYL_1_FASE_LIGA_REGULAR_2_DIV_CAD_MAS_GRUPO_B_G7429_2026__r6.bpkgz",
+   "sha256": "d3889f08ca3494b2b9992676da7a91b35c5af131cedf63aa3dd2dc6e0ccd9106",
+   "bytes": 222818,
+   "club": false,
+   "matches": [
+    {
+     "code": "fbcyl-151192",
+     "start": "2026-11-22T10:30",
+     "home": {
+      "id": "40112",
+      "name": "VILLACELAMA CAJA RURAL RDL"
+     },
+     "away": {
+      "id": "39572",
+      "name": "PRO MOVIL CB ZAMORA A"
+     },
+     "own_id": "40112",
+     "is_club": false,
+     "own_ids": [
+      "40112",
+      "39572"
+     ]
+    },
+    {
+     "code": "fbcyl-151193",
+     "start": "2026-11-22T12:00",
+     "home": {
+      "id": "39561",
+      "name": "LECLERC MEINS AVENIDA"
+     },
+     "away": {
+      "id": "40059",
+      "name": "CORAZÓN DE MARÍA GRUPO PACO MATEO"
+     },
+     "own_id": "39561",
+     "is_club": false,
+     "own_ids": [
+      "39561",
+      "40059"
+     ]
+    },
+    {
+     "code": "fbcyl-151195",
+     "start": "2026-11-22T12:00",
+     "home": {
+      "id": "39573",
+      "name": "LA VALENCIANA CB ZAMORA B"
+     },
+     "away": {
+      "id": "39765",
+      "name": "MESÓN EL ZURGUÉN 2011 CB CARBAJOSA CARBASKET"
+     },
+     "own_id": "39573",
+     "is_club": false,
+     "own_ids": [
+      "39573",
+      "39765"
+     ]
+    },
+    {
+     "code": "fbcyl-151191",
+     "start": "2026-11-22T12:30",
+     "home": {
+      "id": "39764",
+      "name": "MESÓN EL ZURGUÉN 2012 CB CARBAJOSA CARBASKET"
+     },
+     "away": {
+      "id": "40116",
+      "name": "CAJA RURAL RDL"
+     },
+     "own_id": "39764",
+     "is_club": false,
+     "own_ids": [
+      "39764",
+      "40116"
+     ]
+    },
+    {
+     "code": "fbcyl-151194",
+     "start": "2026-11-22T18:00",
+     "home": {
+      "id": "39772",
+      "name": "CyD LEONESA COLEGIO LEONÉS CADETE B"
+     },
+     "away": {
+      "id": "39672",
+      "name": "COPYCENTRO SDP"
+     },
+     "own_id": "39772",
+     "is_club": false,
+     "own_ids": [
+      "39772",
+      "39672"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "NXNrLp37Fpw2OwIl",
+     "key": "wlEN/InF5Pjt8IZ88BHStGaSYGnWNm6FArh67zdovJ/8t+LYCsWlLCJkaep7OpsX"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "UZA6s63bKTrbBh29",
+     "key": "v464f+L7uM3qBUvDpmVlw8UhZU7tI2tVGrJczFwfJyvNasH4rADOsy9SQuCMDbti"
+    },
+    {
+     "scope": "competicion:FBCYL_1ª_FASE_-_LIGA_REGULAR_2ªDIV_CAD_MAS-GRUPO_B_G7429_2026_",
+     "iv": "YFEUq5dj1s6RdVPA",
+     "key": "sHgAXa+jJCOvUaaPyXXQWqafCNTnaBzSUWQTrh/2zP9IlllpiKi/bh46VZiBYora"
+    }
+   ],
+   "competition": {
+    "key": "FBCYL_1ª_FASE_-_LIGA_REGULAR_2ªDIV_CAD_MAS-GRUPO_B_G7429_2026_",
+    "label": "2ªDIV.- CAD. MASC. AUT. · 1ª FASE - LIGA REGULAR 2ªDIV CAD MAS GRUPO B",
+    "competition": "2ªDIV.- CAD. MASC. AUT.",
+    "group": "1ª FASE - LIGA REGULAR 2ªDIV CAD MAS GRUPO B",
+    "season": "2026",
+    "level": null,
+    "gender": "M",
+    "league": "FBCYL"
+   }
+  },
+  {
+   "collection": "FBCYL_1ª_FASE_-_LIGA_REGULAR_2ªDIV_CAD_MAS-GRUPO_C_G7430_2026_",
+   "round": 7,
+   "file": "rounds/FBCYL_1_FASE_LIGA_REGULAR_2_DIV_CAD_MAS_GRUPO_C_G7430_2026__r7.bpkgz",
+   "sha256": "e5081b5a720cb0a7039b802c0c353fc4ddc7f8ad2f827b45c75a97520f69cfdf",
+   "bytes": 354638,
+   "club": false,
+   "matches": [
+    {
+     "code": "fbcyl-151293",
+     "start": "2026-11-21T18:15",
+     "home": {
+      "id": "39668",
+      "name": "BALONCESTO LA FLECHA"
+     },
+     "away": {
+      "id": "39691",
+      "name": "CBPALENCIA URAL AUDI"
+     },
+     "own_id": "39668",
+     "is_club": false,
+     "own_ids": [
+      "39668",
+      "39691"
+     ]
+    },
+    {
+     "code": "fbcyl-151654",
+     "start": "2026-11-21T20:00",
+     "home": {
+      "id": "39686",
+      "name": "JESUITAS SAN JOSE \"B\""
+     },
+     "away": {
+      "id": "39618",
+      "name": "CD BASE BLANCO"
+     },
+     "own_id": "39686",
+     "is_club": false,
+     "own_ids": [
+      "39686",
+      "39618"
+     ]
+    },
+    {
+     "code": "fbcyl-151295",
+     "start": "2026-11-22T10:30",
+     "home": {
+      "id": "39611",
+      "name": "OBILA C.B. - CAJA RURAL DE SALAMANCA - UCAV - CADETE MASCULINO A"
+     },
+     "away": {
+      "id": "39687",
+      "name": "JESUITAS SAN JOSE \"A\""
+     },
+     "own_id": "39611",
+     "is_club": false,
+     "own_ids": [
+      "39611",
+      "39687"
+     ]
+    },
+    {
+     "code": "fbcyl-151296",
+     "start": "2026-11-22T12:30",
+     "home": {
+      "id": "39653",
+      "name": "CB PALENCIA  CADETE \"B\""
+     },
+     "away": {
+      "id": "39742",
+      "name": "CAVIDEL CBC VALLADOLID B"
+     },
+     "own_id": "39653",
+     "is_club": false,
+     "own_ids": [
+      "39653",
+      "39742"
+     ]
+    },
+    {
+     "code": "fbcyl-151653",
+     "start": "2026-11-22T16:00",
+     "home": {
+      "id": "39617",
+      "name": "CD BASE ROJO"
+     },
+     "away": {
+      "id": "39897",
+      "name": "LAS CONTIENDAS ZARATÁN BASKET 012"
+     },
+     "own_id": "39617",
+     "is_club": false,
+     "own_ids": [
+      "39617",
+      "39897"
+     ]
+    },
+    {
+     "code": "fbcyl-151297",
+     "start": "2026-11-22T18:00",
+     "home": {
+      "id": "39712",
+      "name": "ADARSA MARISTAS 12"
+     },
+     "away": {
+      "id": "39695",
+      "name": "FILIPENSES"
+     },
+     "own_id": "39712",
+     "is_club": false,
+     "own_ids": [
+      "39712",
+      "39695"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "rEROfCUQuOqIW3+A",
+     "key": "VjIR0qQfB0HYeaeM5rMKlHnWFKTh0hcl5SMs5WDnKtcDayrV9MghBIrv70ck3Erj"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "kLWPzjJom9JTvK35",
+     "key": "ZX9w+/FcHJztxOVpt4pAZdN3yxKXKoMusRlig/DrQ4cPH4O/Kq5094JQBbyf3Ugh"
+    },
+    {
+     "scope": "competicion:FBCYL_1ª_FASE_-_LIGA_REGULAR_2ªDIV_CAD_MAS-GRUPO_C_G7430_2026_",
+     "iv": "yffBwaOtN9aDriFg",
+     "key": "vsuiOgNv5WsQRMCaBBPqZZgZteXUOM/ES+EJ1BHA6fy/xN9soDQzROdOAq5Th+La"
+    }
+   ],
+   "competition": {
+    "key": "FBCYL_1ª_FASE_-_LIGA_REGULAR_2ªDIV_CAD_MAS-GRUPO_C_G7430_2026_",
+    "label": "2ªDIV.- CAD. MASC. AUT. · 1ª FASE - LIGA REGULAR 2ªDIV CAD MAS GRUPO C",
+    "competition": "2ªDIV.- CAD. MASC. AUT.",
+    "group": "1ª FASE - LIGA REGULAR 2ªDIV CAD MAS GRUPO C",
+    "season": "2026",
+    "level": null,
+    "gender": "M",
+    "league": "FBCYL"
+   }
+  },
+  {
+   "collection": "FBCYL_1ª_FASE_-_LIGA_REGULAR_2ª_DIV_JUN_FEM-GRUPO_A_G7434_2026_",
+   "round": 5,
+   "file": "rounds/FBCYL_1_FASE_LIGA_REGULAR_2_DIV_JUN_FEM_GRUPO_A_G7434_2026__r5.bpkgz",
+   "sha256": "0b87724b8602c5b034efc8ee1d1d4205b39215b244e3d585634f823234fa190d",
+   "bytes": 87438,
+   "club": false,
+   "matches": [
+    {
+     "code": "fbcyl-151697",
+     "start": "2026-11-21T19:00",
+     "home": {
+      "id": "39904",
+      "name": "CSB MARTÍNEZ Y TRÍBEZ"
+     },
+     "away": {
+      "id": "39717",
+      "name": "ADARSA MARISTAS"
+     },
+     "own_id": "39904",
+     "is_club": false,
+     "own_ids": [
+      "39904",
+      "39717"
+     ]
+    },
+    {
+     "code": "fbcyl-151698",
+     "start": "2026-11-22T10:30",
+     "home": {
+      "id": "40122",
+      "name": "CLARET FUNDACIÓN CAJA RURAL DE SEGOVIA"
+     },
+     "away": {
+      "id": "40100",
+      "name": "PONCE PUCELA BASKET A2"
+     },
+     "own_id": "40122",
+     "is_club": false,
+     "own_ids": [
+      "40122",
+      "40100"
+     ]
+    },
+    {
+     "code": "fbcyl-151696",
+     "start": "2026-11-22T18:00",
+     "home": {
+      "id": "39766",
+      "name": "MESÓN EL ZURGUÉN CB CARBAJOSA CARBASKET"
+     },
+     "away": {
+      "id": "39647",
+      "name": "FILIPENSES"
+     },
+     "own_id": "39766",
+     "is_club": false,
+     "own_ids": [
+      "39766",
+      "39647"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "SL/DjbzyUsiq1oPt",
+     "key": "LhcA7Qk+4ZV8/WOdstBxdyXWJp+N7N6JNE00xi6TuqxwUxM19SakdyrGpziKxxpi"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "iFkLRpVGV+4f8YcS",
+     "key": "tHh8lOtmJYnM3vWZVjlkBpA1nFgMaQUsg2zA+3ccjbr+fkZFU99Kzwp42PP6mEma"
+    },
+    {
+     "scope": "competicion:FBCYL_1ª_FASE_-_LIGA_REGULAR_2ª_DIV_JUN_FEM-GRUPO_A_G7434_2026_",
+     "iv": "2ZjLMjL97/6tKpPi",
+     "key": "XZI3UMdpelvCCsrQfBseLkF8UbuBOKWp3k4CNoTBDSgiUDYS0JnLKBCNDbdCH57H"
+    }
+   ],
+   "competition": {
+    "key": "FBCYL_1ª_FASE_-_LIGA_REGULAR_2ª_DIV_JUN_FEM-GRUPO_A_G7434_2026_",
+    "label": "2ªDIV.- JUN. FEM. AUT. · 1ª FASE - LIGA REGULAR 2ª DIV JUN FEM GRUPO A",
+    "competition": "2ªDIV.- JUN. FEM. AUT.",
+    "group": "1ª FASE - LIGA REGULAR 2ª DIV JUN FEM GRUPO A",
+    "season": "2026",
+    "level": null,
+    "gender": "F",
+    "league": "FBCYL"
+   }
+  },
+  {
+   "collection": "FBCYL_1ª_FASE_-_LIGA_REGULAR_2ª_DIV_JUN_FEM-GRUPO_B_G7435_2026_",
+   "round": 5,
+   "file": "rounds/FBCYL_1_FASE_LIGA_REGULAR_2_DIV_JUN_FEM_GRUPO_B_G7435_2026__r5.bpkgz",
+   "sha256": "13a1e965622fd30977a58cf388728caa86032596074ec238cf783c65578bc645",
+   "bytes": 92626,
+   "club": false,
+   "matches": [
+    {
+     "code": "fbcyl-151740",
+     "start": "2026-11-22T10:30",
+     "home": {
+      "id": "39581",
+      "name": "CASAR DE BURBIA SDP"
+     },
+     "away": {
+      "id": "39571",
+      "name": "SEKUR CB ZAMORA"
+     },
+     "own_id": "39581",
+     "is_club": false,
+     "own_ids": [
+      "39581",
+      "39571"
+     ]
+    },
+    {
+     "code": "fbcyl-151738",
+     "start": "2026-11-22T12:00",
+     "home": {
+      "id": "39700",
+      "name": "GAZA - CAJA RURAL DE ZAMORA C.D. ZAMARAT"
+     },
+     "away": {
+      "id": "39636",
+      "name": "ULE 6,25"
+     },
+     "own_id": "39700",
+     "is_club": false,
+     "own_ids": [
+      "39700",
+      "39636"
+     ]
+    },
+    {
+     "code": "fbcyl-151739",
+     "start": "2026-11-22T16:00",
+     "home": {
+      "id": "40058",
+      "name": "CORAZÓN DE MARÍA CAJA RURAL"
+     },
+     "away": {
+      "id": "40089",
+      "name": "SOMOS HIJOLUSA"
+     },
+     "own_id": "40058",
+     "is_club": false,
+     "own_ids": [
+      "40058",
+      "40089"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "yvejToMamKbbSyZ9",
+     "key": "wGcPjjYWG0RDeiecSJA8qdRcLq0jgwtj2V8BFDMKtfIZU+8qo1hwcE7g+tBymHxS"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "k82DjY9j+ZjgWosJ",
+     "key": "QE4zAUloDamS86MeZ+aX9BLlh9xRwpr7BZa5bkVlS+a6cZ6DdRCC7m6qbDTV85XI"
+    },
+    {
+     "scope": "competicion:FBCYL_1ª_FASE_-_LIGA_REGULAR_2ª_DIV_JUN_FEM-GRUPO_B_G7435_2026_",
+     "iv": "Ax7dRtf6jLSy4VJd",
+     "key": "PWE3u1RwjaayOtFqQJWltzNPs1D4B+//8LK8Hwa9Dl5CgIbQ9KPXK6dbo3iAhJms"
+    }
+   ],
+   "competition": {
+    "key": "FBCYL_1ª_FASE_-_LIGA_REGULAR_2ª_DIV_JUN_FEM-GRUPO_B_G7435_2026_",
+    "label": "2ªDIV.- JUN. FEM. AUT. · 1ª FASE - LIGA REGULAR 2ª DIV JUN FEM GRUPO B",
+    "competition": "2ªDIV.- JUN. FEM. AUT.",
+    "group": "1ª FASE - LIGA REGULAR 2ª DIV JUN FEM GRUPO B",
+    "season": "2026",
+    "level": null,
+    "gender": "F",
+    "league": "FBCYL"
+   }
+  },
+  {
+   "collection": "FBCYL_1ª_FASE_-_LIGA_REGULAR_2ª_DIV_JUN_MAS-GRUPO_A_G7426_2026_",
+   "round": 5,
+   "file": "rounds/FBCYL_1_FASE_LIGA_REGULAR_2_DIV_JUN_MAS_GRUPO_A_G7426_2026__r5.bpkgz",
+   "sha256": "a0824766072bd8b90fa7e301247c68eb8bf46bd07b4fc4c28ab91fbaadb3b2c6",
+   "bytes": 140734,
+   "club": false,
+   "matches": [
+    {
+     "code": "fbcyl-150983",
+     "start": "2026-11-22T10:00",
+     "home": {
+      "id": "39732",
+      "name": "BASKET PISONES"
+     },
+     "away": {
+      "id": "39896",
+      "name": "LAS CONTIENDAS ZARATÁN BASKET"
+     },
+     "own_id": "39732",
+     "is_club": false,
+     "own_ids": [
+      "39732",
+      "39896"
+     ]
+    },
+    {
+     "code": "fbcyl-150982",
+     "start": "2026-11-22T11:30",
+     "home": {
+      "id": "39898",
+      "name": "CSB CAJA RURAL DE SORIA NEGRO"
+     },
+     "away": {
+      "id": "39589",
+      "name": "S.P.B. SIMETAL"
+     },
+     "own_id": "39898",
+     "is_club": false,
+     "own_ids": [
+      "39898",
+      "39589"
+     ]
+    },
+    {
+     "code": "fbcyl-150980",
+     "start": "2026-11-22T12:30",
+     "home": {
+      "id": "39667",
+      "name": "BALONCESTO LA FLECHA"
+     },
+     "away": {
+      "id": "39616",
+      "name": "CD BASE INNO360"
+     },
+     "own_id": "39667",
+     "is_club": false,
+     "own_ids": [
+      "39667",
+      "39616"
+     ]
+    },
+    {
+     "code": "fbcyl-150981",
+     "start": "2026-11-22T13:30",
+     "home": {
+      "id": "40043",
+      "name": "CB TIZONA JUNIOR B"
+     },
+     "away": {
+      "id": "39899",
+      "name": "CSB CAJA RURAL DE SORIA BLANCO"
+     },
+     "own_id": "40043",
+     "is_club": false,
+     "own_ids": [
+      "40043",
+      "39899"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "DKtNe/jV3ertQPsT",
+     "key": "fiF/8qjAIeP1kbVF7zNBX+lznlg1T0ojGrPCJa0a+BCqOGr/k7mdTaC8j1dc/U9T"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "EFOj8MtWLzl+C0fu",
+     "key": "GxsBYpOivGU3h14WGkY95E/INjZysgGiPQW1LVyA+gdVNqusFzrZxfIUzqR8OWXf"
+    },
+    {
+     "scope": "competicion:FBCYL_1ª_FASE_-_LIGA_REGULAR_2ª_DIV_JUN_MAS-GRUPO_A_G7426_2026_",
+     "iv": "PQx3Y+WM6EDqZT9w",
+     "key": "Lg0mpg+lgiDcwq6Nl0cMEpz0uhgw9LCY0fgK3SHIw0BaIOdMjZzaZBNEIz3KF5U4"
+    }
+   ],
+   "competition": {
+    "key": "FBCYL_1ª_FASE_-_LIGA_REGULAR_2ª_DIV_JUN_MAS-GRUPO_A_G7426_2026_",
+    "label": "2ªDIV.- JUN. MASC. AUT. · 1ª FASE - LIGA REGULAR 2ª DIV JUN MAS GRUPO A",
+    "competition": "2ªDIV.- JUN. MASC. AUT.",
+    "group": "1ª FASE - LIGA REGULAR 2ª DIV JUN MAS GRUPO A",
+    "season": "2026",
+    "level": null,
+    "gender": "M",
+    "league": "FBCYL"
+   }
+  },
+  {
+   "collection": "FBCYL_1ª_FASE_-_LIGA_REGULAR_2ª_DIV_JUN_MAS-GRUPO_B_G7427_2026_",
+   "round": 5,
+   "file": "rounds/FBCYL_1_FASE_LIGA_REGULAR_2_DIV_JUN_MAS_GRUPO_B_G7427_2026__r5.bpkgz",
+   "sha256": "8f0621e5cea2260292751936f940657c66af9f8d7c9a7e662011412a47ddcec9",
+   "bytes": 112698,
+   "club": false,
+   "matches": [
+    {
+     "code": "fbcyl-151036",
+     "start": "2026-11-22T10:30",
+     "home": {
+      "id": "39767",
+      "name": "MESÓN EL ZURGUÉN CB CARBAJOSA CARBASKET"
+     },
+     "away": {
+      "id": "39641",
+      "name": "ULE 6,25"
+     },
+     "own_id": "39767",
+     "is_club": false,
+     "own_ids": [
+      "39767",
+      "39641"
+     ]
+    },
+    {
+     "code": "fbcyl-151039",
+     "start": "2026-11-22T12:30",
+     "home": {
+      "id": "39673",
+      "name": "PROCONSI SDP"
+     },
+     "away": {
+      "id": "39570",
+      "name": "AMAQ ALQ. CB ZAMORA B"
+     },
+     "own_id": "39673",
+     "is_club": false,
+     "own_ids": [
+      "39673",
+      "39570"
+     ]
+    },
+    {
+     "code": "fbcyl-151037",
+     "start": "2026-11-22T16:00",
+     "home": {
+      "id": "39690",
+      "name": "CB PALENCIA JUNIOR  \"A\""
+     },
+     "away": {
+      "id": "40111",
+      "name": "VILLACELAMA CAJA RURAL RDL"
+     },
+     "own_id": "39690",
+     "is_club": false,
+     "own_ids": [
+      "39690",
+      "40111"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "CN9h55oggKbIL0xq",
+     "key": "m3P+uqh9Nfcx/IOQ++nV6Lkb2hpF6YjyC64tq5mIjSS5eNuFKYUXJ1YI1nF9QvjI"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "sPQHA6uZMzfgUuzi",
+     "key": "Tu+B+0w0WK877OGmcSrwU6veyD5lCzyrnGSyGsi+5ZBdyYDbKEuKNfbJkYR8EYmV"
+    },
+    {
+     "scope": "competicion:FBCYL_1ª_FASE_-_LIGA_REGULAR_2ª_DIV_JUN_MAS-GRUPO_B_G7427_2026_",
+     "iv": "97Pz7xT1wWC3nZkL",
+     "key": "0vNEaG3/AahYeGx6Oe9xzlUcBqXkC9tlfS5WkhnA54azjDbJs0aK/xVg669tCIo0"
+    }
+   ],
+   "competition": {
+    "key": "FBCYL_1ª_FASE_-_LIGA_REGULAR_2ª_DIV_JUN_MAS-GRUPO_B_G7427_2026_",
+    "label": "2ªDIV.- JUN. MASC. AUT. · 1ª FASE - LIGA REGULAR 2ª DIV JUN MAS GRUPO B",
+    "competition": "2ªDIV.- JUN. MASC. AUT.",
+    "group": "1ª FASE - LIGA REGULAR 2ª DIV JUN MAS GRUPO B",
+    "season": "2026",
+    "level": null,
+    "gender": "M",
+    "league": "FBCYL"
+   }
+  },
+  {
+   "collection": "FBCYL_1ª_FASE_-_LIGA_REGULAR_LUEMC_MASC-GRUPO_A1_G7282_2026_",
+   "round": 7,
+   "file": "rounds/FBCYL_1_FASE_LIGA_REGULAR_LUEMC_MASC_GRUPO_A1_G7282_2026__r7.bpkgz",
+   "sha256": "a7ff71fa5c046a3f521d751b317614e6f0ec6b2cc66fe32ab9355b8b745929a8",
+   "bytes": 166118,
+   "club": false,
+   "matches": [
+    {
+     "code": "fbcyl-148668",
+     "start": "2026-11-21T20:15",
+     "home": {
+      "id": "39588",
+      "name": "S.P.B. PREVENNOVA"
+     },
+     "away": {
+      "id": "39555",
+      "name": "OYRSA MEINS AVENIDA"
+     },
+     "own_id": "39588",
+     "is_club": false,
+     "own_ids": [
+      "39588",
+      "39555"
+     ]
+    },
+    {
+     "code": "fbcyl-148670",
+     "start": "2026-11-22T09:30",
+     "home": {
+      "id": "39709",
+      "name": "ADARSA MARISTAS"
+     },
+     "away": {
+      "id": "39662",
+      "name": "BALONCESTO LA FLECHA"
+     },
+     "own_id": "39709",
+     "is_club": false,
+     "own_ids": [
+      "39709",
+      "39662"
+     ]
+    },
+    {
+     "code": "fbcyl-148669",
+     "start": "2026-11-22T13:30",
+     "home": {
+      "id": "39739",
+      "name": "CAVIDEL CBC VALLADOLID A"
+     },
+     "away": {
+      "id": "39768",
+      "name": "IXMA CyD LEONESA A"
+     },
+     "own_id": "39739",
+     "is_club": false,
+     "own_ids": [
+      "39739",
+      "39768"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "q7lO797923VFQwNC",
+     "key": "06lSvMtHbM1XbOmrUNPDF4rvv0qKKYfZ9KyMWAjd2+GIwBV68S1/jtQC0PCphn8x"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "Pk8pj0/KZnHR6slu",
+     "key": "kKzyM3Wrduv0glGvF4tbHxXr3KLTlzBdn+cv4d2PjkZYk3ACJaHfFgmaMXt6r0J3"
+    },
+    {
+     "scope": "competicion:FBCYL_1ª_FASE_-_LIGA_REGULAR_LUEMC_MASC-GRUPO_A1_G7282_2026_",
+     "iv": "lYU6vmnRFg79BmV4",
+     "key": "NZG5FE1s9ehYM4aym42GENEXLBvd3cKW810BF30FVSACu/oSFjpk8PJgX1yELtMA"
+    }
+   ],
+   "competition": {
+    "key": "FBCYL_1ª_FASE_-_LIGA_REGULAR_LUEMC_MASC-GRUPO_A1_G7282_2026_",
+    "label": "LIGA UEMC JUNIOR MASCULINO · 1ª FASE - LIGA REGULAR LUEMC MASC GRUPO A1",
+    "competition": "LIGA UEMC JUNIOR MASCULINO",
+    "group": "1ª FASE - LIGA REGULAR LUEMC MASC GRUPO A1",
+    "season": "2026",
+    "level": null,
+    "gender": "M",
+    "league": "FBCYL"
+   }
+  },
+  {
+   "collection": "FBCYL_1ª_FASE_-_LIGA_REGULAR_LUEMC_MASC-GRUPO_A2_G7283_2026_",
+   "round": 6,
+   "file": "rounds/FBCYL_1_FASE_LIGA_REGULAR_LUEMC_MASC_GRUPO_A2_G7283_2026__r6.bpkgz",
+   "sha256": "bd7489ddab8b27ac472681547bc4334d819082f49651d42e8e92d6d6708baf2f",
+   "bytes": 138198,
+   "club": false,
+   "matches": [
+    {
+     "code": "fbcyl-150801",
+     "start": "2026-11-21T18:00",
+     "home": {
+      "id": "40040",
+      "name": "CB TIZONA JUNIOR A"
+     },
+     "away": {
+      "id": "40115",
+      "name": "CAJA RURAL RDL"
+     },
+     "own_id": "40040",
+     "is_club": false,
+     "own_ids": [
+      "40040",
+      "40115"
+     ]
+    },
+    {
+     "code": "fbcyl-150800",
+     "start": "2026-11-21T20:00",
+     "home": {
+      "id": "39656",
+      "name": "JUVENTUD IMESA"
+     },
+     "away": {
+      "id": "39751",
+      "name": "SAN AGUSTÍN TRANSPORTES CUÉLLAR"
+     },
+     "own_id": "39656",
+     "is_club": false,
+     "own_ids": [
+      "39656",
+      "39751"
+     ]
+    },
+    {
+     "code": "fbcyl-150799",
+     "start": "2026-11-22T10:00",
+     "home": {
+      "id": "39640",
+      "name": "FILIPENSES"
+     },
+     "away": {
+      "id": "39569",
+      "name": "PHONE REPAIR CB ZAMORA A"
+     },
+     "own_id": "39640",
+     "is_club": false,
+     "own_ids": [
+      "39640",
+      "39569"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "TSnolPuzwa1iwzg8",
+     "key": "daK4Jx2k1CYLLRLUUc60HSSXkqxBgoj3kXIxQXw0ebMYiO21hR/bNYRlIfA2cUnV"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "97gt+6/jBG5Qh1vF",
+     "key": "ZF0gqI3PHBZ+RVr9f/0ZqtfRpemRzis2x7XyP5w2R4U9vfrHBPoZndkdOqiMK04d"
+    },
+    {
+     "scope": "competicion:FBCYL_1ª_FASE_-_LIGA_REGULAR_LUEMC_MASC-GRUPO_A2_G7283_2026_",
+     "iv": "RusAD1NHSSGNNHEy",
+     "key": "H6Q9DpoPnrRGAXwm/mcmDpQzqjMWRbCJKN7Bvsd3fo7l6+0zLEkKtWq/ZaZ2arLr"
+    }
+   ],
+   "competition": {
+    "key": "FBCYL_1ª_FASE_-_LIGA_REGULAR_LUEMC_MASC-GRUPO_A2_G7283_2026_",
+    "label": "LIGA UEMC JUNIOR MASCULINO · 1ª FASE - LIGA REGULAR LUEMC MASC GRUPO A2",
+    "competition": "LIGA UEMC JUNIOR MASCULINO",
+    "group": "1ª FASE - LIGA REGULAR LUEMC MASC GRUPO A2",
+    "season": "2026",
+    "level": null,
+    "gender": "M",
+    "league": "FBCYL"
+   }
+  },
+  {
+   "collection": "FBCYL_1ª_FASE_-_LIGA_REGULAR_UEMC_FEM-GRUPO_A1_G7292_2026_",
+   "round": 7,
+   "file": "rounds/FBCYL_1_FASE_LIGA_REGULAR_UEMC_FEM_GRUPO_A1_G7292_2026__r7.bpkgz",
+   "sha256": "dac822477d26f81b51a7871cfd1a8c2169a2012042ee66520bcb638fa2d2fef2",
+   "bytes": 166446,
+   "club": false,
+   "matches": [
+    {
+     "code": "fbcyl-148918",
+     "start": "2026-11-21T20:00",
+     "home": {
+      "id": "40061",
+      "name": "C.B. VILLAMURIEL"
+     },
+     "away": {
+      "id": "39554",
+      "name": "OYRSA MEINS AVENIDA"
+     },
+     "own_id": "40061",
+     "is_club": false,
+     "own_ids": [
+      "40061",
+      "39554"
+     ]
+    },
+    {
+     "code": "fbcyl-148917",
+     "start": "2026-11-22T09:30",
+     "home": {
+      "id": "40084",
+      "name": "SOMOS HIJOLUSA"
+     },
+     "away": {
+      "id": "40099",
+      "name": "PONCE PUCELA BASKET A"
+     },
+     "own_id": "40084",
+     "is_club": false,
+     "own_ids": [
+      "40084",
+      "40099"
+     ]
+    },
+    {
+     "code": "fbcyl-148916",
+     "start": "2026-11-22T12:30",
+     "home": {
+      "id": "40068",
+      "name": "SAN ISIDRO PUCELA BASKET B"
+     },
+     "away": {
+      "id": "39603",
+      "name": "PEYALFE B.F.LEÓN"
+     },
+     "own_id": "40068",
+     "is_club": false,
+     "own_ids": [
+      "40068",
+      "39603"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "+PMWFZ+lRefFnSY+",
+     "key": "gLaBvgfq8G4kwOZk/c3NeHRQZoDtBM2vwdIgyRLuY7uv01TF49IetDeidDFPDx5q"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "Sy76jUNikKu+Ucuk",
+     "key": "opLtwAriudJBe3fHb7TPWCATy5z30/urxc0aiNM7K+MiZ7mA9mwdyacEz7AGwtbP"
+    },
+    {
+     "scope": "competicion:FBCYL_1ª_FASE_-_LIGA_REGULAR_UEMC_FEM-GRUPO_A1_G7292_2026_",
+     "iv": "8TdRlR1XocDgxGV3",
+     "key": "WjxFTIzElaCitEfhBFrhcVPtmWN29b1Hx50lyoYq4JkC95FEbBXNNj5p8ZO/mtek"
+    }
+   ],
+   "competition": {
+    "key": "FBCYL_1ª_FASE_-_LIGA_REGULAR_UEMC_FEM-GRUPO_A1_G7292_2026_",
+    "label": "LIGA UEMC JUNIOR FEMENINO · 1ª FASE - LIGA REGULAR UEMC FEM GRUPO A1",
+    "competition": "LIGA UEMC JUNIOR FEMENINO",
+    "group": "1ª FASE - LIGA REGULAR UEMC FEM GRUPO A1",
+    "season": "2026",
+    "level": null,
+    "gender": "F",
+    "league": "FBCYL"
+   }
+  },
+  {
+   "collection": "FBCYL_1ª_FASE_-_LIGA_REGULAR_UEMC_FEM-GRUPO_A2_G7293_2026_",
+   "round": 6,
+   "file": "rounds/FBCYL_1_FASE_LIGA_REGULAR_UEMC_FEM_GRUPO_A2_G7293_2026__r6.bpkgz",
+   "sha256": "220ae0e81126dccb9457b8f315090c6ef860996713c45f2dce7a98cd0ac74749",
+   "bytes": 134314,
+   "club": false,
+   "matches": [
+    {
+     "code": "fbcyl-150889",
+     "start": "2026-11-22T10:30",
+     "home": {
+      "id": "39622",
+      "name": "CD BASE DIBAQ"
+     },
+     "away": {
+      "id": "39724",
+      "name": "PREVENNOVA BFB"
+     },
+     "own_id": "39622",
+     "is_club": false,
+     "own_ids": [
+      "39622",
+      "39724"
+     ]
+    },
+    {
+     "code": "fbcyl-150890",
+     "start": "2026-11-22T12:00",
+     "home": {
+      "id": "39676",
+      "name": "GABURPAL BABIECA"
+     },
+     "away": {
+      "id": "39577",
+      "name": "ARELSA-CABRERIZOS"
+     },
+     "own_id": "39676",
+     "is_club": false,
+     "own_ids": [
+      "39676",
+      "39577"
+     ]
+    },
+    {
+     "code": "fbcyl-150891",
+     "start": "2026-11-22T18:30",
+     "home": {
+      "id": "39977",
+      "name": "LAS CAVAS DEL CHAMPÁN CBSM"
+     },
+     "away": {
+      "id": "39756",
+      "name": "SAN AGUSTÍN SAMARCA"
+     },
+     "own_id": "39977",
+     "is_club": false,
+     "own_ids": [
+      "39977",
+      "39756"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "hp52qPkq1IOaKaPQ",
+     "key": "FySSuhJZFnEIxgeQ6KyvTuBEjl6PWpZgyhQZaSXGnAIEaPjdOyO4PqG18qyqTfPF"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "KOD2UmUnHV+you3x",
+     "key": "iwInpNMy1ym/QpMJfKJMw2BWkzUdKx+5uIwqP4J2syp56HtG3TSQKLmDCeggxBnm"
+    },
+    {
+     "scope": "competicion:FBCYL_1ª_FASE_-_LIGA_REGULAR_UEMC_FEM-GRUPO_A2_G7293_2026_",
+     "iv": "M26k5bzIvHV7OU/N",
+     "key": "WQAMSriPsO2gwnJ7elkIAvX2RKuzHsH+//scFVmdMU5X0mE030QY8+Fdl5QBtNIH"
+    }
+   ],
+   "competition": {
+    "key": "FBCYL_1ª_FASE_-_LIGA_REGULAR_UEMC_FEM-GRUPO_A2_G7293_2026_",
+    "label": "LIGA UEMC JUNIOR FEMENINO · 1ª FASE - LIGA REGULAR UEMC FEM GRUPO A2",
+    "competition": "LIGA UEMC JUNIOR FEMENINO",
+    "group": "1ª FASE - LIGA REGULAR UEMC FEM GRUPO A2",
+    "season": "2026",
+    "level": null,
+    "gender": "F",
+    "league": "FBCYL"
+   }
+  },
+  {
+   "collection": "FBCYL_1ª_FASE_1ª_DIV_MASCULINA-GRUPO_A_G7279_2026_",
+   "round": 7,
+   "file": "rounds/FBCYL_1_FASE_1_DIV_MASCULINA_GRUPO_A_G7279_2026__r7.bpkgz",
+   "sha256": "3fc44b3b5dd69842968714c69318ad691c8b7893dd46b923a72e037507eca757",
+   "bytes": 216006,
+   "club": false,
+   "matches": [
+    {
+     "code": "fbcyl-148559",
+     "start": "2026-11-21T20:00",
+     "home": {
+      "id": "39910",
+      "name": "CSB DÉCIMAS"
+     },
+     "away": {
+      "id": "39703",
+      "name": "LEKUS Baloncesto Venta de Baños"
+     },
+     "own_id": "39910",
+     "is_club": false,
+     "own_ids": [
+      "39910",
+      "39703"
+     ]
+    },
+    {
+     "code": "fbcyl-148557",
+     "start": "2026-11-22T12:30",
+     "home": {
+      "id": "39637",
+      "name": "GRUPO INMAPA FILIPENSES"
+     },
+     "away": {
+      "id": "39716",
+      "name": "PALENCIA BALONCESTO"
+     },
+     "own_id": "39637",
+     "is_club": false,
+     "own_ids": [
+      "39637",
+      "39716"
+     ]
+    },
+    {
+     "code": "fbcyl-148556",
+     "start": "2026-11-22T18:30",
+     "home": {
+      "id": "39693",
+      "name": "ELDANA CLUB BALONCESTO"
+     },
+     "away": {
+      "id": "40120",
+      "name": "UBU CBTIZONA"
+     },
+     "own_id": "39693",
+     "is_club": false,
+     "own_ids": [
+      "39693",
+      "40120"
+     ]
+    },
+    {
+     "code": "fbcyl-148558",
+     "start": "2026-11-22T18:30",
+     "home": {
+      "id": "39614",
+      "name": "CB PALENCIA  ON LINE"
+     },
+     "away": {
+      "id": "40109",
+      "name": "VILLACELAMA CAJA RURAL RDL"
+     },
+     "own_id": "39614",
+     "is_club": false,
+     "own_ids": [
+      "39614",
+      "40109"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "LPWQfoBuiFHTjQ+u",
+     "key": "BLJLL5Au+lG/z6gp/BMQRHxelp7OFa/CSvb4phVXq95ndeeAf6lUyA99Y9cI4EJp"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "thl0op6PpXz5ED3p",
+     "key": "OaoQ/ZTSAYigV1QRT7h3Q8MnvBXpuuqaKvBSLip1sAQXhiD4Z18kAtEHEa/Iyg/2"
+    },
+    {
+     "scope": "competicion:FBCYL_1ª_FASE_1ª_DIV_MASCULINA-GRUPO_A_G7279_2026_",
+     "iv": "/89Qqn487e3YBoPX",
+     "key": "nrQh/d7Lb7udxtuzD5rfd43AihotPYG5mHPfJGZaCGAcrV/1k/+5kTJ0BSUrWYpW"
+    }
+   ],
+   "competition": {
+    "key": "FBCYL_1ª_FASE_1ª_DIV_MASCULINA-GRUPO_A_G7279_2026_",
+    "label": "1ª DIVISION MASCULINA · 1ª FASE. 1ª DIV. MASCULINA GRUPO A",
+    "competition": "1ª DIVISION MASCULINA",
+    "group": "1ª FASE. 1ª DIV. MASCULINA GRUPO A",
+    "season": "2026",
+    "level": null,
+    "gender": "M",
+    "league": "FBCYL"
+   }
+  },
+  {
+   "collection": "FBCYL_1ª_FASE_1ª_DIV_MASCULINA-GRUPO_B_G7280_2026_",
+   "round": 7,
+   "file": "rounds/FBCYL_1_FASE_1_DIV_MASCULINA_GRUPO_B_G7280_2026__r7.bpkgz",
+   "sha256": "e833f798b7be56069af39d922dc9bbf71b0bd529f1e26ee087688d38d3e03c82",
+   "bytes": 216506,
+   "club": false,
+   "matches": [
+    {
+     "code": "fbcyl-148612",
+     "start": "2026-11-21T18:30",
+     "home": {
+      "id": "39568",
+      "name": "CB ZAMORA"
+     },
+     "away": {
+      "id": "40077",
+      "name": "CRZA CBC BOECILLO"
+     },
+     "own_id": "39568",
+     "is_club": false,
+     "own_ids": [
+      "39568",
+      "40077"
+     ]
+    },
+    {
+     "code": "fbcyl-148614",
+     "start": "2026-11-21T18:30",
+     "home": {
+      "id": "40051",
+      "name": "TEBRIO CABRERIZOS"
+     },
+     "away": {
+      "id": "40064",
+      "name": "C.D. UNIVERSIDAD DE VALLADOLID"
+     },
+     "own_id": "40051",
+     "is_club": false,
+     "own_ids": [
+      "40051",
+      "40064"
+     ]
+    },
+    {
+     "code": "fbcyl-148613",
+     "start": "2026-11-21T20:15",
+     "home": {
+      "id": "39666",
+      "name": "BALONCESTO LA FLECHA"
+     },
+     "away": {
+      "id": "39705",
+      "name": "CDF UPSA"
+     },
+     "own_id": "39666",
+     "is_club": false,
+     "own_ids": [
+      "39666",
+      "39705"
+     ]
+    },
+    {
+     "code": "fbcyl-153562",
+     "start": "2026-11-22T18:30",
+     "home": {
+      "id": "39615",
+      "name": "DIBAQ CD BASE"
+     },
+     "away": {
+      "id": "39627",
+      "name": "AGROCESA C.B. ALDEAMAYOR"
+     },
+     "own_id": "39615",
+     "is_club": false,
+     "own_ids": [
+      "39615",
+      "39627"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "vvdEdBAl3j8m3/qo",
+     "key": "kdaVrVNvlydCuJLyRUq0bcKDeQUuMPhNhQWjuawatWHckRxskardFTY3aPl5YZbD"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "RWRVxwq8G7fHPkTm",
+     "key": "zUVGQSr3rpteqlwMVRsXn7/+ykCuXhkoyiIwwlAGjlV6bwHdw5Q8rV5cZcs89l+w"
+    },
+    {
+     "scope": "competicion:FBCYL_1ª_FASE_1ª_DIV_MASCULINA-GRUPO_B_G7280_2026_",
+     "iv": "ua3O6JxWebYu7XR/",
+     "key": "siwRwq6Ikaby9hiEih0/L5xxKmZXiOo3E7vxugqYkpW3mRKVILXEd8TUJ84bO5sS"
+    }
+   ],
+   "competition": {
+    "key": "FBCYL_1ª_FASE_1ª_DIV_MASCULINA-GRUPO_B_G7280_2026_",
+    "label": "1ª DIVISION MASCULINA · 1ª FASE. 1ª DIV. MASCULINA GRUPO B",
+    "competition": "1ª DIVISION MASCULINA",
+    "group": "1ª FASE. 1ª DIV. MASCULINA GRUPO B",
+    "season": "2026",
+    "level": null,
+    "gender": "M",
+    "league": "FBCYL"
+   }
+  },
+  {
+   "collection": "FBCYL_FASE_1_-_CLASIFICACION_-_MINIBASKET_MASCULINO-GRUPO_A_G7275_2026_",
+   "round": 6,
+   "file": "rounds/FBCYL_FASE_1_CLASIFICACION_MINIBASKET_MASCULINO_GRUPO_A_G7275_2026__r6.bpkgz",
+   "sha256": "d9900348dd3733c968c3e9d9ba736c57f4442ad6971633402ee346506a556476",
+   "bytes": 30366,
+   "club": false,
+   "matches": [
+    {
+     "code": "fbcyl-153245",
+     "start": "2026-11-22T12:30",
+     "home": {
+      "id": "39580",
+      "name": "TU VISION OPTICA SDP"
+     },
+     "away": {
+      "id": "39748",
+      "name": "LOS ADILES"
+     },
+     "own_id": "39580",
+     "is_club": false,
+     "own_ids": [
+      "39580",
+      "39748"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "kG0MgLBfljJi8rYQ",
+     "key": "Nf2+FUewQaBsDnelvpZqNpj9tpwrbgt995KIZ3P5YpaoB9E0ueY1tS6YOvlj4z6u"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "IrG4hH/FpilCE0lM",
+     "key": "blpjlpz+/2cHJPEE1a4Ma5YExA3S1l3lhpVCt1rGp9UypI+RmM+DM/JRzwbMHzMX"
+    },
+    {
+     "scope": "competicion:FBCYL_FASE_1_-_CLASIFICACION_-_MINIBASKET_MASCULINO-GRUPO_A_G7275_2026_",
+     "iv": "I0qPlTcs6PIFa0Cv",
+     "key": "c1eFLm8YjHr2OPuxzB17Nx6MaJlhpxyylifjElDaO5Q82Ku2Jt3UZFrRwQe/26Vs"
+    }
+   ],
+   "competition": {
+    "key": "FBCYL_FASE_1_-_CLASIFICACION_-_MINIBASKET_MASCULINO-GRUPO_A_G7275_2026_",
+    "label": "MINIBASKET MASCULINO AUTONOMICO · FASE 1 - CLASIFICACION - MINIBASKET MASCULINO GRUPO A",
+    "competition": "MINIBASKET MASCULINO AUTONOMICO",
+    "group": "FASE 1 - CLASIFICACION - MINIBASKET MASCULINO GRUPO A",
+    "season": "2026",
+    "level": null,
+    "gender": "M",
+    "league": "FBCYL"
+   }
+  },
+  {
+   "collection": "FBCYL_FASE_1_-_CLASIFICACION_-_MINIBASKET_MASCULINO-GRUPO_B_G7276_2026_",
+   "round": 6,
+   "file": "rounds/FBCYL_FASE_1_CLASIFICACION_MINIBASKET_MASCULINO_GRUPO_B_G7276_2026__r6.bpkgz",
+   "sha256": "96adeec283585a6c8a0f98f4a065d408414198efd4d98f73d6e522fa56342fd8",
+   "bytes": 18806,
+   "club": false,
+   "matches": [
+    {
+     "code": "fbcyl-150080",
+     "start": "2026-11-22T17:30",
+     "home": {
+      "id": "39600",
+      "name": "SPB MINI M."
+     },
+     "away": {
+      "id": "39908",
+      "name": "CSB NOVATION"
+     },
+     "own_id": "39600",
+     "is_club": false,
+     "own_ids": [
+      "39600",
+      "39908"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "5/hEcKK/ePju9DEt",
+     "key": "yDhN8ZhT7S/tlRA9w13OtVVeHuxYECO3Uzsl1Y2W4ADpd6A+MC+ECr0AXuKjmUUN"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "830ct0odNcliAeI+",
+     "key": "o7FsUcVYT+oGe+O6M3ZNLNH2gyZoMj2GE2TU0QsF1sgs6tGGV5Jfcv2XNBFVFNKe"
+    },
+    {
+     "scope": "competicion:FBCYL_FASE_1_-_CLASIFICACION_-_MINIBASKET_MASCULINO-GRUPO_B_G7276_2026_",
+     "iv": "I20xa+ty8pL7IBrW",
+     "key": "iaE55L42rCO/UeVy2eJDhmPpuukCupDbUlLUv8+9+KFCTT3qRQ2NSJASXSD3Lopw"
+    }
+   ],
+   "competition": {
+    "key": "FBCYL_FASE_1_-_CLASIFICACION_-_MINIBASKET_MASCULINO-GRUPO_B_G7276_2026_",
+    "label": "MINIBASKET MASCULINO AUTONOMICO · FASE 1 - CLASIFICACION - MINIBASKET MASCULINO GRUPO B",
+    "competition": "MINIBASKET MASCULINO AUTONOMICO",
+    "group": "FASE 1 - CLASIFICACION - MINIBASKET MASCULINO GRUPO B",
+    "season": "2026",
+    "level": null,
+    "gender": "M",
+    "league": "FBCYL"
+   }
+  },
+  {
+   "collection": "FBCYL_FASE_1_-_CLASIFICACION_-_MINIBASKET_MASCULINO-GRUPO_C_G7277_2026_",
+   "round": 4,
+   "file": "rounds/FBCYL_FASE_1_CLASIFICACION_MINIBASKET_MASCULINO_GRUPO_C_G7277_2026__r4.bpkgz",
+   "sha256": "e78d1637dca63890f07c7d7bd92af4bb56e29f9df10a312601c7be113491e009",
+   "bytes": 51714,
+   "club": false,
+   "matches": [
+    {
+     "code": "fbcyl-153286",
+     "start": "2026-11-21T18:20",
+     "home": {
+      "id": "39737",
+      "name": "LA SALLE VALLADOLID"
+     },
+     "away": {
+      "id": "39745",
+      "name": "CAVIDEL CBC VALLADOLID"
+     },
+     "own_id": "39737",
+     "is_club": false,
+     "own_ids": [
+      "39737",
+      "39745"
+     ]
+    },
+    {
+     "code": "fbcyl-153289",
+     "start": "2026-11-22T16:00",
+     "home": {
+      "id": "39715",
+      "name": "ADARSA MARISTAS 16"
+     },
+     "away": {
+      "id": "39665",
+      "name": "BALONCESTO LA FLECHA"
+     },
+     "own_id": "39715",
+     "is_club": false,
+     "own_ids": [
+      "39715",
+      "39665"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "TkqfAtUXiHKZo+/j",
+     "key": "ddK2h4FjP8XCwMp2grLTkB7qoY9JkmhnAvVyEwkce1xaUfLT3sxmd1eSPoWTil+A"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "xw5mca+vDxBp1Q2I",
+     "key": "v/wI5qpDyqbcUCQIU++wdMGVwaKBv/DpivuHTYqtmNaZ7kU/Yn24HfZ8jJDVr7uC"
+    },
+    {
+     "scope": "competicion:FBCYL_FASE_1_-_CLASIFICACION_-_MINIBASKET_MASCULINO-GRUPO_C_G7277_2026_",
+     "iv": "wwES8R9So8KPyufN",
+     "key": "/Dwl++PUNbTU2NMG5sF0Ve+1VimDixZQY2ZcGEDDVJtVDKUDATu7V2GPQ/iPicRP"
+    }
+   ],
+   "competition": {
+    "key": "FBCYL_FASE_1_-_CLASIFICACION_-_MINIBASKET_MASCULINO-GRUPO_C_G7277_2026_",
+    "label": "MINIBASKET MASCULINO AUTONOMICO · FASE 1 - CLASIFICACION - MINIBASKET MASCULINO GRUPO C",
+    "competition": "MINIBASKET MASCULINO AUTONOMICO",
+    "group": "FASE 1 - CLASIFICACION - MINIBASKET MASCULINO GRUPO C",
+    "season": "2026",
+    "level": null,
+    "gender": "M",
+    "league": "FBCYL"
+   }
+  },
+  {
+   "collection": "FBCYL_FASE_1_-_CLASIFICACION_-_MINIBASKET_MASCULINO-GRUPO_D_G7278_2026_",
+   "round": 2,
+   "file": "rounds/FBCYL_FASE_1_CLASIFICACION_MINIBASKET_MASCULINO_GRUPO_D_G7278_2026__r2.bpkgz",
+   "sha256": "503e9ef4e13db463277815bbdb3732f9aaf235cbfd8a0d19ce1c67baf3a71426",
+   "bytes": 8542,
+   "club": false,
+   "matches": [
+    {
+     "code": "fbcyl-148519",
+     "start": "2026-11-22T10:30",
+     "home": {
+      "id": "39633",
+      "name": "LOFRISA CB ZAMORA 2015"
+     },
+     "away": {
+      "id": "39567",
+      "name": "CAJA RURAL MEINS AVENIDA"
+     },
+     "own_id": "39633",
+     "is_club": false,
+     "own_ids": [
+      "39633",
+      "39567"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "41FJYfecfx6UWG25",
+     "key": "0/eDfP1s5Ly0J9doONs69aOfInmT9SCWPm5NBbuaHwXOYyJuWwQjdAtcFFuso7GO"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "FtKZXgNM3/INj2pp",
+     "key": "LVZlo+NkGLmtSAmo81kcoz1NraW+mdLNVnwZVIkHD/vibDFWoLtqM+t975UolAYs"
+    },
+    {
+     "scope": "competicion:FBCYL_FASE_1_-_CLASIFICACION_-_MINIBASKET_MASCULINO-GRUPO_D_G7278_2026_",
+     "iv": "nEdVFsibGuxvp0Nu",
+     "key": "xalFo4AxAULAGs0e8B5lS6+lUMN+njWF+mBgY7L3xKyt3UpSUzTtGIdv1w1CGgAP"
+    }
+   ],
+   "competition": {
+    "key": "FBCYL_FASE_1_-_CLASIFICACION_-_MINIBASKET_MASCULINO-GRUPO_D_G7278_2026_",
+    "label": "MINIBASKET MASCULINO AUTONOMICO · FASE 1 - CLASIFICACION - MINIBASKET MASCULINO GRUPO D",
+    "competition": "MINIBASKET MASCULINO AUTONOMICO",
+    "group": "FASE 1 - CLASIFICACION - MINIBASKET MASCULINO GRUPO D",
+    "season": "2026",
+    "level": null,
+    "gender": "M",
+    "league": "FBCYL"
+   }
+  },
+  {
+   "collection": "FBCYL_FASE_1_CLASIFICACION_MINI_FEM-GRUPO_A_G7271_2026_",
+   "round": 6,
+   "file": "rounds/FBCYL_FASE_1_CLASIFICACION_MINI_FEM_GRUPO_A_G7271_2026__r6.bpkgz",
+   "sha256": "19ca1bdac9b930a7755ece057dd3abf939e139e9ae503e75ab512981962d5986",
+   "bytes": 35442,
+   "club": false,
+   "matches": [
+    {
+     "code": "fbcyl-153264",
+     "start": "2026-11-22T12:30",
+     "home": {
+      "id": "40095",
+      "name": "SOMOS HIJOLUSA"
+     },
+     "away": {
+      "id": "39646",
+      "name": "CONSTRUCCIONES LOS OBELISCOS 6,25"
+     },
+     "own_id": "40095",
+     "is_club": false,
+     "own_ids": [
+      "40095",
+      "39646"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "/l1eJC7wCj1x1LID",
+     "key": "x2hmlZgYOvVP0u4ocYygHnxF2Pwc2Keznh5oP1oKftl33h9xiJsOfavYmMEK4CED"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "niZaH9IBIp10wwQB",
+     "key": "kWkra7yWxrs2JvgWkvbkgX4soo9DeVDW6epFQFm4g8vH+aOl9MrN4V9Hi6L7e2Ox"
+    },
+    {
+     "scope": "competicion:FBCYL_FASE_1_CLASIFICACION_MINI_FEM-GRUPO_A_G7271_2026_",
+     "iv": "9P3+YYnPaXces2Iw",
+     "key": "cPo5WwAaPlsXDKgzWrZqMuNPcfel/3Pi/s61IxA4JfynHBOe4RP157xHZ56Zrxgr"
+    }
+   ],
+   "competition": {
+    "key": "FBCYL_FASE_1_CLASIFICACION_MINI_FEM-GRUPO_A_G7271_2026_",
+    "label": "MINIBASKET FEMENINO AUTONOMICO · FASE 1. CLASIFICACION MINI FEM GRUPO A",
+    "competition": "MINIBASKET FEMENINO AUTONOMICO",
+    "group": "FASE 1. CLASIFICACION MINI FEM GRUPO A",
+    "season": "2026",
+    "level": null,
+    "gender": "F",
+    "league": "FBCYL"
+   }
+  },
+  {
+   "collection": "FBCYL_FASE_1_CLASIFICACION_MINI_FEM-GRUPO_B_G7272_2026_",
+   "round": 4,
+   "file": "rounds/FBCYL_FASE_1_CLASIFICACION_MINI_FEM_GRUPO_B_G7272_2026__r4.bpkgz",
+   "sha256": "f2c02e7aa5eb07b4fd6803ef8c7d6b00f70c84e1e85d548aec96a7ec6debc34c",
+   "bytes": 50222,
+   "club": false,
+   "matches": [
+    {
+     "code": "fbcyl-152408",
+     "start": "2026-11-22T16:00",
+     "home": {
+      "id": "40050",
+      "name": "TIZONA FEMENINO MINI AUTONÓMICO"
+     },
+     "away": {
+      "id": "39909",
+      "name": "CSB RED DE CALOR"
+     },
+     "own_id": "40050",
+     "is_club": false,
+     "own_ids": [
+      "40050",
+      "39909"
+     ]
+    },
+    {
+     "code": "fbcyl-152409",
+     "start": "2026-11-22T16:00",
+     "home": {
+      "id": "39681",
+      "name": "ZHANDY BABIECA 'A'"
+     },
+     "away": {
+      "id": "39601",
+      "name": "SPB - MINI F."
+     },
+     "own_id": "39681",
+     "is_club": false,
+     "own_ids": [
+      "39681",
+      "39601"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "j7niOzZGkIDrq2wx",
+     "key": "vVp4/AW1bQas9uLw3VOdxOqWFIrJBv+d8pCyv6SGy4rzR8rDhEczvzdvtOkWdXzF"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "tNezQeLDsm6HThpW",
+     "key": "zx0nJgaOiHxLxrDZ5W/+lZxggFAo8b3bgdXnL3oQDRFKcfARBj6dmZsadl8A6kMo"
+    },
+    {
+     "scope": "competicion:FBCYL_FASE_1_CLASIFICACION_MINI_FEM-GRUPO_B_G7272_2026_",
+     "iv": "Nh5DsiQhIe+JwG0Q",
+     "key": "v+4uEsFx3Bllr44WNm83BsVZk5I38ISTsJNXLThx0KE/Yawc5Rr88ivgRd90/9Y/"
+    }
+   ],
+   "competition": {
+    "key": "FBCYL_FASE_1_CLASIFICACION_MINI_FEM-GRUPO_B_G7272_2026_",
+    "label": "MINIBASKET FEMENINO AUTONOMICO · FASE 1. CLASIFICACION MINI FEM GRUPO B",
+    "competition": "MINIBASKET FEMENINO AUTONOMICO",
+    "group": "FASE 1. CLASIFICACION MINI FEM GRUPO B",
+    "season": "2026",
+    "level": null,
+    "gender": "F",
+    "league": "FBCYL"
+   }
+  },
+  {
+   "collection": "FBCYL_FASE_1_CLASIFICACION_MINI_FEM-GRUPO_C_G7273_2026_",
+   "round": 1,
+   "file": "rounds/FBCYL_FASE_1_CLASIFICACION_MINI_FEM_GRUPO_C_G7273_2026__r1.bpkgz",
+   "sha256": "45e34f577dd735b9aae4a7647c880ac52c62953f059ebe8ce4ec3554dc1db828",
+   "bytes": 21430,
+   "club": false,
+   "matches": [
+    {
+     "code": "fbcyl-149915",
+     "start": "2026-11-22T16:00",
+     "home": {
+      "id": "40066",
+      "name": "QUESOS LA VEGA C.B. VILLAMURIEL"
+     },
+     "away": {
+      "id": "39721",
+      "name": "ADARSA MARISTAS 15"
+     },
+     "own_id": "40066",
+     "is_club": false,
+     "own_ids": [
+      "40066",
+      "39721"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "gaJIpVy4dZRgGfjo",
+     "key": "n9EAph91zG0Lira2uVqHDDLpbERVzCC5NrYyTiIoEYkQGvyfB+fUZ+LmVELEA8A1"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "h10ACkChmZypwL1i",
+     "key": "UsOQ0sGYx6ZhBCjl5AcKeCVZYEDCQGA1t8XjOOfV6VKiFwnV1M1krteK+ISvebuA"
+    },
+    {
+     "scope": "competicion:FBCYL_FASE_1_CLASIFICACION_MINI_FEM-GRUPO_C_G7273_2026_",
+     "iv": "PBPIghhe307/B7qn",
+     "key": "gS87+wMpqQWDi3Kaiujwn1peS+kIDcO6fHwHh4bKu+6NxqSHcvrzDQpEKAfRfSSd"
+    }
+   ],
+   "competition": {
+    "key": "FBCYL_FASE_1_CLASIFICACION_MINI_FEM-GRUPO_C_G7273_2026_",
+    "label": "MINIBASKET FEMENINO AUTONOMICO · FASE 1. CLASIFICACION MINI FEM GRUPO C",
+    "competition": "MINIBASKET FEMENINO AUTONOMICO",
+    "group": "FASE 1. CLASIFICACION MINI FEM GRUPO C",
+    "season": "2026",
+    "level": null,
+    "gender": "F",
+    "league": "FBCYL"
+   }
+  },
+  {
+   "collection": "FBCYL_FASE_1_CLASIFICACION_MINI_FEM-GRUPO_D_G7274_2026_",
+   "round": 4,
+   "file": "rounds/FBCYL_FASE_1_CLASIFICACION_MINI_FEM_GRUPO_D_G7274_2026__r4.bpkgz",
+   "sha256": "22023de19258359ec478886fb8eaf6875779ccfd596b3e2cca2c7131ff36e61e",
+   "bytes": 36390,
+   "club": false,
+   "matches": [
+    {
+     "code": "fbcyl-148505",
+     "start": "2026-11-29T10:00",
+     "home": {
+      "id": "39698",
+      "name": "CAJA RURAL DE ZAMORA - CORAZÓN DE JESÚS C.D. ZAMARAT"
+     },
+     "away": {
+      "id": "39626",
+      "name": "CD BASE PALAZUELOS"
+     },
+     "own_id": "39698",
+     "is_club": false,
+     "own_ids": [
+      "39698",
+      "39626"
+     ]
+    },
+    {
+     "code": "fbcyl-148506",
+     "start": "2026-11-29T18:00",
+     "home": {
+      "id": "39749",
+      "name": "CLÍNICA PULSO CB CARBAJOSA CARBASKET"
+     },
+     "away": {
+      "id": "39978",
+      "name": "MAIL BOXES ETC. CBSM"
+     },
+     "own_id": "39749",
+     "is_club": false,
+     "own_ids": [
+      "39749",
+      "39978"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "21Ue0mVIHinlfODr",
+     "key": "eNf+Nganhut2Nwyrmj7TIw/PUx6OPZwR3KhQWdGsKzt77XHkuhzPk7Kw2CL9NMPs"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "Q7hkfZEoLoz4yDka",
+     "key": "pgPhnCoj3gOXlSKOLboLTm45eMHhQHK0tINnxa+1GSXP2XBQSl/Fx3qbh6jIocri"
+    },
+    {
+     "scope": "competicion:FBCYL_FASE_1_CLASIFICACION_MINI_FEM-GRUPO_D_G7274_2026_",
+     "iv": "IeqR0ucaaknq2l+h",
+     "key": "nriq9gWSJUdKiqHC6ySAD9KyP+qVGcIdNztmA9hkOJpPjr5tLQBLQx8+EW/uxIb9"
+    }
+   ],
+   "competition": {
+    "key": "FBCYL_FASE_1_CLASIFICACION_MINI_FEM-GRUPO_D_G7274_2026_",
+    "label": "MINIBASKET FEMENINO AUTONOMICO · FASE 1. CLASIFICACION MINI FEM GRUPO D",
+    "competition": "MINIBASKET FEMENINO AUTONOMICO",
+    "group": "FASE 1. CLASIFICACION MINI FEM GRUPO D",
+    "season": "2026",
+    "level": null,
+    "gender": "F",
+    "league": "FBCYL"
+   }
+  },
+  {
+   "collection": "FBCYL_SENIOR_FBCYL_FEMENINO_-_1ª_FASE_LR-UNICO_G7424_2026_",
+   "round": 5,
+   "file": "rounds/FBCYL_SENIOR_FBCYL_FEMENINO_1_FASE_LR_UNICO_G7424_2026__r5.bpkgz",
+   "sha256": "d11f3fe68c487300b139badedcd0cf252995a5ee28923e34bfb659ecc37bf4e5",
+   "bytes": 66750,
+   "club": false,
+   "matches": [
+    {
+     "code": "fbcyl-150764",
+     "start": "2026-11-21T18:00",
+     "home": {
+      "id": "40094",
+      "name": "SOMOS HIJOLUSA"
+     },
+     "away": {
+      "id": "39651",
+      "name": "DIBAQ CD BASE"
+     },
+     "own_id": "40094",
+     "is_club": false,
+     "own_ids": [
+      "40094",
+      "39651"
+     ]
+    },
+    {
+     "code": "fbcyl-150762",
+     "start": "2026-11-22T18:00",
+     "home": {
+      "id": "40234",
+      "name": "PONCE PUCELA BASKET"
+     },
+     "away": {
+      "id": "39701",
+      "name": "C.D ZAMARAT MARTINAMOR"
+     },
+     "own_id": "40234",
+     "is_club": false,
+     "own_ids": [
+      "40234",
+      "39701"
+     ]
+    }
+   ],
+   "wraps": [
+    {
+     "scope": "abierto",
+     "iv": "Sy+G1+SScQncf8sw",
+     "key": "rB9EYT3jzFfoRui1MCxzu3VsJg6tKSn5Td4/iE078QemJ4CiCiEhHhxw2HnL2Jvl"
+    },
+    {
+     "scope": "club:1008631",
+     "iv": "mvlaKTEWffvXO7FZ",
+     "key": "teac/nvBUcLF2/5evnnNu7qNgvdbG4Uhq+a0ealJe5iTx9eHK1LHDR8tTUgGPxAV"
+    },
+    {
+     "scope": "competicion:FBCYL_SENIOR_FBCYL_FEMENINO_-_1ª_FASE_LR-UNICO_G7424_2026_",
+     "iv": "Dua3a6YTcficAeqy",
+     "key": "3fpY96QiV+z/VI+chFEbIB9HYmowIlT9UtioiiA88cTRFb/vUxCmjb2RQAN0p3JT"
+    }
+   ],
+   "competition": {
+    "key": "FBCYL_SENIOR_FBCYL_FEMENINO_-_1ª_FASE_LR-UNICO_G7424_2026_",
+    "label": "SENIOR FBCYL FEMENINO · SENIOR FBCYL FEMENINO - 1ª FASE. LR UNICO",
+    "competition": "SENIOR FBCYL FEMENINO",
+    "group": "SENIOR FBCYL FEMENINO - 1ª FASE. LR UNICO",
+    "season": "2026",
+    "level": null,
+    "gender": "F",
+    "league": "FBCYL"
+   }
+  }
+ ],
+ "club_team_id": "1008631"
+}
