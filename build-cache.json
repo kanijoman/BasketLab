@@ -1,0 +1,555 @@
+{
+ "epoch": 1,
+ "competitions": {
+  "FIBA_EuroBasket_2025_": {
+   "fingerprint": "5f8c0d8b004eb5e59f938a8415ad34c929eb777db7edb39b5a8bfbae66702fec",
+   "sections": [
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "41edcc322790814a",
+    "rotations": "76919861013e9250",
+    "matches": "12486b8af84a251d",
+    "possessions": "cb78df916f9ab8e8",
+    "possession_csv": "cb78df916f9ab8e8",
+    "lineups": "73f0f68dc6080f3a",
+    "inout": "362251a2353c6597",
+    "consistency": "09afd10bca97f4d7",
+    "rival_adjusted": "da29bbf7e4726f48",
+    "assist_connections": "ceaf17e130829468"
+   }
+  },
+  "FIBA_EuroBasket_Women_2025_": {
+   "fingerprint": "089594facb536b49f09969e779d7341b98001891d71411589d140756d8daa33a",
+   "sections": [
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "41edcc322790814a",
+    "rotations": "76919861013e9250",
+    "matches": "12486b8af84a251d",
+    "possessions": "cb78df916f9ab8e8",
+    "possession_csv": "cb78df916f9ab8e8",
+    "lineups": "73f0f68dc6080f3a",
+    "inout": "362251a2353c6597",
+    "consistency": "09afd10bca97f4d7",
+    "rival_adjusted": "da29bbf7e4726f48",
+    "assist_connections": "ceaf17e130829468"
+   }
+  },
+  "FIBA_U16_EuroBasket_2024_": {
+   "fingerprint": "4c2e94e23cb9fcbca5ed337e3308d9f84a43991981516cd7d04c505fca1d3cb4",
+   "sections": [
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "41edcc322790814a",
+    "rotations": "76919861013e9250",
+    "matches": "12486b8af84a251d",
+    "possessions": "cb78df916f9ab8e8",
+    "possession_csv": "cb78df916f9ab8e8",
+    "lineups": "73f0f68dc6080f3a",
+    "inout": "362251a2353c6597",
+    "consistency": "09afd10bca97f4d7",
+    "rival_adjusted": "da29bbf7e4726f48",
+    "assist_connections": "ceaf17e130829468"
+   }
+  },
+  "FIBA_U16_EuroBasket_2025_": {
+   "fingerprint": "924f9700653e42a539eb11bcdcc56d610c2dc0e6a44a4683426eb3fca573b4d1",
+   "sections": [
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "41edcc322790814a",
+    "rotations": "76919861013e9250",
+    "matches": "12486b8af84a251d",
+    "possessions": "cb78df916f9ab8e8",
+    "possession_csv": "cb78df916f9ab8e8",
+    "lineups": "73f0f68dc6080f3a",
+    "inout": "362251a2353c6597",
+    "consistency": "09afd10bca97f4d7",
+    "rival_adjusted": "da29bbf7e4726f48",
+    "assist_connections": "ceaf17e130829468"
+   }
+  },
+  "FIBA_U16_EuroBasket_2026_": {
+   "fingerprint": "e468dc0ad94d015978a8205080d0fe1ec44f4a022b9ad18c2dbb7474429671aa",
+   "sections": [
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "41edcc322790814a",
+    "rotations": "76919861013e9250",
+    "matches": "12486b8af84a251d",
+    "possessions": "cb78df916f9ab8e8",
+    "possession_csv": "cb78df916f9ab8e8",
+    "lineups": "73f0f68dc6080f3a",
+    "inout": "362251a2353c6597",
+    "consistency": "09afd10bca97f4d7",
+    "rival_adjusted": "da29bbf7e4726f48",
+    "assist_connections": "ceaf17e130829468"
+   }
+  },
+  "FIBA_U16_EuroBasket_Women_2024_": {
+   "fingerprint": "3a51a396168c1af7b1ff53e2e5f923b5df3c47b36d0e7b069df3b8438e984495",
+   "sections": [
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "41edcc322790814a",
+    "rotations": "76919861013e9250",
+    "matches": "12486b8af84a251d",
+    "possessions": "cb78df916f9ab8e8",
+    "possession_csv": "cb78df916f9ab8e8",
+    "lineups": "73f0f68dc6080f3a",
+    "inout": "362251a2353c6597",
+    "consistency": "09afd10bca97f4d7",
+    "rival_adjusted": "da29bbf7e4726f48",
+    "assist_connections": "ceaf17e130829468"
+   }
+  },
+  "FIBA_U16_EuroBasket_Women_2025_": {
+   "fingerprint": "9664dce858488697245b8ec83f35850b5926165287384b593b4482683fa5c278",
+   "sections": [
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "41edcc322790814a",
+    "rotations": "76919861013e9250",
+    "matches": "12486b8af84a251d",
+    "possessions": "cb78df916f9ab8e8",
+    "possession_csv": "cb78df916f9ab8e8",
+    "lineups": "73f0f68dc6080f3a",
+    "inout": "362251a2353c6597",
+    "consistency": "09afd10bca97f4d7",
+    "rival_adjusted": "da29bbf7e4726f48",
+    "assist_connections": "ceaf17e130829468"
+   }
+  },
+  "FIBA_U16_EuroBasket_Women_2026_": {
+   "fingerprint": "2a430178f8b3992d659cbc1292483dfdca45bab4d512d97568103c8cf43fe430",
+   "sections": [
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "41edcc322790814a",
+    "rotations": "76919861013e9250",
+    "matches": "12486b8af84a251d",
+    "possessions": "cb78df916f9ab8e8",
+    "possession_csv": "cb78df916f9ab8e8",
+    "lineups": "73f0f68dc6080f3a",
+    "inout": "362251a2353c6597",
+    "consistency": "09afd10bca97f4d7",
+    "rival_adjusted": "da29bbf7e4726f48",
+    "assist_connections": "ceaf17e130829468"
+   }
+  },
+  "FIBA_U18_EuroBasket_2024_": {
+   "fingerprint": "7c6ad1fabe3f6d19a1bd9962c86ba9ff28369c6272ecca8dd431ef88408c1041",
+   "sections": [
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "41edcc322790814a",
+    "rotations": "76919861013e9250",
+    "matches": "12486b8af84a251d",
+    "possessions": "cb78df916f9ab8e8",
+    "possession_csv": "cb78df916f9ab8e8",
+    "lineups": "73f0f68dc6080f3a",
+    "inout": "362251a2353c6597",
+    "consistency": "09afd10bca97f4d7",
+    "rival_adjusted": "da29bbf7e4726f48",
+    "assist_connections": "ceaf17e130829468"
+   }
+  },
+  "FIBA_U18_EuroBasket_2025_": {
+   "fingerprint": "ef250e5c80d6929720b39d5b653e3bca45606a12b247eef6042c4b5d112a35e9",
+   "sections": [
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "41edcc322790814a",
+    "rotations": "76919861013e9250",
+    "matches": "12486b8af84a251d",
+    "possessions": "cb78df916f9ab8e8",
+    "possession_csv": "cb78df916f9ab8e8",
+    "lineups": "73f0f68dc6080f3a",
+    "inout": "362251a2353c6597",
+    "consistency": "09afd10bca97f4d7",
+    "rival_adjusted": "da29bbf7e4726f48",
+    "assist_connections": "ceaf17e130829468"
+   }
+  },
+  "FIBA_U18_EuroBasket_2026_": {
+   "fingerprint": "331719a206b95d2759426ec0dba5faba3eb8083033552c8eed4ea760b296a96e",
+   "sections": [
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "41edcc322790814a",
+    "rotations": "76919861013e9250",
+    "matches": "12486b8af84a251d",
+    "possessions": "cb78df916f9ab8e8",
+    "possession_csv": "cb78df916f9ab8e8",
+    "lineups": "73f0f68dc6080f3a",
+    "inout": "362251a2353c6597",
+    "consistency": "09afd10bca97f4d7",
+    "rival_adjusted": "da29bbf7e4726f48",
+    "assist_connections": "ceaf17e130829468"
+   }
+  },
+  "FIBA_U18_EuroBasket_Women_2024_": {
+   "fingerprint": "095e3d1c2e7b25ad8045adb75caae89800e7b1a851787a45fade46cd8c7c2dc8",
+   "sections": [
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "41edcc322790814a",
+    "rotations": "76919861013e9250",
+    "matches": "12486b8af84a251d",
+    "possessions": "cb78df916f9ab8e8",
+    "possession_csv": "cb78df916f9ab8e8",
+    "lineups": "73f0f68dc6080f3a",
+    "inout": "362251a2353c6597",
+    "consistency": "09afd10bca97f4d7",
+    "rival_adjusted": "da29bbf7e4726f48",
+    "assist_connections": "ceaf17e130829468"
+   }
+  },
+  "FIBA_U18_EuroBasket_Women_2025_": {
+   "fingerprint": "3dcbe79b8978ae10c735def81f3a13a140920d58f03ca87cbaedded6d6101298",
+   "sections": [
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "41edcc322790814a",
+    "rotations": "76919861013e9250",
+    "matches": "12486b8af84a251d",
+    "possessions": "cb78df916f9ab8e8",
+    "possession_csv": "cb78df916f9ab8e8",
+    "lineups": "73f0f68dc6080f3a",
+    "inout": "362251a2353c6597",
+    "consistency": "09afd10bca97f4d7",
+    "rival_adjusted": "da29bbf7e4726f48",
+    "assist_connections": "ceaf17e130829468"
+   }
+  },
+  "FIBA_U18_EuroBasket_Women_2026_": {
+   "fingerprint": "2efedc9b149c5756fea83aeb1c692c1abac3603fe95917a7065c5cf52f51cd4a",
+   "sections": [
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "41edcc322790814a",
+    "rotations": "76919861013e9250",
+    "matches": "12486b8af84a251d",
+    "possessions": "cb78df916f9ab8e8",
+    "possession_csv": "cb78df916f9ab8e8",
+    "lineups": "73f0f68dc6080f3a",
+    "inout": "362251a2353c6597",
+    "consistency": "09afd10bca97f4d7",
+    "rival_adjusted": "da29bbf7e4726f48",
+    "assist_connections": "ceaf17e130829468"
+   }
+  },
+  "FIBA_U19_World_Cup_2025_": {
+   "fingerprint": "226a4453b7a458697fc00345263ed60263e3075caab3aa490a19673a54426acd",
+   "sections": [
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "41edcc322790814a",
+    "rotations": "76919861013e9250",
+    "matches": "12486b8af84a251d",
+    "possessions": "cb78df916f9ab8e8",
+    "possession_csv": "cb78df916f9ab8e8",
+    "lineups": "73f0f68dc6080f3a",
+    "inout": "362251a2353c6597",
+    "consistency": "09afd10bca97f4d7",
+    "rival_adjusted": "da29bbf7e4726f48",
+    "assist_connections": "ceaf17e130829468"
+   }
+  },
+  "FIBA_U19_World_Cup_Women_2025_": {
+   "fingerprint": "cb306767ce1e894233f585780d0c8db55688b50b45b8d266bd72419944211f41",
+   "sections": [
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "41edcc322790814a",
+    "rotations": "76919861013e9250",
+    "matches": "12486b8af84a251d",
+    "possessions": "cb78df916f9ab8e8",
+    "possession_csv": "cb78df916f9ab8e8",
+    "lineups": "73f0f68dc6080f3a",
+    "inout": "362251a2353c6597",
+    "consistency": "09afd10bca97f4d7",
+    "rival_adjusted": "da29bbf7e4726f48",
+    "assist_connections": "ceaf17e130829468"
+   }
+  },
+  "FIBA_U20_EuroBasket_2024_": {
+   "fingerprint": "6aabee329987616cccb0c82be5bcf07b5a81ac91987f0ad8a64b348cf00d4687",
+   "sections": [
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "41edcc322790814a",
+    "rotations": "76919861013e9250",
+    "matches": "12486b8af84a251d",
+    "possessions": "cb78df916f9ab8e8",
+    "possession_csv": "cb78df916f9ab8e8",
+    "lineups": "73f0f68dc6080f3a",
+    "inout": "362251a2353c6597",
+    "consistency": "09afd10bca97f4d7",
+    "rival_adjusted": "da29bbf7e4726f48",
+    "assist_connections": "ceaf17e130829468"
+   }
+  },
+  "FIBA_U20_EuroBasket_2025_": {
+   "fingerprint": "e77ada6ae247bade9b737b51359496db7f431da7d65b7b67fedd40c94a6216b6",
+   "sections": [
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "41edcc322790814a",
+    "rotations": "76919861013e9250",
+    "matches": "12486b8af84a251d",
+    "possessions": "cb78df916f9ab8e8",
+    "possession_csv": "cb78df916f9ab8e8",
+    "lineups": "73f0f68dc6080f3a",
+    "inout": "362251a2353c6597",
+    "consistency": "09afd10bca97f4d7",
+    "rival_adjusted": "da29bbf7e4726f48",
+    "assist_connections": "ceaf17e130829468"
+   }
+  },
+  "FIBA_U20_EuroBasket_2026_": {
+   "fingerprint": "f37cd89760a1165821a7b751f2437af2d7c074097608c200c7361153e4ee739a",
+   "sections": [
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "41edcc322790814a",
+    "rotations": "76919861013e9250",
+    "matches": "12486b8af84a251d",
+    "possessions": "cb78df916f9ab8e8",
+    "possession_csv": "cb78df916f9ab8e8",
+    "lineups": "73f0f68dc6080f3a",
+    "inout": "362251a2353c6597",
+    "consistency": "09afd10bca97f4d7",
+    "rival_adjusted": "da29bbf7e4726f48",
+    "assist_connections": "ceaf17e130829468"
+   }
+  },
+  "FIBA_U20_EuroBasket_Women_2024_": {
+   "fingerprint": "ff5179db25c7922f2802f6bc4acb980bb51bbc26f4dcec8288d92c959a3efdfb",
+   "sections": [
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "41edcc322790814a",
+    "rotations": "76919861013e9250",
+    "matches": "12486b8af84a251d",
+    "possessions": "cb78df916f9ab8e8",
+    "possession_csv": "cb78df916f9ab8e8",
+    "lineups": "73f0f68dc6080f3a",
+    "inout": "362251a2353c6597",
+    "consistency": "09afd10bca97f4d7",
+    "rival_adjusted": "da29bbf7e4726f48",
+    "assist_connections": "ceaf17e130829468"
+   }
+  },
+  "FIBA_U20_EuroBasket_Women_2025_": {
+   "fingerprint": "6a7113448fc0ec7e37a832d90065f89115bcde76babf4fd849d7578a09262cdf",
+   "sections": [
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "41edcc322790814a",
+    "rotations": "76919861013e9250",
+    "matches": "12486b8af84a251d",
+    "possessions": "cb78df916f9ab8e8",
+    "possession_csv": "cb78df916f9ab8e8",
+    "lineups": "73f0f68dc6080f3a",
+    "inout": "362251a2353c6597",
+    "consistency": "09afd10bca97f4d7",
+    "rival_adjusted": "da29bbf7e4726f48",
+    "assist_connections": "ceaf17e130829468"
+   }
+  },
+  "FIBA_U20_EuroBasket_Women_2026_": {
+   "fingerprint": "bcd13b94e9eba91e1c326633af86051852ed6e9e3379315510f45c576899ecf0",
+   "sections": [
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "41edcc322790814a",
+    "rotations": "76919861013e9250",
+    "matches": "12486b8af84a251d",
+    "possessions": "cb78df916f9ab8e8",
+    "possession_csv": "cb78df916f9ab8e8",
+    "lineups": "73f0f68dc6080f3a",
+    "inout": "362251a2353c6597",
+    "consistency": "09afd10bca97f4d7",
+    "rival_adjusted": "da29bbf7e4726f48",
+    "assist_connections": "ceaf17e130829468"
+   }
+  }
+ }
+}
