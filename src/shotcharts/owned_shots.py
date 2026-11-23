@@ -17,6 +17,7 @@ OwnedShot = Tuple[str, Optional[str], float, float, bool, str]
 def iter_owned_shots_feb(collection: Any) -> Iterator[OwnedShot]:
     for doc in collection.find({"SHOTCHART.SHOTS": {"$exists": True}}, {"SHOTCHART.SHOTS": 1, "SHOTCHART.TEAM": 1, "HEADER.TEAM": 1}):
         header = [str((t or {}).get("id", "")) for t in doc.get("HEADER", {}).get("TEAM", [])]
+        outside = {slot for slot, t in enumerate(doc.get("HEADER", {}).get("TEAM", [])) if (t or {}).get("division1") is False}      # #1061: a team that is not Division I is not published
         shotchart = doc.get("SHOTCHART", {})
         dorsals = build_dorsal_to_id_map(shotchart)
         for shot in shotchart.get("SHOTS", []):
@@ -24,7 +25,7 @@ def iter_owned_shots_feb(collection: Any) -> Iterator[OwnedShot]:
                 slot = int(shot.get("team"))
             except (TypeError, ValueError):
                 continue
-            if slot not in (0, 1) or slot >= len(header):
+            if slot not in (0, 1) or slot >= len(header) or slot in outside:
                 continue
             x, y = feb_to_fiba(float(shot.get("x", 0)), float(shot.get("y", 0)), slot)
             player = dorsals.get((slot, str(shot.get("player", ""))))
