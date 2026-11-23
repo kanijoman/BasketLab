@@ -3,7 +3,7 @@
 ``inout_analysis`` is what ``GET /players/{collection}/inout/{player_id}`` answers and what ``src/local_data/inout_export.py`` publishes: the raw analysis of
 ``PlayerStatsService`` with the legacy ``in``/``out`` keys renamed to ``on``/``off`` and the advanced metrics added to each block.
 """
-from typing import Any, Dict
+from typing import Any, Dict, Iterable
 
 from src.pbp.game_possessions import estimate_possessions
 from src.services import PlayerStatsService
@@ -96,7 +96,15 @@ def enrich_stat_block(block: Dict) -> Dict:
 
 def inout_analysis(db: Any, collection: str, player_id: str) -> Dict[str, Any]:
     """Team performance when ``player_id`` is on and off the court, with the advanced metrics of each block."""
-    result = PlayerStatsService(db).get_in_out_analysis(collection, player_id)
+    return _finish(PlayerStatsService(db).get_in_out_analysis(collection, player_id))
+
+
+def inout_analysis_many(db: Any, collection: str, player_ids: Iterable[str]) -> Dict[str, Dict[str, Any]]:
+    """``{player id: inout_analysis(...)}`` for several players with ONE pass over the games of the competition (the publication asks for all of them)."""
+    return {player_id: _finish(result) for player_id, result in PlayerStatsService(db).get_in_out_analysis_many(collection, player_ids).items()}
+
+
+def _finish(result: Dict[str, Any]) -> Dict[str, Any]:
     # Normalize legacy in/out keys to on/off expected by the frontend
     if result and "in" in result and "on" not in result:
         result["on"] = result.pop("in")

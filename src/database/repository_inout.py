@@ -1,6 +1,6 @@
 ﻿"""IN/OUT repository mixin."""
 
-from typing import Dict, List
+from typing import Dict, Iterable, List
 from pymongo.errors import PyMongoError
 
 from utils.collection_utils import is_fbcyl as _is_fbcyl
@@ -146,3 +146,66 @@ class InOutRepositoryMixin:
 
         except PyMongoError:
             return {}
+
+
+    def get_players_in_out_stats(self, collection_name: str, player_ids: Iterable[str], date_filter: Dict = None) -> Dict[str, Dict]:
+        """``{player id: what get_player_in_out_stats gives for him}`` for several players in ONE pass over the games.
+
+        The query of one player walks every game of the competition and builds an analyzer for each game of his team; for all the players of a competition that is players x games (23/11/2026: 10 games
+        18 s, 30 games 134 s; a conference of 370 games took hours). Here each game is read once and its analyzer is shared by every player that needs it. Each player's result is exactly the one of
+        the query for that player (``tests/test_inout_single_pass.py``): the same rules, the games in the same order, so the totals add up the same."""
+        ids = list(dict.fromkeys(player_ids))
+        if not self.connection.is_connected():
+            return {player_id: {} for player_id in ids}
+        try:
+            from .playbyplay_analyzer import PlayByPlayAnalyzer, InOutStatsCalculator
+
+            is_fbcyl = _is_fbcyl(collection_name)
+            runs: Dict[str, Dict] = {}
+            for player_id in ids:
+                player_team_id = None
+                if not is_fbcyl:
+                    player_team_id = self._find_feb_player_team_id(collection_name, player_id)
+                    if not player_team_id:
+                        continue                                                    # not found: an empty result, as the query of one player gives
+                runs[player_id] = {'team': player_team_id, 'in': self._empty_in_out_totals(), 'out': self._empty_in_out_totals(), 'analyzed': 0, 'participated': 0}
+            if runs:
+                for game in self.get_games_with_playbyplay(collection_name, date_filter):          # lazy cursor: one document in memory at a time
+                    analyzer, failed = None, False
+                    for player_id, run in runs.items():
+                        if is_fbcyl:
+                            identity = find_fbcyl_player(game, player_id)
+                            if identity is None:
+                                continue
+                            pid_for_game, team_id_for_game = identity
+                        else:
+                            pid_for_game, team_id_for_game = player_id, run['team']
+                        if player_minutes_played(game, pid_for_game, is_fbcyl) > 0.0:
+                            run['participated'] += 1
+                        if not team_participated(game, team_id_for_game, is_fbcyl):
+                            continue
+                        try:
+                            if analyzer is None and not failed:
+                                try:
+                                    analyzer = PlayByPlayAnalyzer(game, is_fbcyl=is_fbcyl)       # once per game, shared by its players
+                                except Exception:
+                                    failed = True                                   # as the query of one player: that game adds nothing
+                            if analyzer is None:
+                                continue
+                            game_stats = InOutStatsCalculator(analyzer).calculate_in_out_stats(pid_for_game, team_id_for_game)
+                            self._add_in_out_game(run['in'], game_stats.get('in', {}))
+                            self._add_in_out_game(run['out'], game_stats.get('out', {}))
+                            run['analyzed'] += 1
+                        except Exception:
+                            continue
+            out: Dict[str, Dict] = {}
+            for player_id in ids:
+                run = runs.get(player_id)
+                if run is None:
+                    out[player_id] = {}
+                    continue
+                run['in']['games'] = run['out']['games'] = run['participated']
+                out[player_id] = {'in': run['in'], 'out': run['out'], 'player_id': player_id, 'player_team_id': run['team'], 'games_analyzed': run['analyzed']}
+            return out
+        except PyMongoError:
+            return {player_id: {} for player_id in ids}

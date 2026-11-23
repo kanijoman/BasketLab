@@ -18,10 +18,10 @@ from src.utils.collection_utils import is_fbcyl
 
 def export_inout(handler: Any, name: str) -> Dict[str, Any]:
     """``{player_id, analysis}`` of every player of ``name`` in the order of the player rows (``player_id`` is the uuid in FBCYL); ``analysis`` is ``{}`` for a player the endpoint cannot analyse."""
-    from src.services.inout_service import inout_analysis
+    from src.services.inout_service import inout_analysis_many
 
     fbcyl = is_fbcyl(name)
-    players, seen = [], set()
+    ids, seen = [], set()
     collection = handler.connection.client["BASKETBALL"][name]
     rows = fbcyl_player_rows(collection) if fbcyl else _rows(collection, AggregationPipelineBuilder.build_season_player_rows_pipeline())
     key = "player_uuid" if fbcyl else "player_id"
@@ -30,6 +30,7 @@ def export_inout(handler: Any, name: str) -> Dict[str, Any]:
         if row.get(key) is None or player_id in seen:
             continue
         seen.add(player_id)
-        analysis = inout_analysis(handler, name, player_id) or {}
-        players.append({"player_id": player_id, "analysis": json.loads(json.dumps(analysis, default=str))})
+        ids.append(player_id)
+    analyses = inout_analysis_many(handler, name, ids)                 # ONE pass over the games for every player (#888: it was players x games)
+    players = [{"player_id": player_id, "analysis": json.loads(json.dumps(analyses.get(player_id) or {}, default=str))} for player_id in ids]
     return {"format": FORMAT, "collection": name, "league": "fbcyl" if fbcyl else "feb", "players": players}
