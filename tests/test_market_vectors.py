@@ -11,6 +11,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parent / "local_vectors"))
 
 import generate_equivalence  # noqa: E402
+import generate_formation  # noqa: E402
 import generate_talent_data as vectors  # noqa: E402
 from src.live_prep.package_scopes import open_sealed, scope_key  # noqa: E402
 from src.live_prep.package_sealing import ScopedSealer  # noqa: E402
@@ -71,3 +72,8 @@ def _same(a, b, path="") -> None:
 def test_the_committed_equivalence_vectors_are_what_the_estimator_gives_today():
     committed = json.loads(generate_equivalence.OUT.read_text(encoding="utf-8"))
     _same(committed, json.loads(json.dumps(generate_equivalence.build())))
+
+
+def test_the_committed_formation_vectors_are_what_the_index_gives_today():
+    committed = json.loads(generate_formation.OUT.read_text(encoding="utf-8"))
+    _same(committed, json.loads(json.dumps(generate_formation.build())))

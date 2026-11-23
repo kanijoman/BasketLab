@@ -543,6 +543,17 @@ class TestFbcylRecordWorkflow:
         assert "schedule" in triggers and "workflow_dispatch" in triggers
 
 
+    def test_match_days_have_their_own_schedule_with_other_minutes_so_a_delayed_cron_still_fires_in_the_window(self):
+        """21/11/2026: GitHub fired no planner between 14:22 and 20:38 UTC and the 16:00 match went unrecorded. The planner looks 3 h ahead and the recorder waits up to 175 min, so any
+        fire from 3 h before the kick-off works: the days of play (Saturday, Sunday, and Wednesday for the midweek rounds) get extra entries, each at minutes the base one does not use."""
+        crons = [c["cron"] for c in (self._data().get("on") or self._data()[True])["schedule"]]
+        base = crons[0]
+        extra = [c for c in crons[1:] if c.split()[4] != "*"]
+        days = {d for c in extra for d in c.split()[4].split(",")}
+        assert base.startswith("*/15") and {"0", "3", "6"} <= days
+        assert all(not set(c.split()[0].split(",")) & {"0", "15", "30", "45"} for c in extra)
+
+
 class TestWebVisualCaptures:
     """Issue #197 (U7): the e2e job of the web keeps the captures of the key pages (both themes, three widths) as an artifact, also when everything passes,
     so a change of look can be reviewed in the pull request."""
