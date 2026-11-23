@@ -48,6 +48,14 @@ class TalentEquivalencesEntry(FileEntry):
     sexes: List[Literal["F", "M"]]
 
 
+class TalentFormationEntry(FileEntry):
+    """The sealed ``formation`` file (#893): per sex the coefficients and the noise of the index of the formation (what he would be in the senior game IF he gets there), the groups it speaks of and its validation.
+    ``usable`` says whether the range can be shown; ``sexes`` which sexes it holds."""
+    wraps: List[Wrap]
+    usable: bool
+    sexes: List[Literal["F", "M"]]
+
+
 class TalentManifest(TypedDict):
     """``index.json`` of the ``talent-data`` branch: the only file that keeps its name. ``v`` and ``open_key`` are those of the live packages' index (the key of the ``abierto`` scope)."""
     schema: int
@@ -57,10 +65,11 @@ class TalentManifest(TypedDict):
     competitions: List[TalentCompetitionEntry]
     identities: NotRequired[TalentIdentitiesEntry]
     equivalences: NotRequired[TalentEquivalencesEntry]
+    formation: NotRequired[TalentFormationEntry]
 
 
-MODELS = (TalentZonesEntry, TalentCompetitionEntry, TalentIdentitiesEntry, TalentEquivalencesEntry, TalentManifest)
-FILE_ENTRIES = (TalentZonesEntry, TalentCompetitionEntry, TalentIdentitiesEntry, TalentEquivalencesEntry)
+MODELS = (TalentZonesEntry, TalentCompetitionEntry, TalentIdentitiesEntry, TalentEquivalencesEntry, TalentFormationEntry, TalentManifest)
+FILE_ENTRIES = (TalentZonesEntry, TalentCompetitionEntry, TalentIdentitiesEntry, TalentEquivalencesEntry, TalentFormationEntry)
 
 
 def validate_talent_manifest(manifest: Any) -> None:
