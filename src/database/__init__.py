@@ -88,6 +88,10 @@ class MongoDBHandler:
         return self.repository.get_player_in_out_stats(collection_name, player_id, date_filter,
                                                        debug=debug, progress_callback=progress_callback)
 
+    def get_players_in_out_stats(self, collection_name: str, player_ids, date_filter: dict = None) -> dict:
+        """IN/OUT statistics of several players in one pass over the games (``{player id: stats}``, each exactly what ``get_player_in_out_stats`` gives)."""
+        return self.repository.get_players_in_out_stats(collection_name, player_ids, date_filter)
+
     def get_lineup_analysis(self, collection_name: str, team_id: str, team_name: str,
                            combination_size: int = 5, date_filter: dict = None,
                            is_fbcyl: bool = False, include_game_log: bool = False,

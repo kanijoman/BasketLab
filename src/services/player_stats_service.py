@@ -392,6 +392,10 @@ class PlayerStatsService:
         }
         return _accumulate_cv_by_player(rows, FBCYL_FIELD_MAP)
 
+    def get_in_out_analysis_many(self, collection_name: str, player_ids, date_filter: Optional[Dict] = None) -> Dict[str, Dict]:
+        """``{player id: what get_in_out_analysis gives}`` for several players, in one pass over the games."""
+        return {player_id: result or {} for player_id, result in (self._db.get_players_in_out_stats(collection_name, player_ids, date_filter) or {}).items()}
+
     def get_in_out_analysis(
         self,
         collection_name: str,
