@@ -7603,6 +7603,936 @@
       },
       "label": "ACB Liga Endesa",
       "note": "ACB Liga Endesa 2026/2027: 18 clubs listed on 20/11/2026; paused until it is turned on"
+    },
+    {
+      "competition": "D1 Men",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "M",
+      "conference": "A-10",
+      "active": false,
+      "ncaa": {
+        "conference_id": "3"
+      },
+      "label": "NCAA D1 Men · Atlantic 10 Conference",
+      "note": "NCAA D1 Men 2025/2026, Atlantic 10 Conference: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Men",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "M",
+      "conference": "ACC",
+      "active": false,
+      "ncaa": {
+        "conference_id": "2"
+      },
+      "label": "NCAA D1 Men · Atlantic Coast Conference",
+      "note": "NCAA D1 Men 2025/2026, Atlantic Coast Conference: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Men",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "M",
+      "conference": "Am. East",
+      "active": false,
+      "ncaa": {
+        "conference_id": "1"
+      },
+      "label": "NCAA D1 Men · America East Conference",
+      "note": "NCAA D1 Men 2025/2026, America East Conference: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Men",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "M",
+      "conference": "American",
+      "active": false,
+      "ncaa": {
+        "conference_id": "62"
+      },
+      "label": "NCAA D1 Men · American Conference",
+      "note": "NCAA D1 Men 2025/2026, American Conference: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Men",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "M",
+      "conference": "Atlantic Sun",
+      "active": false,
+      "ncaa": {
+        "conference_id": "46"
+      },
+      "label": "NCAA D1 Men · Atlantic Sun Conference",
+      "note": "NCAA D1 Men 2025/2026, Atlantic Sun Conference: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Men",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "M",
+      "conference": "Big 12",
+      "active": false,
+      "ncaa": {
+        "conference_id": "8"
+      },
+      "label": "NCAA D1 Men · Big 12 Conference",
+      "note": "NCAA D1 Men 2025/2026, Big 12 Conference: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Men",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "M",
+      "conference": "Big East",
+      "active": false,
+      "ncaa": {
+        "conference_id": "4"
+      },
+      "label": "NCAA D1 Men · Big East Conference",
+      "note": "NCAA D1 Men 2025/2026, Big East Conference: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Men",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "M",
+      "conference": "Big Sky",
+      "active": false,
+      "ncaa": {
+        "conference_id": "5"
+      },
+      "label": "NCAA D1 Men · Big Sky Conference",
+      "note": "NCAA D1 Men 2025/2026, Big Sky Conference: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Men",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "M",
+      "conference": "Big South",
+      "active": false,
+      "ncaa": {
+        "conference_id": "6"
+      },
+      "label": "NCAA D1 Men · Big South Conference",
+      "note": "NCAA D1 Men 2025/2026, Big South Conference: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Men",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "M",
+      "conference": "Big Ten",
+      "active": false,
+      "ncaa": {
+        "conference_id": "7"
+      },
+      "label": "NCAA D1 Men · Big Ten Conference",
+      "note": "NCAA D1 Men 2025/2026, Big Ten Conference: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Men",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "M",
+      "conference": "Big West",
+      "active": false,
+      "ncaa": {
+        "conference_id": "9"
+      },
+      "label": "NCAA D1 Men · Big West Conference",
+      "note": "NCAA D1 Men 2025/2026, Big West Conference: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Men",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "M",
+      "conference": "CAA",
+      "active": false,
+      "ncaa": {
+        "conference_id": "10"
+      },
+      "label": "NCAA D1 Men · Coastal Athletic Association",
+      "note": "NCAA D1 Men 2025/2026, Coastal Athletic Association: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Men",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "M",
+      "conference": "CUSA",
+      "active": false,
+      "ncaa": {
+        "conference_id": "11"
+      },
+      "label": "NCAA D1 Men · Conference USA",
+      "note": "NCAA D1 Men 2025/2026, Conference USA: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Men",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "M",
+      "conference": "Horizon",
+      "active": false,
+      "ncaa": {
+        "conference_id": "45"
+      },
+      "label": "NCAA D1 Men · Horizon League",
+      "note": "NCAA D1 Men 2025/2026, Horizon League: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Men",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "M",
+      "conference": "Ivy",
+      "active": false,
+      "ncaa": {
+        "conference_id": "12"
+      },
+      "label": "NCAA D1 Men · Ivy League",
+      "note": "NCAA D1 Men 2025/2026, Ivy League: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Men",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "M",
+      "conference": "MAC",
+      "active": false,
+      "ncaa": {
+        "conference_id": "14"
+      },
+      "label": "NCAA D1 Men · Mid-American Conference",
+      "note": "NCAA D1 Men 2025/2026, Mid-American Conference: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Men",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "M",
+      "conference": "MEAC",
+      "active": false,
+      "ncaa": {
+        "conference_id": "16"
+      },
+      "label": "NCAA D1 Men · Mid-Eastern Athletic Conference",
+      "note": "NCAA D1 Men 2025/2026, Mid-Eastern Athletic Conference: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Men",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "M",
+      "conference": "Metro",
+      "active": false,
+      "ncaa": {
+        "conference_id": "13"
+      },
+      "label": "NCAA D1 Men · Metro Conference",
+      "note": "NCAA D1 Men 2025/2026, Metro Conference: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Men",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "M",
+      "conference": "Mountain West",
+      "active": false,
+      "ncaa": {
+        "conference_id": "44"
+      },
+      "label": "NCAA D1 Men · Mountain West Conference",
+      "note": "NCAA D1 Men 2025/2026, Mountain West Conference: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Men",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "M",
+      "conference": "MVC",
+      "active": false,
+      "ncaa": {
+        "conference_id": "18"
+      },
+      "label": "NCAA D1 Men · Missouri Valley Conference",
+      "note": "NCAA D1 Men 2025/2026, Missouri Valley Conference: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Men",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "M",
+      "conference": "NEC",
+      "active": false,
+      "ncaa": {
+        "conference_id": "19"
+      },
+      "label": "NCAA D1 Men · Northeast Conference",
+      "note": "NCAA D1 Men 2025/2026, Northeast Conference: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Men",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "M",
+      "conference": "OVC",
+      "active": false,
+      "ncaa": {
+        "conference_id": "20"
+      },
+      "label": "NCAA D1 Men · Ohio Valley Conference",
+      "note": "NCAA D1 Men 2025/2026, Ohio Valley Conference: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Men",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "M",
+      "conference": "Patriot",
+      "active": false,
+      "ncaa": {
+        "conference_id": "22"
+      },
+      "label": "NCAA D1 Men · Patriot League",
+      "note": "NCAA D1 Men 2025/2026, Patriot League: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Men",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "M",
+      "conference": "SEC",
+      "active": false,
+      "ncaa": {
+        "conference_id": "23"
+      },
+      "label": "NCAA D1 Men · Southeastern Conference",
+      "note": "NCAA D1 Men 2025/2026, Southeastern Conference: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Men",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "M",
+      "conference": "SoCon",
+      "active": false,
+      "ncaa": {
+        "conference_id": "24"
+      },
+      "label": "NCAA D1 Men · Southern Conference",
+      "note": "NCAA D1 Men 2025/2026, Southern Conference: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Men",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "M",
+      "conference": "Southland",
+      "active": false,
+      "ncaa": {
+        "conference_id": "25"
+      },
+      "label": "NCAA D1 Men · Southland Conference",
+      "note": "NCAA D1 Men 2025/2026, Southland Conference: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Men",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "M",
+      "conference": "Summit",
+      "active": false,
+      "ncaa": {
+        "conference_id": "49"
+      },
+      "label": "NCAA D1 Men · Summit League",
+      "note": "NCAA D1 Men 2025/2026, Summit League: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Men",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "M",
+      "conference": "Sun Belt",
+      "active": false,
+      "ncaa": {
+        "conference_id": "27"
+      },
+      "label": "NCAA D1 Men · Sun Belt Conference",
+      "note": "NCAA D1 Men 2025/2026, Sun Belt Conference: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Men",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "M",
+      "conference": "SWAC",
+      "active": false,
+      "ncaa": {
+        "conference_id": "26"
+      },
+      "label": "NCAA D1 Men · Southwestern Athletic Conference",
+      "note": "NCAA D1 Men 2025/2026, Southwestern Athletic Conference: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Men",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "M",
+      "conference": "UAC",
+      "active": false,
+      "ncaa": {
+        "conference_id": "30"
+      },
+      "label": "NCAA D1 Men · United Athletic Conference",
+      "note": "NCAA D1 Men 2025/2026, United Athletic Conference: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Men",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "M",
+      "conference": "WCC",
+      "active": false,
+      "ncaa": {
+        "conference_id": "29"
+      },
+      "label": "NCAA D1 Men · West Coast Conference",
+      "note": "NCAA D1 Men 2025/2026, West Coast Conference: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Women",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "F",
+      "conference": "A-10",
+      "active": false,
+      "ncaa": {
+        "conference_id": "3"
+      },
+      "label": "NCAA D1 Women · Atlantic 10 Conference",
+      "note": "NCAA D1 Women 2025/2026, Atlantic 10 Conference: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Women",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "F",
+      "conference": "ACC",
+      "active": false,
+      "ncaa": {
+        "conference_id": "2"
+      },
+      "label": "NCAA D1 Women · Atlantic Coast Conference",
+      "note": "NCAA D1 Women 2025/2026, Atlantic Coast Conference: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Women",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "F",
+      "conference": "Am. East",
+      "active": false,
+      "ncaa": {
+        "conference_id": "1"
+      },
+      "label": "NCAA D1 Women · America East Conference",
+      "note": "NCAA D1 Women 2025/2026, America East Conference: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Women",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "F",
+      "conference": "American",
+      "active": false,
+      "ncaa": {
+        "conference_id": "62"
+      },
+      "label": "NCAA D1 Women · American Conference",
+      "note": "NCAA D1 Women 2025/2026, American Conference: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Women",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "F",
+      "conference": "Atlantic Sun",
+      "active": false,
+      "ncaa": {
+        "conference_id": "46"
+      },
+      "label": "NCAA D1 Women · Atlantic Sun Conference",
+      "note": "NCAA D1 Women 2025/2026, Atlantic Sun Conference: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Women",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "F",
+      "conference": "Big 12",
+      "active": false,
+      "ncaa": {
+        "conference_id": "8"
+      },
+      "label": "NCAA D1 Women · Big 12 Conference",
+      "note": "NCAA D1 Women 2025/2026, Big 12 Conference: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Women",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "F",
+      "conference": "Big East",
+      "active": false,
+      "ncaa": {
+        "conference_id": "4"
+      },
+      "label": "NCAA D1 Women · Big East Conference",
+      "note": "NCAA D1 Women 2025/2026, Big East Conference: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Women",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "F",
+      "conference": "Big Sky",
+      "active": false,
+      "ncaa": {
+        "conference_id": "5"
+      },
+      "label": "NCAA D1 Women · Big Sky Conference",
+      "note": "NCAA D1 Women 2025/2026, Big Sky Conference: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Women",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "F",
+      "conference": "Big South",
+      "active": false,
+      "ncaa": {
+        "conference_id": "6"
+      },
+      "label": "NCAA D1 Women · Big South Conference",
+      "note": "NCAA D1 Women 2025/2026, Big South Conference: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Women",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "F",
+      "conference": "Big Ten",
+      "active": false,
+      "ncaa": {
+        "conference_id": "7"
+      },
+      "label": "NCAA D1 Women · Big Ten Conference",
+      "note": "NCAA D1 Women 2025/2026, Big Ten Conference: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Women",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "F",
+      "conference": "Big West",
+      "active": false,
+      "ncaa": {
+        "conference_id": "9"
+      },
+      "label": "NCAA D1 Women · Big West Conference",
+      "note": "NCAA D1 Women 2025/2026, Big West Conference: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Women",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "F",
+      "conference": "CAA",
+      "active": false,
+      "ncaa": {
+        "conference_id": "10"
+      },
+      "label": "NCAA D1 Women · Coastal Athletic Association",
+      "note": "NCAA D1 Women 2025/2026, Coastal Athletic Association: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Women",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "F",
+      "conference": "CUSA",
+      "active": false,
+      "ncaa": {
+        "conference_id": "11"
+      },
+      "label": "NCAA D1 Women · Conference USA",
+      "note": "NCAA D1 Women 2025/2026, Conference USA: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Women",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "F",
+      "conference": "Horizon",
+      "active": false,
+      "ncaa": {
+        "conference_id": "45"
+      },
+      "label": "NCAA D1 Women · Horizon League",
+      "note": "NCAA D1 Women 2025/2026, Horizon League: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Women",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "F",
+      "conference": "Ivy",
+      "active": false,
+      "ncaa": {
+        "conference_id": "12"
+      },
+      "label": "NCAA D1 Women · Ivy League",
+      "note": "NCAA D1 Women 2025/2026, Ivy League: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Women",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "F",
+      "conference": "MAC",
+      "active": false,
+      "ncaa": {
+        "conference_id": "14"
+      },
+      "label": "NCAA D1 Women · Mid-American Conference",
+      "note": "NCAA D1 Women 2025/2026, Mid-American Conference: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Women",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "F",
+      "conference": "MEAC",
+      "active": false,
+      "ncaa": {
+        "conference_id": "16"
+      },
+      "label": "NCAA D1 Women · Mid-Eastern Athletic Conference",
+      "note": "NCAA D1 Women 2025/2026, Mid-Eastern Athletic Conference: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Women",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "F",
+      "conference": "Metro",
+      "active": false,
+      "ncaa": {
+        "conference_id": "13"
+      },
+      "label": "NCAA D1 Women · Metro Conference",
+      "note": "NCAA D1 Women 2025/2026, Metro Conference: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Women",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "F",
+      "conference": "Mountain West",
+      "active": false,
+      "ncaa": {
+        "conference_id": "44"
+      },
+      "label": "NCAA D1 Women · Mountain West Conference",
+      "note": "NCAA D1 Women 2025/2026, Mountain West Conference: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Women",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "F",
+      "conference": "MVC",
+      "active": false,
+      "ncaa": {
+        "conference_id": "18"
+      },
+      "label": "NCAA D1 Women · Missouri Valley Conference",
+      "note": "NCAA D1 Women 2025/2026, Missouri Valley Conference: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Women",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "F",
+      "conference": "NEC",
+      "active": false,
+      "ncaa": {
+        "conference_id": "19"
+      },
+      "label": "NCAA D1 Women · Northeast Conference",
+      "note": "NCAA D1 Women 2025/2026, Northeast Conference: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Women",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "F",
+      "conference": "OVC",
+      "active": false,
+      "ncaa": {
+        "conference_id": "20"
+      },
+      "label": "NCAA D1 Women · Ohio Valley Conference",
+      "note": "NCAA D1 Women 2025/2026, Ohio Valley Conference: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Women",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "F",
+      "conference": "Patriot",
+      "active": false,
+      "ncaa": {
+        "conference_id": "22"
+      },
+      "label": "NCAA D1 Women · Patriot League",
+      "note": "NCAA D1 Women 2025/2026, Patriot League: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Women",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "F",
+      "conference": "SEC",
+      "active": false,
+      "ncaa": {
+        "conference_id": "23"
+      },
+      "label": "NCAA D1 Women · Southeastern Conference",
+      "note": "NCAA D1 Women 2025/2026, Southeastern Conference: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Women",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "F",
+      "conference": "SoCon",
+      "active": false,
+      "ncaa": {
+        "conference_id": "24"
+      },
+      "label": "NCAA D1 Women · Southern Conference",
+      "note": "NCAA D1 Women 2025/2026, Southern Conference: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Women",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "F",
+      "conference": "Southland",
+      "active": false,
+      "ncaa": {
+        "conference_id": "25"
+      },
+      "label": "NCAA D1 Women · Southland Conference",
+      "note": "NCAA D1 Women 2025/2026, Southland Conference: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Women",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "F",
+      "conference": "Summit",
+      "active": false,
+      "ncaa": {
+        "conference_id": "47"
+      },
+      "label": "NCAA D1 Women · Summit League",
+      "note": "NCAA D1 Women 2025/2026, Summit League: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Women",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "F",
+      "conference": "Sun Belt",
+      "active": false,
+      "ncaa": {
+        "conference_id": "27"
+      },
+      "label": "NCAA D1 Women · Sun Belt Conference",
+      "note": "NCAA D1 Women 2025/2026, Sun Belt Conference: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Women",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "F",
+      "conference": "SWAC",
+      "active": false,
+      "ncaa": {
+        "conference_id": "26"
+      },
+      "label": "NCAA D1 Women · Southwestern Athletic Conference",
+      "note": "NCAA D1 Women 2025/2026, Southwestern Athletic Conference: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Women",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "F",
+      "conference": "UAC",
+      "active": false,
+      "ncaa": {
+        "conference_id": "30"
+      },
+      "label": "NCAA D1 Women · United Athletic Conference",
+      "note": "NCAA D1 Women 2025/2026, United Athletic Conference: listed by ESPN on 23/11/2026; paused until a batch turns it on"
+    },
+    {
+      "competition": "D1 Women",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "ncaa",
+      "division": "D1",
+      "gender": "F",
+      "conference": "WCC",
+      "active": false,
+      "ncaa": {
+        "conference_id": "29"
+      },
+      "label": "NCAA D1 Women · West Coast Conference",
+      "note": "NCAA D1 Women 2025/2026, West Coast Conference: listed by ESPN on 23/11/2026; paused until a batch turns it on"
     }
   ]
 }
