@@ -174,7 +174,7 @@ class TestViews:
 
 # the seasons of the history and youth championships loaded so far (#876): one batch of seasons at a time, so the refresh of FEB keeps its time
 LOADED_SEASONS = {"2020", "2021", "2022", "2023", "2024", "2025"}
-TERCERA_LOADED = {"2025", "2024"}                  # Tercera FEB goes in its own batches of two seasons (#876, batches 3 to 5)
+TERCERA_LOADED = {"2025", "2024", "2023", "2022"}                  # Tercera FEB goes in its own batches of two seasons (#876, batches 3 to 5; 4 = 2023 and 2022)
 
 
 class TestTheRealCatalogue:
