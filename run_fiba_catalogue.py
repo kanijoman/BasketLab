@@ -22,13 +22,16 @@ def main(argv: Optional[List[str]] = None, client: Any = None, today: Optional[s
     from src.services.competition_catalogue import DEFAULT_CATALOGUE
 
     parser = argparse.ArgumentParser(description="Add the FIBA events to the catalogue, paused")
-    parser.add_argument("--year", type=int, action="append", required=True, help="a year (the one of the event); repeatable")
+    parser.add_argument("--year", type=int, action="append", default=[], help="a year (the one of the event) of the national-team events; repeatable")
+    parser.add_argument("--club-season", type=int, action="append", default=[], help="a season of the club competitions (EuroLeague Women, EuroCup Women), the year it starts in (2025 is 2025/26); repeatable")
     parser.add_argument("--catalogue", default=DEFAULT_CATALOGUE)
     parser.add_argument("--dry-run", action="store_true", help="say what would be added and write nothing")
     args = parser.parse_args(argv)
+    if not args.year and not args.club_season:
+        parser.error("give at least one --year or --club-season")
     path = Path(args.catalogue)
     raw = json.loads(path.read_text(encoding="utf-8"))
-    entries, report = new_entries(client or FibaClient(), raw.get("competitions", []), args.year, today or date.today().strftime("%d/%m/%Y"))
+    entries, report = new_entries(client or FibaClient(), raw.get("competitions", []), args.year, today or date.today().strftime("%d/%m/%Y"), club_seasons=args.club_season)
     for entry in entries:
         print(f"{'would add' if args.dry_run else 'adds'}: {entry['fiba']['event']} ({entry['note']})")
     for key in ("already", "empty", "missing"):

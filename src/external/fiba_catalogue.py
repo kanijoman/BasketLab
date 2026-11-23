@@ -33,6 +33,20 @@ def candidate_events(years: Iterable[int]) -> List[Dict[str, Any]]:
     return out
 
 
+CLUB_COMPETITIONS = (("euroleague-women", "EuroLeague Women"), ("eurocup-women", "EuroCup Women"))      # run by FIBA Europe, in the same site (#1039)
+
+
+def candidate_club_events(seasons: Iterable[int]) -> List[Dict[str, Any]]:
+    """The club competitions FIBA may have in each season (the year it STARTS in, as FEB's): the EuroLeague Women and the EuroCup Women. A season is named by the SHORT form of its two years
+    (``euroleague-women-25-26``): the long one (``-2025-26``) is answered with the generic shell of the page, as is any season that does not exist (#1039: only 2024/25 onwards do)."""
+    out: List[Dict[str, Any]] = []
+    for year in seasons:
+        for stem, competition in CLUB_COMPETITIONS:
+            out.append({"event": f"{stem}-{year % 100:02d}-{(year + 1) % 100:02d}", "competition": competition, "division": "Senior", "gender": "F", "season_value": str(year),
+                        "season_label": f"{year}/{year + 1}", "label": f"FIBA {competition}"})
+    return out
+
+
 def _entry(candidate: Dict[str, Any], games: int, today: str) -> Dict[str, Any]:
     entry = {"competition": candidate["competition"], "season_label": candidate["season_label"], "season_value": candidate["season_value"], "league": "fiba", "division": candidate["division"],
              "gender": candidate["gender"], "active": False, "fiba": {"event": candidate["event"]}, "label": candidate["label"],
@@ -42,13 +56,13 @@ def _entry(candidate: Dict[str, Any], games: int, today: str) -> Dict[str, Any]:
     return entry
 
 
-def new_entries(client: Any, existing: List[Dict[str, Any]], years: Iterable[int], today: str) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
+def new_entries(client: Any, existing: List[Dict[str, Any]], years: Iterable[int], today: str, club_seasons: Iterable[int] = ()) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
     """The paused entries to add and what happened to the rest: ``{already, empty, missing, failed}`` (the events already in ``existing``, those that list no games, those that are not on the site and those that
     failed to answer, with the reason). The events already in the catalogue are not even asked about."""
     have = {e["fiba"]["event"] for e in existing if isinstance(e.get("fiba"), dict) and e["fiba"].get("event")}
     report: Dict[str, Any] = {"already": [], "empty": [], "missing": [], "failed": {}}
     entries: List[Dict[str, Any]] = []
-    for candidate in candidate_events(years):
+    for candidate in [*candidate_events(years), *candidate_club_events(club_seasons)]:
         slug = candidate["event"]
         if slug in have:
             report["already"].append(slug)

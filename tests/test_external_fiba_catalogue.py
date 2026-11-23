@@ -181,7 +181,10 @@ def test_the_fiba_events_turned_on_in_the_real_catalogue_are_exactly_the_ones_de
 
     catalogue = load_catalogue(Path(__file__).resolve().parents[1] / "config" / "competitions.json")
     fiba = [e for e in catalogue if e["league"] == "fiba"]
-    assert len(fiba) == 22 == len(ACTIVE_FIBA_EVENTS) and {e["fiba"]["event"] for e in fiba if e["active"]} == ACTIVE_FIBA_EVENTS
+    clubs = [e for e in fiba if e["competition"] in ("EuroLeague Women", "EuroCup Women")]           # #1039: in the catalogue, PAUSED, until somebody turns them on
+    national = [e for e in fiba if e not in clubs]
+    assert len(national) == 22 == len(ACTIVE_FIBA_EVENTS) and {e["fiba"]["event"] for e in national if e["active"]} == ACTIVE_FIBA_EVENTS
+    assert len(clubs) == 6 and not any(e["active"] for e in clubs) and {e["season_value"] for e in clubs} == {"2024", "2025", "2026"}
     assert {e["fiba"]["event"] for e in external_entries(catalogue) if e["league"] == "fiba"} == ACTIVE_FIBA_EVENTS
 
 
