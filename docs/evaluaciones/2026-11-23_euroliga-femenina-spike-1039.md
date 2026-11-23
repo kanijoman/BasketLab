@@ -61,6 +61,6 @@ Del jugador viene en la propia página del partido: nacimiento, altura, nacional
 ## Hallazgos de paso
 
 * **Un evento que no existe devuelve una página genérica**, no un 404: 5 «partidos» sin enlace, sin equipos y sin fecha, siempre los mismos ids. Hoy no hace daño (`new_entries` exige equipos y `FibaSource` solo pide partidos terminados), pero cualquier lector nuevo que cuente los partidos listados se lo creería. Queda anotado.
-* **La API de la Euroliga masculina trae también la EuroCup masculina (`U`) y ligas nacionales** (alemana, italiana, griega, española…): son fuentes posibles para más adelante con el mismo lector de la Euroliga, no se han medido.
+* **Qué más hay en la API de la Euroliga masculina** (`api-live.euroleague.net/v2`): se midió el 23/11/2026, ver el apartado «Otras competiciones del mismo endpoint» del [informe de la masculina](2026-11-23_euroliga-spike-1038.md). Corrige una frase de la primera versión de este informe: las ligas nacionales de la lista **no tienen datos**.
 * **Mapa de tiros**: FIBA da las coordenadas de cada tiro; la fuente de FIBA todavía no las convierte a las zonas del motor (`SHOTCHART` vacío). Aplica a esta competición como a las demás de FIBA.
 * Con la regla del histórico de 10 temporadas (OPERATIONS, 23/11/2026) el tope **no limita** aquí: las tres temporadas que existen entran todas.

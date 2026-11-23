@@ -64,3 +64,21 @@ Para la Euroliga el tope de 10 y la calidad coinciden casi del todo: la temporad
 ## Siguiente (si se sigue con la fuente)
 
 Patrón de ACB (#886): catálogo de ediciones pausadas (`league: euroleague`, que hay que añadir a `EXTERNAL_SOURCES`), cliente con pausa y presupuesto, lector, conversor al documento FEB con los códigos de arriba y el mapa de tiros (coordenadas de `Points` a las zonas del motor, con la validación contra la zona que da la propia API), enlace con FEB por nombre y fecha y la fuente del refresco diario. La femenina (#1039) tiene su propio spike.
+
+## Otras competiciones del mismo endpoint (barrido del 23/11/2026)
+
+`/v2/competitions` lista 43 competiciones. Se midió cada una: temporadas, partidos de la última temporada con datos y, en una muestra de partidos jugados, si hay caja (con biografía), jugada a jugada y tiros, y si la jugada a jugada cuadra con la caja (las nueve estadísticas básicas, con los mismos códigos que la Euroliga).
+
+| Competición | Temporadas | Último dato | Fiable desde | Para qué sirve |
+|---|---|---|---|---|
+| **Euroliga** (`E`) | 2000–2026 | 380 partidos por temporada | 2017/18 (spike) | masculino sénior |
+| **EuroCup** (`U`) | 2002–2026 | 2026/27: 224 partidos (128 jugados) | **2017/18** (6 de 6 por temporada de 2017 a 2025; 2016 y 2014 fallan en los intentos de 2; 2011, 3 de 6) | masculino sénior, segundo nivel europeo |
+| **U18 Next Generation Tournament** (`J`) | 68 torneos desde 2002; 4 o 5 por temporada desde 2014 (clasificatorios y final) | 2026/27: Rijeka (16 partidos) y Viena | **19 de 19 torneos medidos, de 2019/20 a 2026/27, 3 de 3 cada uno** (≈ 16 partidos por torneo, ≈ 75 por temporada) | **sub-18 de los mejores canteras de clubes europeos: encaja con la formación de Talent**, con biografía en la caja |
+| SuperCup (`SC`) | solo 2026 | 4 partidos, 3 de 3 fiables | — | poco: una sola edición |
+| Euroleague Qualifying Round (`EQR`) | 2009–2014 | 7 partidos en 2014, **0 de 3 fiables** | no | histórica, sin interés |
+| ULEB Summer League (`S`) | 2007 | 0 partidos | no | vacía |
+| **Ligas y copas nacionales** (alemana, italiana, griega, española, turca, francesa…, 32 códigos) | 2000–2005 o ninguna | **0 partidos** | no | **no tienen datos**: son códigos heredados sin partidos |
+
+* **Eso significa que la EuroCup y el torneo sub-18 son lo único nuevo** de este endpoint, además de la Euroliga. Misma API, mismos códigos de jugada, misma biografía y mismo identificador de jugador (el código `009849` de la Euroliga sale también en EuroCup y torneos, por lo que el enlace entre competiciones es directo).
+* **El torneo sub-18 es la pieza de más valor para Talent**: seguir a los jugadores antes del salto al sénior con caja y jugada a jugada completas, y con el mismo `code` de persona que luego tendrán en la Euroliga.
+* **Límite de peticiones**: la API responde **429 (Cloudflare, error 1015) a ≈ 8 peticiones por segundo** (dos barridos en paralelo) y se recupera en unos 2 minutos. Con una sola petición cada 0,3 s (≈ 3 por segundo) se midieron cientos de peticiones sin ningún bloqueo. La fuente debe llevar pausa propia (≥ 0,5 s), un solo trabajo a la vez y espera con reintentos ante un 429.
