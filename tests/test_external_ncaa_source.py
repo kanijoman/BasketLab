@@ -145,7 +145,8 @@ class TestWhatIsAskedFor:
 class TestWhenThingsGoWrong:
     def test_a_game_that_is_not_there_is_said_and_the_others_still_come(self):
         s = NcaaSource(FakeClient(missing=["401829197"]), today=lambda: date(2026, 1, 16))
-        found = list(s.fetch(entry("29"), "2026-01-15", frozenset())) + list(s.fetch(entry("1"), "2026-01-15", frozenset()))
+        list(s.fetch(entry("29"), "2026-01-15", frozenset()))
+        list(s.fetch(entry("1"), "2026-01-15", frozenset()))
         assert "401829197: not found" in s.notes and s.complete is True
 
     def test_a_game_that_fails_to_be_had_is_said_and_asked_again_the_next_run(self):
