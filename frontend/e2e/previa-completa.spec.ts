@@ -44,6 +44,7 @@ test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
     if (!sessionStorage.getItem('e2e-started')) { localStorage.clear(); sessionStorage.setItem('e2e-started', '1') }
   })
+  await page.clock.setFixedTime(new Date('2026-11-09T12:00:00Z'))           // the publication is a capture of that day: «next match» reads the clock
   await servePublication(page)
 })
 
