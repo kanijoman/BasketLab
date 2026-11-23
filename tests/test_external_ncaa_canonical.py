@@ -82,6 +82,11 @@ class TestTheBox:
         own = gonzaga["TEAMACTIONS"]
         assert own["rt"] == str(43 - int(gonzaga["TOTAL"]["rt"])) and own["to"] == "0"          # team rebounds are what the box of the team has over the sum of its players
 
+    def test_the_turnovers_of_the_total_include_the_ones_of_the_team_itself_as_the_official_box_counts_them(self):
+        """The women's game of Villanova at UConn: Villanova (222) has 24 turnovers of its players and 2 of the team, and the official total is 26: the play by play counts all 26."""
+        villanova = next(t for t in doc(WOMENS, ENTRY_F)["BOXSCORE"]["TEAM"] if t["id"] == "ncaa:222")
+        assert villanova["TOTAL"]["to"] == "26" and villanova["TEAMACTIONS"]["to"] == "2" and sum(int(p["to"]) for p in villanova["PLAYER"] if p["to"]) == 24
+
     def test_a_player_who_did_not_play_is_in_the_box_without_numbers(self):
         benched = [p for t in doc(WOMENS, ENTRY_F)["BOXSCORE"]["TEAM"] for p in t["PLAYER"] if p["min"] is None]
         assert benched and all(p["pts"] is None for p in benched)
@@ -125,7 +130,16 @@ class TestThePlayByPlay:
     def test_nothing_of_the_play_by_play_is_lost_and_lines_are_numbered_in_order(self):
         game = parse_summary(fixture(MENS))
         out = to_canonical(game, ENTRY_M, NAMES)["PLAYBYPLAY"]["LINES"]
-        assert len(out) == len(game["plays"]) and [l["num"] for l in out] == [str(i) for i in range(1, len(out) + 1)]
+        assists = sum(1 for p in game["plays"] if p["assist_id"])
+        assert assists == 26 and len(out) == len(game["plays"]) + assists and [l["num"] for l in out] == [str(i) for i in range(1, len(out) + 1)]
+
+    def test_a_made_shot_with_an_assist_is_followed_by_the_assist_line_of_the_other_player(self):
+        """ESPN gives the assist as the second participant of the made shot («Eemeli Yalaho makes 23-foot three point jumper (Jerone Morton assists)»): 26 of them, as many as the box says."""
+        out = lines(MENS)
+        index = next(i for i, l in enumerate(out) if "Eemeli Yalaho: TIRO DE 3 ANOTADO" in l["text"])
+        shot, assist = out[index], out[index + 1]
+        assert shot["idPlayer"] == "ncaa:5175078" and assist["action"] == "assist" and assist["idPlayer"] == "ncaa:5177358" and assist["idTeam"] == shot["idTeam"]
+        assert assist["text"].endswith("Jerone Morton: ASISTENCIA") and (assist["quarter"], assist["time"], assist["scoreA"]) == (shot["quarter"], shot["time"], shot["scoreA"])
 
     def test_an_event_that_is_not_known_stays_as_a_line_of_other(self):
         game = parse_summary(fixture(WOMENS))
@@ -155,6 +169,18 @@ class TestTheReconciliationOfTheCommonCriterion:
 
         result = reconcile_game(doc("game_womens_noplays_401830444", ENTRY_F))
         assert result.reliable is False and {c.stat for c in result.mismatches(CORE_STATS)} == set(CORE_STATS)
+
+    @pytest.mark.parametrize("name,entry", [(MENS, ENTRY_M), ("game_womens_nond1_401817303", ENTRY_F), ("game_mens_ot_401812120", ENTRY_M), (WOMENS, ENTRY_F), ("game_womens_ot_401827769", ENTRY_F)])
+    def test_the_turnovers_match_in_every_real_game_and_the_assists_in_nearly_all(self, name, entry):
+        """Real finding (23/11/2026): the turnovers match once the team's own are counted; the assists match in most games but in two of the six (the overtime of Bryant and Villanova at UConn) the official
+        box has ONE assist more than the play by play of ESPN itself (13 of 14 and 21 of 22): an information statistic, so the game is not discarded."""
+        from src.market.box_reconciliation import reconcile_game
+
+        result = reconcile_game(doc(name, entry))
+        assert not result.mismatches(("TOV",)) and result.reliable is True
+        off_by_one = {"game_mens_ot_401812120", WOMENS}
+        assert bool(result.mismatches(("AST",))) is (name in off_by_one)
+        assert all(abs(c.official - c.pbp) == 1 for c in result.mismatches(("AST",)))
 
     def test_a_play_that_ESPN_lost_makes_the_game_not_reliable_and_the_statistic_is_named(self):
         from src.market.box_reconciliation import reconcile_game

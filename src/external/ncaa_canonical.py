@@ -56,6 +56,7 @@ def _team_box(team: Dict[str, Any], players: List[Dict[str, Any]], totals: Dict[
              "fgm": str(add["fgm"]), "fga": str(add["fga"]), "assist": str(add["ast"]), "bs": str(add["blk"]), "st": str(add["stl"]), "to": str(add["tov"]), "ro": str(add["orb"]), "rd": str(add["drb"]),
              "rt": str(add["reb"]), "pf": str(add["pf"])}
     own = lambda name, summed: str(max(0, int(totals.get(name) or 0) - summed))                  # what the box of the team has over the sum of its players
+    total["to"] = str(int(totals.get("totalTurnovers") or add["tov"]))                       # the official total counts the turnovers of the team itself; the play by play counts them all
     actions = {"ro": own("offensiveRebounds", add["orb"]), "rd": own("defensiveRebounds", add["drb"]), "rt": own("totalRebounds", add["reb"]), "to": str(int(totals.get("teamTurnovers") or 0)),
                "pf": own("fouls", add["pf"])}
     return {"id": source_id(SOURCE, team["id"]), "name": team["name"], "teamCode": None, "win_lose": "W" if won else "L", "conference_id": team["conference_id"], "conference": names.get(team["conference_id"] or ""),
@@ -119,8 +120,18 @@ class _Lines:
                 "action": action, "text": text, "deleted": None, "scoreA": str(play["home_score"]) if play["home_score"] is not None else None,
                 "scoreB": str(play["away_score"]) if play["away_score"] is not None else None}
 
+    def _assist(self, play: Dict[str, Any], shot: Dict[str, Any]) -> Dict[str, Any]:
+        """The line of the assist of a made shot, right after it (ESPN gives it as the second participant of the shot): FIBA and ACB have it as an event of its own."""
+        who = self._who({**play, "athlete_id": play["assist_id"]})
+        return {**shot, "idPlayer": source_id(SOURCE, play["assist_id"]), "idLicense": source_id(SOURCE, play["assist_id"]), "action": "assist", "text": f"{who}: ASISTENCIA"}
+
     def build(self, plays: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        lines = [self.line(p) for p in plays]
+        lines: List[Dict[str, Any]] = []
+        for play in plays:
+            shot = self.line(play)
+            lines.append(shot)
+            if play["assist_id"]:
+                lines.append(self._assist(play, shot))
         for number, line in enumerate(lines, start=1):
             line["num"] = str(number)
         return lines

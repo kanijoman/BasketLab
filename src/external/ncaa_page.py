@@ -111,12 +111,14 @@ def _player(athlete: Dict[str, Any], keys: List[str]) -> Dict[str, Any]:
 
 
 def _play(raw: Dict[str, Any]) -> Dict[str, Any]:
-    athlete = ((raw.get("participants") or [{}])[0].get("athlete") or {}).get("id")
+    participants = [(p.get("athlete") or {}).get("id") for p in raw.get("participants") or []]
+    athlete = participants[0] if participants else None
+    assist = participants[1] if len(participants) > 1 and raw.get("scoringPlay") else None            # a made shot names the player who assisted it second
     coordinate = raw.get("coordinate") or {}
     return {"seq": str(raw["sequenceNumber"]), "period": int(raw["period"]["number"]), "clock": str((raw.get("clock") or {}).get("displayValue") or "0:00"),
             "team_id": str(raw["team"]["id"]) if raw.get("team") else None, "type": str(raw["type"]["text"]), "text": str(raw.get("text") or ""), "scoring": bool(raw.get("scoringPlay")),
             "points": int(raw.get("scoreValue") or 0) if raw.get("scoringPlay") else 0, "shooting": bool(raw.get("shootingPlay")), "points_attempted": int(raw.get("pointsAttempted") or 0),
-            "athlete_id": str(athlete) if athlete else None, "x": coordinate.get("x"), "y": coordinate.get("y"), "home_score": raw.get("homeScore"), "away_score": raw.get("awayScore"),
+            "athlete_id": str(athlete) if athlete else None, "assist_id": str(assist) if assist else None, "x": coordinate.get("x"), "y": coordinate.get("y"), "home_score": raw.get("homeScore"), "away_score": raw.get("awayScore"),
             "wallclock": raw.get("wallclock")}
 
 
