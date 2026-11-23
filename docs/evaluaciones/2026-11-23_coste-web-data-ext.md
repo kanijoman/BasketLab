@@ -17,10 +17,15 @@ Medido el 23/11/2026 con **partidos reales de NCAA** (los de la conferencia ACC 
 
 * **`LineupExtractor` recuerda quién está en pista por (equipo, instante)** y la plantilla del equipo (un partido no cambia mientras vive el extractor); devuelve una copia del conjunto, porque quien llama puede modificarlo. Con 10 partidos reales los quintetos pasan de **18,4 s a 6,3 s (3×)**; en un partido de 264 quintetos los recorridos de tramos de pista pasan de **1.267.200 a ≤ 4.810**. Las respuestas no cambian: los 236 tests de quintetos, rotaciones y repositorio, y los ficheros dorados de `inout` y de conteo de la jugada a jugada, siguen en verde. También acelera `web-data` de FEB, que usa el mismo código.
 
-## Lo que queda (decisión pendiente)
+## Lo que se hizo después: `inout` en un solo recorrido (opción 1, decidida el 23/11/2026)
 
-`inout` no mejora con eso (18 s antes y después): cada jugador crea sus propios extractores. Opciones:
+`get_players_in_out_stats` (repositorio) calcula el dentro/fuera de **todos los jugadores de la competición en un solo recorrido de los partidos**: cada partido se lee una vez y su analizador lo comparten los jugadores que lo necesitan. El resultado de cada jugador es **idéntico** al de la consulta por jugador (`get_player_in_out_stats`, que sigue existiendo como oráculo; los escenarios del corpus real del repositorio y los 36 jugadores de los partidos de prueba de FEB lo comprueban). `export_inout` lo usa.
 
-1. **Un solo recorrido por partido**: analizar cada partido una vez y repartir el resultado entre todos sus jugadores (lineal en vez de cuadrático). Es lo correcto, pero toca el repositorio de dentro/fuera; el oráculo es el cálculo por jugador actual (los dorados y una comparación jugador a jugador con los partidos de prueba de FEB y FBCYL).
-2. **No publicar `inout` ni `lineups` de las fuentes externas** (un indicador por competición en el catálogo). Rápido, pero se pierde el dato.
-3. **Un límite de tiempo propio de `web-data-ext`** que publique lo construido y aplace el resto (como el de #1067), sin arreglar el coste.
+| Partidos | `inout` antes | `inout` ahora |
+|---|---|---|
+| 10 | 18 s | **7 s** |
+| 30 | 134 s | **16 s** |
+
+Ahora crece **linealmente** (de 10 a 30 partidos, 2,3× en vez de 7,4×): con los ≈ 370 partidos de una conferencia la diferencia es de horas a minutos. Junto con la memoria del extractor de quintetos, la publicación de 30 partidos pasa de 224 s a unos 40 s (mismo método de medida, `mongomock`).
+
+**Lo que sigue pendiente**: dentro de cada partido, cada jugador sigue recorriendo la jugada a jugada completa (clasificar cada jugada una vez y repartirla entre los jugadores sería un paso más, que se hará si la medición con Mongo real lo pide) y el tiempo real del próximo `Web data ext` en el workflow, que es lo que decide si hace falta además un límite de tiempo propio o saltarse secciones.
