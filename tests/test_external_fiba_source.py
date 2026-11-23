@@ -168,7 +168,7 @@ class TestTheRealSourceOfTheRefresh:
 
         assert isinstance(sources.default_source("fiba", budget=7), FibaSource) and sources.default_source("fiba", budget=7).remaining == 7
         assert sources.default_source("fiba").remaining == 300
-        assert sources.default_source("ncaa") is None and type(sources.default_source("acb")).__name__ == "AcbSource"          # ACB (#886) has its own now
+        assert type(sources.default_source("ncaa")).__name__ == "NcaaSource" and type(sources.default_source("acb")).__name__ == "AcbSource"          # ACB (#886) and NCAA (#888) have their own now
 
     def test_it_registers_the_source_once_and_never_over_one_that_is_already_there(self):
         from src.external import sources

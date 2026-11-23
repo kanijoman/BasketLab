@@ -61,6 +61,15 @@ def _check_fiba(where: str, value: Any) -> Dict[str, Any]:
     return {"event": value["event"].strip(), **({"max_games": cap} if cap is not None else {})}
 
 
+def _check_ncaa(where: str, value: Any) -> Dict[str, Any]:
+    """The ``ncaa`` object of an NCAA entry: the ``conference_id`` ESPN gives the conference for that sex and season (#966). It is its identity: the name is a label (the new Pac-12 of 2026/27 has the
+    name of the one that disappeared, and the Summit has an id per sex)."""
+    conference = value.get("conference_id") if isinstance(value, dict) else None
+    if not isinstance(conference, str) or not conference.strip():
+        raise ValueError(f"{where}: an ncaa competition needs ncaa.conference_id, the id ESPN gives its conference (text): the name is a label, not its identity")
+    return {"conference_id": conference.strip()}
+
+
 def _check_acb(where: str, value: Any) -> Dict[str, Any]:
     """The ``acb`` object of an ACB entry: the ``competition_id`` and the ``edition_id`` of its API (the Liga Endesa 2019/20 is 1 and 84) and, optionally, ``max_games``: how many games of it a run asks for at most (#886)."""
     ids = ("competition_id", "edition_id")
@@ -87,7 +96,8 @@ def _check_external(where: str, raw: Dict[str, Any]) -> Dict[str, Any]:
         raise ValueError(f"{where}: conference must be a text")
     if conference is None and league in CONFERENCE_REQUIRED:
         raise ValueError(f"{where}: a {league} competition lacks: conference (one competition per conference)")
-    extra = {"fiba": _check_fiba(where, raw.get("fiba"))} if league == "fiba" else {"acb": _check_acb(where, raw.get("acb"))} if league == "acb" else {}
+    extra = ({"fiba": _check_fiba(where, raw.get("fiba"))} if league == "fiba" else {"acb": _check_acb(where, raw.get("acb"))} if league == "acb"
+             else {"ncaa": _check_ncaa(where, raw.get("ncaa"))} if league == "ncaa" else {})
     return {"source": league, "groups": "", "conference": conference.strip() if conference else None, **extra}
 
 
@@ -144,6 +154,13 @@ def load_catalogue(path: Any = DEFAULT_CATALOGUE) -> List[Dict[str, Any]]:
         if key in seen:
             raise ValueError(f"competitions entry #{i}: {e['competition']} {e['season_label']} is listed twice")
         seen.add(key)
+    conferences: Dict[tuple, int] = {}
+    for i, e in enumerate(entries, start=1):             # a conference is its id in a sex and season, whatever it is called (#966)
+        if e["league"] == "ncaa":
+            same = (e["gender"], e["season_value"], e["ncaa"]["conference_id"])
+            if same in conferences:
+                raise ValueError(f"competitions entry #{i}: {e['competition']} {e['season_label']} {e['conference']} is the same conference (id {same[2]}) as entry #{conferences[same]}, whatever its name")
+            conferences[same] = i
     return entries
 
 

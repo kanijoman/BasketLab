@@ -23,6 +23,8 @@ def _external(source: str, **over):
         base["conference"] = "SEC"
     if source == "fiba":
         base["fiba"] = {"event": "fiba-test-event-2026"}
+    if source == "ncaa":
+        base["ncaa"] = {"conference_id": over.get("conference", "SEC")}          # the id of the conference is its identity (#966); the tests use its name
     if source == "acb":
         base["acb"] = {"competition_id": 1, "edition_id": 91}
     return {**base, **over}
