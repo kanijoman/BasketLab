@@ -97,4 +97,15 @@ jobs:
           fi
           git commit -q -m "Rosters $(date -u +%Y-%m-%dT%H:%MZ)"
           export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/ext_key -o IdentitiesOnly=yes"
-          git push -q origin HEAD
+          # other jobs write to this same repository (each one its own folder, so nothing conflicts): when the branch moved while this one worked (#1068, a 34-minute NCAA batch lost
+          # to a push rejected because FIBA had pushed in the meantime) it integrates what they wrote and pushes again, a few times
+          for attempt in 1 2 3 4 5; do
+            if git pull --rebase -q origin main && git push -q origin HEAD; then
+              exit 0
+            fi
+            git rebase --abort 2>/dev/null || true
+            echo "push attempt $attempt of 5 failed: another job wrote to the repository; integrating it and trying again"
+            sleep $((attempt * ${PUSH_RETRY_PAUSE:-5}))
+          done
+          echo "::error::the archive could not be pushed after 5 attempts"
+          exit 1
