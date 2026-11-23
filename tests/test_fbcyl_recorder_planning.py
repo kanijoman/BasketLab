@@ -78,3 +78,30 @@ def test_the_match_of_wednesday_25_11_is_planned_with_the_real_watchlist():
     groups = {str(g) for g in watch["groups"]}
     assert groups, "a watchlist without groups plans nothing"
     assert rec.plan({**watch, "groups": [GROUP]}, kick_off, lambda g: [wednesday])
+
+
+class TestTheRequestsAreMadeAsABrowserDoes:
+    """Real cause of the unrecorded match of 21/11/2026 (#446), found on 23/11: the recorder asked with ``requests.get(url)`` and NO headers, and the servers of FBCYL (the ESB calendar, the stats and the
+    streaming) close the connection without an answer to the default agent of ``requests`` (measured on 23/11: ``ConnectionError`` without headers and HTTP 200 with a plain ``Mozilla/5.0`` for the
+    calendar, the moves, the stats and the live feed). The planner then planned nothing and the recorder could not have read anything either."""
+
+    def test_every_request_of_the_recorder_carries_a_browser_user_agent(self, monkeypatch):
+        seen = []
+
+        class Answer:
+            status_code, headers, content = 200, {}, b"{}"
+
+        monkeypatch.setattr("requests.get", lambda url, **kw: seen.append(kw) or Answer())
+        response = rec.http_get("https://esb.optimalwayconsulting.com/x")
+        agent = seen[0]["headers"]["User-Agent"]
+        assert response.status == 200 and agent.startswith("Mozilla/5.0") and "python-requests" not in agent
+
+    def test_the_agent_names_no_project_and_no_person(self, monkeypatch):
+        seen = []
+
+        class Answer:
+            status_code, headers, content = 200, {}, b""
+
+        monkeypatch.setattr("requests.get", lambda url, **kw: seen.append(kw) or Answer())
+        rec.http_get("https://x")
+        assert set(seen[0]["headers"]) == {"User-Agent"} and "basketlab" not in seen[0]["headers"]["User-Agent"].lower()
