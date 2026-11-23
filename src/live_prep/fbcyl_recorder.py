@@ -220,6 +220,26 @@ def http_get(url: str) -> Response:
     return Response(r.status_code, dict(r.headers), r.content)
 
 
+def read_calendar(group: str, get: Callable[[str], Response], attempts: int = 3, pause_s: float = 3.0) -> List[Dict[str, Any]]:
+    """The rows of a group calendar, asked again when the answer is not a good one (the ESB API fails now and then); said as a warning of the run when it never is (#446).
+
+    On 21/11/2026 the planner read it once and a failure became «no matches» without a trace: four green runs, no recording."""
+    problem = "no rows"
+    for attempt in range(attempts):
+        if attempt:
+            time.sleep(pause_s)
+        try:
+            response = get(API.format(group=group))
+            rows = calendar_rows(response.body.decode("utf-8", "replace")) if response.status == 200 else []
+            problem = f"HTTP {response.status}, no rows" if not rows else problem
+        except Exception as exc:  # noqa: BLE001 - the planner must go on with the other groups
+            rows, problem = [], f"{type(exc).__name__}: {exc}"
+        if rows:
+            return rows
+    print(f"::warning::FBCYL calendar of group {group} unreadable after {attempts} attempts ({problem}): no match of that group is planned", file=sys.stderr)
+    return []
+
+
 def main(argv: Optional[List[str]] = None, get: Optional[Callable[[str], Response]] = None) -> int:
     get = get or http_get
     parser = argparse.ArgumentParser(description="FBCYL live recorder (spike #444)")
@@ -241,7 +261,7 @@ def main(argv: Optional[List[str]] = None, get: Optional[Callable[[str], Respons
     if args.cmd == "plan":
         now = datetime.fromisoformat(args.now) if args.now else datetime.now(timezone.utc)
         watch = json.loads(Path(args.watchlist).read_text(encoding="utf-8"))
-        print(json.dumps({"include": plan(watch, now, lambda group: calendar_rows(get(API.format(group=group)).body.decode("utf-8", "replace")))}))
+        print(json.dumps({"include": plan(watch, now, lambda group: read_calendar(group, get))}))
         return 0
     recorder = FbcylRecorder(args.group, args.home, args.away, Path(args.out) / f"fbcyl-{args.group}-{args.home}-{args.away}", get, interval=args.interval,
                              max_minutes=args.max_minutes, max_wait_minutes=args.max_wait_minutes, skip_if_finished=args.skip_if_finished)
