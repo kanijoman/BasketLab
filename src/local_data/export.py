@@ -70,11 +70,28 @@ def fbcyl_player_rows(collection: Any) -> List[Dict]:
     return sorted(rows, key=lambda r: (str(r["match_id"]), str(r["team_id"]), str(r["player_uuid"]), str(r["player_name"])))
 
 
+def _outside_division_one(collection: Any, name: str) -> set:
+    """``{(game, is_local)}`` of the teams a game of an external source says are NOT Division I (#1061: NCAA keeps the game complete, with a visitor that is not Division I and its box, and what is
+    published leaves that team out). Only ``division1: false`` counts: a source that says nothing of it (FIBA, ACB) keeps every team."""
+    if not source_of(name):
+        return set()
+    outside = set()
+    for doc in collection.find({}, {"HEADER.TEAM.division1": 1}):
+        for position, team in enumerate(((doc.get("HEADER") or {}).get("TEAM") or [])[:2]):
+            if team.get("division1") is False:
+                outside.add((doc["_id"], position == 0))              # the first team is the local one
+    return outside
+
+
 def export_collection(collection: Any, name: str) -> Dict[str, Any]:
     """The payload of one competition: its team rows, its player rows (FEB; ``None`` for FBCYL) and how many games they come from."""
     fbcyl = is_fbcyl(name)
     team_rows = _rows(collection, build_fbcyl_season_rows_pipeline() if fbcyl else AggregationPipelineBuilder.build_season_rows_pipeline())
     player_rows = fbcyl_player_rows(collection) if fbcyl else _rows(collection, AggregationPipelineBuilder.build_season_player_rows_pipeline())
+    outside = _outside_division_one(collection, name)
+    if outside:
+        team_rows = [r for r in team_rows if (r["match_id"], r["is_local"]) not in outside]
+        player_rows = [r for r in player_rows if (r["match_id"], r["is_local"]) not in outside]
     return {"format": FORMAT, "collection": name, "league": source_of(name) or ("fbcyl" if fbcyl else "feb"), "games": len({r["match_id"] for r in team_rows}),
             "team_rows": team_rows, "player_rows": player_rows}
 
