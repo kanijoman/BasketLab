@@ -136,3 +136,31 @@ class TestThePlayByPlay:
     def test_a_game_whose_play_by_play_came_empty_has_no_lines_and_is_still_a_document(self):
         d = doc("game_womens_noplays_401830444", ENTRY_F)
         assert d["PLAYBYPLAY"]["LINES"] == [] and d["BOXSCORE"]["TEAM"][0]["PLAYER"] and d["SHOTCHART"] == {"SHOTS": [], "TEAM": []}
+
+
+class TestTheReconciliationOfTheCommonCriterion:
+    """The criterion of #884 for every external source, with the shared reconciliation (``market.box_reconciliation``, the one the refresh applies): the play by play of the document must match its box in
+    the nine core statistics. Measured on real games, 23/11/2026: the six normal ones match; the one whose play by play came empty does not, and is kept marked as not reliable."""
+
+    @pytest.mark.parametrize("name,entry", [(MENS, ENTRY_M), ("game_mens_ot_401812120", ENTRY_M), ("game_mens_nond1_401823428", ENTRY_M), (WOMENS, ENTRY_F), ("game_womens_ot_401827769", ENTRY_F),
+                                            ("game_womens_nond1_401817303", ENTRY_F)])
+    def test_the_real_games_match_in_the_core_statistics(self, name, entry):
+        from src.market.box_reconciliation import CORE_STATS, reconcile_game
+
+        result = reconcile_game(doc(name, entry))
+        assert result.reliable is True and not result.mismatches(CORE_STATS)
+
+    def test_the_game_whose_play_by_play_came_empty_is_not_reliable_in_every_core_statistic(self):
+        from src.market.box_reconciliation import CORE_STATS, reconcile_game
+
+        result = reconcile_game(doc("game_womens_noplays_401830444", ENTRY_F))
+        assert result.reliable is False and {c.stat for c in result.mismatches(CORE_STATS)} == set(CORE_STATS)
+
+    def test_a_play_that_ESPN_lost_makes_the_game_not_reliable_and_the_statistic_is_named(self):
+        from src.market.box_reconciliation import reconcile_game
+
+        game = parse_summary(fixture(WOMENS))
+        made = next(i for i, p in enumerate(game["plays"]) if p["scoring"] and p["points_attempted"] == 2)
+        del game["plays"][made]
+        result = reconcile_game(to_canonical(game, ENTRY_F, NAMES))
+        assert result.reliable is False and {"PTS", "FGM", "FGA"} <= {c.stat for c in result.mismatches(("PTS", "FGM", "FGA"))}
