@@ -42,7 +42,11 @@ const chooseTeam = async (id: string) => {
 }
 const fixtureRows = () => screen.getAllByTestId('fixture')
 
+// The calendar is a real capture of 9/11/2026 and «next match» reads the clock: without a fixed date these tests rot as the matches of the capture fall into the past.
+const CAPTURED_ON = new Date('2026-11-09T12:00:00Z')
+
 beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'], now: CAPTURED_ON })
   vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} })           // the chart of the scenarios is drawn by recharts; jsdom has no ResizeObserver
   localStorage.clear()
   api.getForecastInputs.mockReset().mockResolvedValue(inputs)

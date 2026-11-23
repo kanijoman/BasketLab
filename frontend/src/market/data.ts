@@ -2,6 +2,7 @@
 // sealing and same unlocking as `web-data` (`@/webdata/sealedClient`), another manifest (`./contract.generated`) and another branch: the two publications are written by two workflows and
 // a failure of one does not stop the other. The base is fixed here, not in an environment variable: the Vercel project of Talent needs none.
 import type { EquivalenceDocument } from './equivalence'
+import type { FormationDocument } from './formation'
 import { DataUnavailable } from '@/datasource/resolve'
 import { createSealedClient } from '@/webdata/sealedClient'
 import { TALENT_SCHEMA, type TalentCompetitionEntry, type TalentManifest } from './contract.generated'
@@ -109,5 +110,15 @@ export async function loadEquivalences(): Promise<EquivalenceDocument | null> {
     const manifest = await talent.loadManifest()
     if (!manifest.equivalences) throw new TalentDataUnavailable('Esta publicación no tiene equivalencias.')
     return { manifest, wraps: manifest.equivalences.wraps, text: await talent.fetchText(manifest.equivalences.file) }
+  }, 'El fichero')
+}
+
+/** The index of the formation (#893), or null when the publication has none: what a player of the formation would be in the senior game IF he gets there, and whether the range can be shown (`usable`). */
+export async function loadFormation(): Promise<FormationDocument | null> {
+  if (!(await talent.loadManifest()).formation) return null
+  return talent.openSealed<FormationDocument>(async () => {
+    const manifest = await talent.loadManifest()
+    if (!manifest.formation) throw new TalentDataUnavailable('Esta publicación no tiene el índice de formación.')
+    return { manifest, wraps: manifest.formation.wraps, text: await talent.fetchText(manifest.formation.file) }
   }, 'El fichero')
 }
