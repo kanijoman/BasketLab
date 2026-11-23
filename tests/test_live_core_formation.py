@@ -291,6 +291,24 @@ def test_the_note_is_not_added_when_there_is_room_or_the_player_is_not_formacion
     assert "mínimo" not in foul_alert(rec_roster(g1=YES, w1=YES), "b1").message
 
 
+def test_the_note_does_not_claim_a_count_it_cannot_know_when_players_on_court_have_no_mark_regression():
+    """Bug 2524505 (#1056, feedback 0.7.0): the change note said «sin ella solo quedarían 1 de formación» for a team with only 2 players who are NOT formación, which makes it impossible.
+    The note counted only the players the roster says ARE formación and ignored the ones it does not settle (no mark, or not in the roster): with three of the five in that state it
+    claimed a certainty it does not have. It now says that the mark of those is unknown, as the alert of the illegal lineup does (there the doubt favours the team)."""
+    from src.live_core.rules_lineup import departure_note
+
+    snapshot, roster = board([YES, YES, UNKNOWN, UNKNOWN, UNKNOWN])                   # p1 is the one the alert asks to take off
+    note = departure_note(snapshot, OWN, roster, RuleConfig(), "p1")
+    assert note is not None and "solo quedarían" not in note and "no consta" in note and "3" in note
+
+
+def test_the_note_keeps_its_certain_text_when_every_mark_is_known():
+    from src.live_core.rules_lineup import departure_note
+
+    snapshot, roster = board([YES, YES, NO, NO, NO])
+    assert "solo quedarían 1 de formación" in departure_note(snapshot, OWN, roster, RuleConfig(), "p1")
+
+
 # --- analysis for the app ----------------------------------------------------------------
 
 def test_the_analysis_tells_the_app_how_many_formacion_players_are_on_court():

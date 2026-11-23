@@ -1,5 +1,5 @@
 /** The next match of each team "de interés" among the published rounds (issue #478): what «Próximos partidos» shows for them. */
-import { isFavorite, type Favorite } from './favorites'
+import { isFavorite, teamScope, type Favorite } from './favorites'
 import { inScope, type RoundFilters } from './filters'
 import { sidesOf, type RoundIndexEntry, type RoundMatch } from './remote'
 
@@ -28,8 +28,9 @@ export function nextMatchesOfFavorites(rounds: RoundIndexEntry[], favorites: Fav
     let best: NextMatch | null = null
     for (const round of rounds) {
       for (const match of round.matches) {
-        const home = isFavorite([favorite], match.home.id, match.home.name)
-        const away = !home && isFavorite([favorite], match.away.id, match.away.name)
+        const scope = teamScope(round.competition)
+        const home = isFavorite([favorite], match.home.id, match.home.name, scope)
+        const away = !home && isFavorite([favorite], match.away.id, match.away.name, scope)
         const at = startOf(match)
         if (!(home || away) || (at !== null && at < limit)) continue
         const candidate: NextMatch = { favorite, round, match, ownId: home ? match.home.id : match.away.id, rival: home ? match.away : match.home }
@@ -62,9 +63,10 @@ export function nextMatchList(rounds: RoundIndexEntry[], filters: RoundFilters, 
     for (const match of round.matches) {
       const at = startOf(match)
       if (at !== null && at < limit) continue
+      const scope = teamScope(round.competition)
       for (const team of [match.home, match.away]) {
         if (filters.team && team.id !== filters.team) continue
-        if (onlyInterest && !isFavorite(favorites, team.id, team.name)) continue
+        if (onlyInterest && !isFavorite(favorites, team.id, team.name, scope)) continue
         const current = best.get(team.id)
         const currentAt = current ? startOf(current.match) : null
         if (!current || (at !== null && (currentAt === null || at < currentAt))) best.set(team.id, { round, match })
@@ -73,12 +75,12 @@ export function nextMatchList(rounds: RoundIndexEntry[], filters: RoundFilters, 
   }
   const unique = new Map<string, { round: RoundIndexEntry; match: RoundMatch }>()
   for (const entry of best.values()) unique.set(entry.match.code, entry)
-  const favoriteSides = (m: RoundMatch) => [m.home, m.away].filter(t => isFavorite(favorites, t.id, t.name)).map(t => t.id)
+  const favoriteSides = (round: RoundIndexEntry, m: RoundMatch) => [m.home, m.away].filter(t => isFavorite(favorites, t.id, t.name, teamScope(round.competition))).map(t => t.id)
   const found = Array.from(unique.values()).map(({ round, match }) => {
-    const mine = favoriteSides(match)
+    const mine = favoriteSides(round, match)
     const offered = sidesOf(match)
     return { round, match, sides: mine.length ? offered.filter(id => mine.includes(id)).concat(mine.filter(id => !offered.includes(id))) : offered }
   })
-  const rank = (u: UpcomingMatch) => (!filters.team && favoriteSides(u.match).length > 0 ? 0 : 1)
+  const rank = (u: UpcomingMatch) => (!filters.team && favoriteSides(u.round, u.match).length > 0 ? 0 : 1)
   return found.sort((a, b) => rank(a) - rank(b) || (startOf(a.match) ?? Infinity) - (startOf(b.match) ?? Infinity))
 }

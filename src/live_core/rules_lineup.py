@@ -71,8 +71,12 @@ def departure_note(snap: Dict[str, Any], own_team_id: str, roster: Dict[str, Dic
         return None
     if (roster.get(pid) or {}).get("formacion") is not True:
         return None
-    yes = formation_counts(snap, own_team_id, roster)["yes"]
+    counts = formation_counts(snap, own_team_id, roster)
+    yes = counts["yes"]
     if yes > minimum:
         return None
+    if counts["unknown"]:         # the roster does not settle some of the five: «only N would remain» is not known (#1056), only that N are certain
+        return (f"Ojo: {player['name'].strip()} es de formación y sin {pronoun(config)} en pista solo constarían {yes - 1} de formación (mínimo {minimum}), "
+                f"pero no consta el dato de {counts['unknown']} en pista: comprobar su formación antes de cambiar.")
     return (f"Ojo: {player['name'].strip()} es de formación y sin {pronoun(config)} en pista solo quedarían {yes - 1} de formación "
             f"(mínimo {minimum}): el cambio debe ser por {other(config)} de formación.")

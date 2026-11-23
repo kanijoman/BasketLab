@@ -75,7 +75,8 @@ def normalize_catalog(entries: Optional[Iterable[Dict[str, Any]]]) -> List[Dict[
         if not isinstance(clubs, list):
             raise ValueError(f"competitions entry #{i}: clubs must be a list of team ids")
         rule_config = _checked_rule_config(i, raw["rule_config"]) if "rule_config" in raw else {}
-        out.append({"competition": name, "level": level, "gender": gender, "clubs": [str(c) for c in clubs], "rule_config": rule_config,
+        out.append({"competition": name, "level": level, "gender": gender, "category": raw.get("category") or "senior", "age_group": raw.get("age_group"),
+                    "clubs": [str(c) for c in clubs], "rule_config": rule_config,
                     "group_rules": _checked_group_rules(i, raw.get("group_rules", []))})
     return out
 
@@ -99,6 +100,7 @@ def competition_infos(db: Any, collections: Iterable[str], catalog: List[Dict[st
         out[collection] = {
             "key": collection, "label": f"{competition} · {group}" if group else competition, "competition": competition, "group": group,
             "season": meta.get("season_label") or "", "level": entry.get("level"), "gender": entry.get("gender"), "league": "FEB",
+            "category": entry.get("category") or "senior", "age_group": entry.get("age_group"),
             "clubs": list(entry.get("clubs") or default_clubs), "rule_config": {**({"gender": entry["gender"]} if entry.get("gender") else {}), **_rules_of(entry, group)},
         }
     return out
@@ -110,7 +112,8 @@ def fbcyl_infos(collections: Dict[str, str], catalogue: List[Dict[str, Any]], fe
     cannot be read gives an info labelled with the name of the collection, never an error: the round is still published."""
     from src.scraper.fbcyl_calendar import competition_of
 
-    gender_of = {str(e["fbcyl"]["competition_id"]): e["fbcyl"].get("gender") or None for e in catalogue if e.get("league") == "fbcyl"}
+    fbcyl_entries = {str(e["fbcyl"]["competition_id"]): e for e in catalogue if e.get("league") == "fbcyl"}
+    gender_of = {group: e["fbcyl"].get("gender") or None for group, e in fbcyl_entries.items()}
     out: Dict[str, Dict[str, Any]] = {}
     for collection, group in collections.items():
         try:
@@ -122,6 +125,7 @@ def fbcyl_infos(collections: Dict[str, str], catalogue: List[Dict[str, Any]], fe
         out[collection] = {
             "key": collection, "label": f"{competition} · {said['group']}" if said["competition"] and said["group"] else competition, "competition": competition,
             "group": said["group"], "season": said["season"], "level": None, "gender": gender, "league": "FBCYL",
+            "category": fbcyl_entries.get(str(group), {}).get("category") or "senior", "age_group": fbcyl_entries.get(str(group), {}).get("age_group"),
             "clubs": list(default_clubs), "rule_config": {"gender": gender} if gender else {},
         }
     return out
