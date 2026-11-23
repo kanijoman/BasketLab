@@ -213,10 +213,13 @@ class FbcylRecorder:
 
 # --- real adapters + CLI --------------------------------------------------------------------------------------
 
+BROWSER_AGENT = {"User-Agent": "Mozilla/5.0"}      # plain on purpose: the servers of FBCYL drop the connection without an answer to the default agent of ``requests`` (#446, 23/11/2026) and no project is named
+
+
 def http_get(url: str) -> Response:
     import requests
 
-    r = requests.get(url, timeout=20)
+    r = requests.get(url, headers=BROWSER_AGENT, timeout=20)
     return Response(r.status_code, dict(r.headers), r.content)
 
 
