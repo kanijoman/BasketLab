@@ -1,6 +1,6 @@
 /** The matches to follow (issues #286, #172, #440, #511): the next match of each team, filtered by league, competition, group and team, the teams "de interés" first. */
 import { useMemo, useState } from 'react'
-import { isFavorite, loadFavorites, toggleFavorite, type Favorite } from '../package/favorites'
+import { isFavorite, loadFavorites, teamScope, toggleFavorite, type Favorite } from '../package/favorites'
 import { NO_FILTERS, competitionOf, loadFilters, optionsOf, saveFilters, type RoundFilters } from '../package/filters'
 import { competitionLabel, type RoundIndexEntry, type RoundMatch } from '../package/remote'
 import { nextMatchesOfFavorites, nextMatchList } from '../package/upcoming'
@@ -38,10 +38,11 @@ function when(start?: string | null): string {
 /** «sáb 24/10 16:30»: when a reminder rings. */
 const whenAt = (d: Date) => `${d.toLocaleDateString('es-ES', { weekday: 'short', day: '2-digit', month: '2-digit' })} ${d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`
 
-function Star({ team, favorites, onToggle }: { team: { id: string; name: string }; favorites: Favorite[]; onToggle: (team: Favorite) => void }) {
-  const marked = isFavorite(favorites, team.id, team.name)
+/** The star of a team IN the category of the competition it plays (#1055): the club's youth teams are other teams. */
+function Star({ team, scope, favorites, onToggle }: { team: { id: string; name: string }; scope: string | null; favorites: Favorite[]; onToggle: (team: Favorite) => void }) {
+  const marked = isFavorite(favorites, team.id, team.name, scope)
   return (
-    <button type="button" className="star secondary" aria-pressed={marked} onClick={() => onToggle({ teamId: team.id, name: team.name })}
+    <button type="button" className="star secondary" aria-pressed={marked} onClick={() => onToggle({ teamId: team.id, name: team.name, ...(scope ? { scope } : {}) })}
       aria-label={marked ? `Quitar ${team.name} de los equipos de interés` : `Marcar ${team.name} como de interés`}>
       {marked ? '★' : '☆'}
     </button>
@@ -152,7 +153,7 @@ export default function RoundPackages({ rounds, canOpen, busy, onDownload, isLoa
                 <span className="detail round-competition">{competitionOf(round).label}</span>
                 {[match.home, match.away].map(team => (
                   <span key={team.id} className="round-team">
-                    <Star team={team} favorites={favorites} onToggle={toggle} />
+                    <Star team={team} scope={teamScope(round.competition)} favorites={favorites} onToggle={toggle} />
                     {match.is_club ? <strong className="team-name">{team.name}</strong> : <span className="team-name">{team.name}</span>}
                   </span>
                 ))}

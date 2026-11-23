@@ -4,8 +4,8 @@
  * The labels come from the competition data of the index (publisher, #438); an index that has none falls back to the name of the collection.
  * The chosen filters are remembered on the device (same pattern as `useTab.ts`).
  */
-import { isFavorite, type Favorite } from './favorites'
-import { competitionLabel, type RoundIndexEntry, type RoundMatch } from './remote'
+import { hasFavorite, type Favorite } from './favorites'
+import { competitionLabel, type RoundIndexEntry } from './remote'
 
 const KEY = 'basketlab-live-filters'
 
@@ -48,9 +48,6 @@ export function leagueOf(round: RoundIndexEntry): string {
   return /^FBCYL_/i.test(round.collection) ? 'FBCYL' : 'FEB'
 }
 
-const hasFavorite = (match: RoundMatch, favorites: Favorite[]) =>
-  isFavorite(favorites, match.home.id, match.home.name) || isFavorite(favorites, match.away.id, match.away.name)
-
 export const inScope = (round: RoundIndexEntry, filters: RoundFilters) => {
   const c = competitionOf(round)
   return (!filters.league || leagueOf(round) === filters.league) && (!filters.competition || c.name === filters.competition) && (!filters.group || c.group === filters.group)
@@ -61,7 +58,7 @@ export function filterRounds(rounds: RoundIndexEntry[], filters: RoundFilters, f
   return rounds.flatMap(round => {
     if (!inScope(round, filters)) return []
     const matches = round.matches.filter(m =>
-      (!filters.onlyFavorites || hasFavorite(m, favorites)) && (!filters.team || m.home.id === filters.team || m.away.id === filters.team))
+      (!filters.onlyFavorites || hasFavorite(round, m, favorites)) && (!filters.team || m.home.id === filters.team || m.away.id === filters.team))
     return matches.length > 0 ? [{ ...round, matches }] : []
   })
 }

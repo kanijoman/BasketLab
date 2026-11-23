@@ -5,7 +5,7 @@
  */
 export const PACKAGES_BASE_URL = 'https://raw.githubusercontent.com/kanijoman/BasketLab/live-packages'
 import type { Wrap } from './crypto'
-import { isFavorite, type Favorite } from './favorites'
+import { hasFavorite, type Favorite } from './favorites'
 
 /** Version 1: encrypted with a password. Version 2 (issue #410): sealed by scope, the keys wrapped per scope are in `wraps` and the index publishes
  *  `open_key` while the beta is open. */
@@ -20,6 +20,9 @@ export interface CompetitionInfo {
   season: string
   level: number | null
   gender: 'M' | 'F' | null
+  /** `senior` or `formacion`, and the age group of a youth one (`U16`…); absent in an index from before #1055 (the team is then told by its name alone). */
+  category?: 'senior' | 'formacion'
+  age_group?: string | null
   /** `FEB` or `FBCYL`; absent in an index from before it existed (then it is read from the name of the collection). */
   league?: string
 }
@@ -135,12 +138,13 @@ export function competitionLabel(collection: string): string {
 /** The rounds with a team of interest first, then the competition of the club; in each round the matches of the teams of interest first, then
  *  those of the club, then by kick-off. Without favourites it is the order it always was. */
 export function orderRounds(rounds: RoundIndexEntry[], favorites: Favorite[] = []): RoundIndexEntry[] {
-  const interesting = (m: RoundMatch) => Number(isFavorite(favorites, m.home.id, m.home.name) || isFavorite(favorites, m.away.id, m.away.name))
-  const byTime = (a: RoundMatch, b: RoundMatch) => interesting(b) - interesting(a) || Number(b.is_club) - Number(a.is_club) || (a.start ?? '').localeCompare(b.start ?? '')
-  const rank = (r: RoundIndexEntry) => (r.matches.some(m => interesting(m)) ? 1 : 0)
+  const interesting = (round: RoundIndexEntry, m: RoundMatch) => Number(hasFavorite(round, m, favorites))
+  const byTime = (round: RoundIndexEntry) => (a: RoundMatch, b: RoundMatch) =>
+    interesting(round, b) - interesting(round, a) || Number(b.is_club) - Number(a.is_club) || (a.start ?? '').localeCompare(b.start ?? '')
+  const rank = (r: RoundIndexEntry) => (r.matches.some(m => interesting(r, m)) ? 1 : 0)
   return [...rounds]
     .sort((a, b) => rank(b) - rank(a) || Number(b.club) - Number(a.club) || a.collection.localeCompare(b.collection))
-    .map(round => ({ ...round, matches: [...round.matches].sort(byTime) }))
+    .map(round => ({ ...round, matches: [...round.matches].sort(byTime(round)) }))
 }
 
 export interface RoundBundle {
