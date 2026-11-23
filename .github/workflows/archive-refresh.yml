@@ -87,13 +87,16 @@ jobs:
         id: scrape
         if: steps.restore.outcome == 'success'
         continue-on-error: true
+        # #1067: the job is cut at 90 minutes and a cancelled job does not save. The scrape stops starting competitions after 70 (what is left waits for the next run) and its step is cut at 80 if one
+        # hangs: either way the job still has time to save (267 s on the biggest load so far) and the games already scraped are kept
+        timeout-minutes: 80
         env:
           MONGODB_CONNECTION_STRING: ${{ env.EPHEMERAL_MONGO }}
           ONLY: ${{ github.event.inputs.only }}
           SEASON: ${{ github.event.inputs.season }}
           LEAGUE: ${{ github.event.inputs.league }}
           FORCE: ${{ github.event.inputs.force == 'true' && '1' || '' }}
-        run: python run_refresh.py --config config/competitions.json --require-env ${ONLY:+--only "$ONLY"} ${SEASON:+--season "$SEASON"} ${LEAGUE:+--league "$LEAGUE"} ${FORCE:+--force-check}
+        run: python run_refresh.py --config config/competitions.json --require-env --max-minutes 70 ${ONLY:+--only "$ONLY"} ${SEASON:+--season "$SEASON"} ${LEAGUE:+--league "$LEAGUE"} ${FORCE:+--force-check}
       # Games stored before a new DERIVED_VERSION get the field here; idempotent and cheap. Runs even if the scrape reported a problem.
       - name: Fill DERIVED in the games
         if: steps.restore.outcome == 'success' && !cancelled()

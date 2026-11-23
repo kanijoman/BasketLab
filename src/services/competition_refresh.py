@@ -12,6 +12,7 @@ import argparse
 import json
 import os
 import sys
+import time
 from dataclasses import dataclass, field, fields, replace
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -252,9 +253,17 @@ def _refresh_fbcyl(db: Any, entry: RefreshEntry, scraper: Optional[Any], today: 
     return item
 
 
+def _deferred(collection: str) -> Dict[str, Any]:
+    """A competition the run had no time for (#1067): the next one takes it up. It has the shape of any other item, and is no error."""
+    return {"collection": collection, "fatal": None, "job": None, "freshness": None, "deferred": True}
+
+
 def refresh_all(db: Any, entries: List[RefreshEntry], scraper: Optional[Any] = None,
                 freshness: Optional[Callable[[str], Dict[str, Any]]] = None, fbcyl_scraper: Optional[Any] = None,
-                now: Optional[Callable[[], datetime]] = None, force: bool = False) -> List[Dict[str, Any]]:
+                now: Optional[Callable[[], datetime]] = None, force: bool = False,
+                deadline: Optional[float] = None, clock: Callable[[], float] = time.monotonic) -> List[Dict[str, Any]]:
+    """Refresh every entry. With a ``deadline`` (a reading of ``clock``) it looks at the clock BEFORE each competition, never in the middle of one, and when the time is up it leaves the rest as ``deferred``:
+    the job saves what it has and the next run goes on (#1067). A competition that was already closed needs no time and is reported as always."""
     from src.services.data_freshness_service import DataFreshnessService
     from src.services.match_schedule_service import _madrid_now
 
@@ -262,9 +271,16 @@ def refresh_all(db: Any, entries: List[RefreshEntry], scraper: Optional[Any] = N
     now = now or _madrid_now
     report = []
     today = now().date()
+    stopped = False                                                      # once the time is up every competition left is deferred, without reading the clock again
+
+    def late() -> bool:
+        nonlocal stopped
+        stopped = stopped or (deadline is not None and clock() >= deadline)
+        return stopped
+
     for entry in entries:
         if entry.league == "fbcyl":
-            report.append(_refresh_fbcyl(db, entry, fbcyl_scraper, today))
+            report.append(_deferred(f"{entry.competition_label}/{entry.season_label}") if late() else _refresh_fbcyl(db, entry, fbcyl_scraper, today))
             continue
         if not force:
             known = ingested_collections(db, [entry])
@@ -277,7 +293,8 @@ def refresh_all(db: Any, entries: List[RefreshEntry], scraper: Optional[Any] = N
             report.append({"collection": f"{entry.competition_label}/{entry.season_label}", "fatal": f"{type(exc).__name__}: {exc}",
                            "job": None, "freshness": None})
             continue
-        report.extend(_refresh_one(db, e, scraper, check, now, force) for e in concrete)
+        for e in concrete:
+            report.append(_deferred(f"{e.competition_label}/{e.season_label}/{e.group_label}") if late() else _refresh_one(db, e, scraper, check, now, force))
     return report
 
 
@@ -291,8 +308,12 @@ def to_markdown(report: List[Dict[str, Any]]) -> str:
     if closed:
         shown = ", ".join(closed[:10]) + (f" y {len(closed) - 10} más" if len(closed) > 10 else "")
         out += [f"## Colecciones cerradas: {len(closed)}", f"- Sin comprobar este refresco (último partido de hace más de {CLOSED_AFTER_DAYS} días y al día; se comprueban cada {RECHECK_CLOSED_EVERY_DAYS} días): {shown}", ""]
+    deferred = [r["collection"] for r in report if r.get("deferred")]
+    if deferred:
+        shown = ", ".join(deferred[:10]) + (f" y {len(deferred) - 10} más" if len(deferred) > 10 else "")
+        out += [f"## Aplazadas por tiempo: {len(deferred)}", f"- El refresco llegó a su límite de tiempo y no empezó estas competiciones: {shown}. No es un error: se retoman en el siguiente refresco (lo ya guardado se salta).", ""]
     for r in report:
-        if r.get("closed"):
+        if r.get("closed") or r.get("deferred"):
             continue
         out.append(f"## {r['collection']}")
         if r["fatal"]:
@@ -323,6 +344,16 @@ def to_markdown(report: List[Dict[str, Any]]) -> str:
     return "\n".join(out)
 
 
+def _positive_minutes(text: str) -> float:
+    try:
+        minutes = float(text)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"not a number of minutes: {text!r}") from None
+    if minutes <= 0:
+        raise argparse.ArgumentTypeError("the limit must be a positive number of minutes")
+    return minutes
+
+
 def main(argv: Optional[List[str]] = None) -> int:
     parser = argparse.ArgumentParser(description="Refresh the database from FEB")
     parser.add_argument("--config", default=DEFAULT_CONFIG)
@@ -332,6 +363,8 @@ def main(argv: Optional[List[str]] = None) -> int:
                         help="refresh only this season, the year it starts in (repeatable; comma separated also works), e.g. 2025")
     parser.add_argument("--league", choices=LEAGUES, help="refresh only this league")
     parser.add_argument("--force-check", action="store_true", help="check the closed collections too (by default a collection whose last game is over 14 days old and was up to date is checked every 7 days)")
+    parser.add_argument("--max-minutes", type=_positive_minutes, metavar="N",
+                        help="stop starting competitions after N minutes and leave the rest for the next run (#1067): the job can then save what it has before its own limit")
     parser.add_argument("--require-env", action="store_true", help="fail unless MONGODB_CONNECTION_STRING is set (CI)")
     args = parser.parse_args(argv)
     if args.require_env and not os.environ.get("MONGODB_CONNECTION_STRING"):
@@ -349,7 +382,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     if not db.is_connected():
         print("No se pudo conectar a la base de datos", file=sys.stderr)
         return 2
-    report = refresh_all(db, entries, force=args.force_check)
+    deadline = time.monotonic() + args.max_minutes * 60 if args.max_minutes else None
+    report = refresh_all(db, entries, force=args.force_check, deadline=deadline, clock=time.monotonic)
     text = to_markdown(report)
     print(text)
     summary = os.environ.get("GITHUB_STEP_SUMMARY")
