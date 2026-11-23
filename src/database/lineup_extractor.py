@@ -23,6 +23,10 @@ class LineupExtractor:
         # Cache substitutions and segments for performance
         self._substitutions_cache = None
         self._segments_cache = {}
+        # Who is on court depends on the team and the instant, never on the lineup that asks, and a game has hundreds of lineups that walk all its instants (23/11/2026: 3,9 million calls
+        # for 30 real games): each answer is worked out once. The game does not change while the extractor lives.
+        self._on_court_cache: Dict[Tuple[str, int], FrozenSet[str]] = {}
+        self._team_players_cache: Dict[str, Set[str]] = {}
 
     def get_lineup_at_timestamp(self, team_id: str, timestamp_seconds: int) -> Set[str]:
         """
@@ -35,6 +39,14 @@ class LineupExtractor:
         Returns:
             Set of player IDs (maximum 5) on court at that timestamp
         """
+        key = (team_id, timestamp_seconds)
+        cached = self._on_court_cache.get(key)
+        if cached is None:
+            cached = self._on_court_cache[key] = frozenset(self._who_is_on_court(team_id, timestamp_seconds))
+        return set(cached)                                           # a copy: a caller may change what it gets
+
+    def _who_is_on_court(self, team_id: str, timestamp_seconds: int) -> Set[str]:
+        """``get_lineup_at_timestamp`` without the memo."""
         # Ensure substitutions are parsed (only once)
         if self._substitutions_cache is None:
             self._substitutions_cache = self.analyzer.parse_substitutions()
@@ -42,8 +54,10 @@ class LineupExtractor:
         # Build timeline of who's on court: player -> where the segment that contains the timestamp started
         on_court: Dict[str, int] = {}
 
-        # Get all players from this team
-        team_players = self._get_team_players(team_id)
+        # Get all players from this team (once per team: they do not change during the game)
+        if team_id not in self._team_players_cache:
+            self._team_players_cache[team_id] = self._get_team_players(team_id)
+        team_players = self._team_players_cache[team_id]
 
         # For each player, check if they're on court at timestamp (use cached segments)
         for player_id in team_players:
