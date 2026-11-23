@@ -33,7 +33,10 @@ def _entry(source, **over):
         base["fiba"] = {"event": "fiba-test-event-2026"}
     if source == "acb":
         base["acb"] = {"competition_id": 1, "edition_id": 91}
-    return {**base, **over}
+    entry = {**base, **over}
+    if source == "ncaa" and "ncaa" not in over:
+        entry["ncaa"] = {"conference_id": entry["conference"]}          # the id of the conference (#966): the tests use its name, one per conference
+    return entry
 
 
 def _catalogue(tmp_path, *entries):

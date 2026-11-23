@@ -119,3 +119,34 @@ class TestTheScriptThatAddsThem:
         fake = Site({"/mens-college-basketball/scoreboard/conferences?season=2026": text("conferences_mens_2026"), "/womens-college-basketball/scoreboard/conferences?season=2026": NcaaFetchError("down")})
         assert self.run(path, "--season", "2025", fake=fake) == 1
         assert len(json.loads(path.read_text(encoding="utf-8"))["competitions"]) == 32 and "FAILED: F" in capsys.readouterr().out
+
+
+class TestTheIdentityOfAConference:
+    """A conference is told by its id in a sex and season, never by its name (#966): the new Pac-12 of 2026/27 has the name of the one that disappeared and is another organisation, and the
+    Summit has two ids, one per sex. The name is a label and a piece of the collection name; the catalogue refuses what would make two conferences one or one conference none."""
+
+    def load(self, tmp_path, *entries):
+        path = tmp_path / "competitions.json"
+        path.write_text(json.dumps({"competitions": list(entries)}, ensure_ascii=False), encoding="utf-8")
+        return load_catalogue(path)
+
+    def entry(self, **over):
+        found, _ = entries([2025])
+        return {**next(e for e in found if e["gender"] == "M" and e["conference"] == "ACC"), **over}
+
+    def test_an_ncaa_entry_must_carry_the_id_of_its_conference(self, tmp_path):
+        import pytest
+
+        without = {k: v for k, v in self.entry().items() if k != "ncaa"}
+        for bad in (without, self.entry(ncaa={}), self.entry(ncaa={"conference_id": ""}), self.entry(ncaa={"conference_id": 2}), self.entry(ncaa="2")):
+            with pytest.raises(ValueError, match="ncaa.conference_id"):
+                self.load(tmp_path, bad)
+
+    def test_two_entries_of_a_sex_and_season_with_the_same_conference_id_are_one_conference_listed_twice_whatever_their_name(self, tmp_path):
+        import pytest
+
+        with pytest.raises(ValueError, match="same conference"):
+            self.load(tmp_path, self.entry(), self.entry(conference="Atlantic Coast"))
+
+    def test_the_same_id_in_another_sex_or_season_is_another_conference(self, tmp_path):
+        assert len(self.load(tmp_path, self.entry(), self.entry(gender="F", competition="D1 Women"), self.entry(season_value="2026", season_label="2026/2027"))) == 3

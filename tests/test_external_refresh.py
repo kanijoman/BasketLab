@@ -26,7 +26,7 @@ NOW = datetime(2026, 11, 17, 7, 0, tzinfo=timezone.utc)
 
 
 def _catalogue(tmp_path, *sources):
-    entries = [{"competition": f"{s.upper()} test", "season_label": "2026/2027", "season_value": "2026", "league": s, "division": "Top", "gender": "M", **({"fiba": {"event": "fiba-test-event-2026"}} if s == "fiba" else {}), **({"acb": {"competition_id": 1, "edition_id": 91}} if s == "acb" else {}), **({"conference": "SEC"} if s == "ncaa" else {})} for s in sources]
+    entries = [{"competition": f"{s.upper()} test", "season_label": "2026/2027", "season_value": "2026", "league": s, "division": "Top", "gender": "M", **({"fiba": {"event": "fiba-test-event-2026"}} if s == "fiba" else {}), **({"acb": {"competition_id": 1, "edition_id": 91}} if s == "acb" else {}), **({"conference": "SEC", "ncaa": {"conference_id": "23"}} if s == "ncaa" else {})} for s in sources]
     path = tmp_path / "competitions.json"
     path.write_text(json.dumps({"competitions": entries}), encoding="utf-8")
     return load_catalogue(path)
@@ -263,7 +263,7 @@ class TestEntryPoint:
     def _argv(self, tmp_path, *sources, extra=()):
         cat = tmp_path / "competitions.json"
         cat.write_text(json.dumps({"competitions": [{"competition": f"{s.upper()} test", "season_label": "2026/2027", "season_value": "2026", "league": s, "division": "Top", "gender": "M",
-                                                     **({"fiba": {"event": "fiba-test-event-2026"}} if s == "fiba" else {}), **({"conference": "SEC"} if s == "ncaa" else {})} for s in sources]}), encoding="utf-8")
+                                                     **({"fiba": {"event": "fiba-test-event-2026"}} if s == "fiba" else {}), **({"conference": "SEC", "ncaa": {"conference_id": "23"}} if s == "ncaa" else {})} for s in sources]}), encoding="utf-8")
         return ["--catalogue", str(cat), "--out", str(tmp_path / "out"), *extra]
 
     def test_the_sources_of_the_catalogue_are_listed_for_the_matrix_of_the_workflow(self, cli, tmp_path, capsys):
