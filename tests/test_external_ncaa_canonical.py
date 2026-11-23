@@ -149,7 +149,7 @@ class TestThePlayByPlay:
 
     def test_a_game_whose_play_by_play_came_empty_has_no_lines_and_is_still_a_document(self):
         d = doc("game_womens_noplays_401830444", ENTRY_F)
-        assert d["PLAYBYPLAY"]["LINES"] == [] and d["BOXSCORE"]["TEAM"][0]["PLAYER"] and d["SHOTCHART"] == {"SHOTS": [], "TEAM": []}
+        assert d["PLAYBYPLAY"]["LINES"] == [] and d["BOXSCORE"]["TEAM"][0]["PLAYER"] and d["SHOTCHART"]["SHOTS"] == [] and d["SHOTCHART"]["TEAM"] == []
 
 
 class TestTheReconciliationOfTheCommonCriterion:

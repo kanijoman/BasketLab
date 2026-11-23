@@ -7,17 +7,19 @@ prefixed (``ncaa:265``), written the way ``fiba_canonical`` writes FIBA's so tha
   what the box of the team has over the sum of its players);
 * ``PLAYBYPLAY.LINES``: one line per play of ESPN, with the keywords the engine matches (``TIRO DE 2 ANOTADO``, ``MATE``, ``Faltas: n.``). An event that is not known is kept as a line of ``other``.
 
-The game is kept COMPLETE: both teams, the box of both and every play, also when a team is not Division I (which players are kept is decided by who reads the document). Not in this version: the shot
-chart (ESPN gives the court coordinates of each shot; their mapping to the zones of the engine is a block of its own). Pure functions, no I/O, nothing of the game is changed.
+The game is kept COMPLETE: both teams, the box of both and every play, also when a team is not Division I (which players are kept is decided by who reads the document). ``SHOTCHART``: the shots of ESPN as FEB writes them (``ncaa_coordinates``), only when the chart is
+complete (#1062). Pure functions, no I/O, nothing of the game is changed.
 """
 from __future__ import annotations
 
 from collections import Counter
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
+from src.external.acb_canonical import feb_coordinates
 from src.market.canonical import period_scheme, source_id
 
 SOURCE = "ncaa"
+FOOT_MM = 304.8
 _STATS = ("pts", "fgm", "fga", "tpm", "tpa", "ftm", "fta", "reb", "ast", "tov", "stl", "blk", "orb", "drb", "pf")
 
 
@@ -137,6 +139,39 @@ class _Lines:
         return lines
 
 
+def ncaa_coordinates(x_ft: float, y_ft: float, slot: int) -> Tuple[float, float]:
+    """A shot of ESPN as FEB's percentages of the WHOLE court. ESPN gives it in feet over one half court that is already folded: ``x`` across the court (0 to 50, the hoop at 25) and ``y`` along it from the hoop
+    (#1062; the distance of the text of the play, «25-foot three point jumper», fits it with 0.36 feet of error over 283 shots). It goes through ``feb_coordinates`` of ACB (distances from the hoop kept in metres, the
+    home team at the left basket and the visitor at the right one; the engine folds each back to the same half court), the only thing that changes is which axis is which."""
+    return feb_coordinates(y_ft * FOOT_MM, (x_ft - 25) * FOOT_MM, slot)
+
+
+def chart_shots(game: Dict[str, Any]) -> Tuple[List[Dict[str, Any]], int, int]:
+    """``(FEB shots, how many field goals have coordinates, how many field goals there are)``: every field goal of the play by play (a shot of two or three points, never a free throw) written as FEB writes a
+    shot: ``m`` (``1`` in), ``t`` (the clock that remains), ``x`` and ``y`` (percentages of the court), ``team`` (the slot: ``0`` home), ``player`` (the number of his shirt) and ``quarter`` (the period). In the
+    order of the game."""
+    home = next(t["id"] for t in game["teams"] if t["home"])
+    numbers = {p["id"]: p["jersey"] for players in game["players"].values() for p in players}
+    goals = [p for p in game["plays"] if p["shooting"] and p["points_attempted"] in (2, 3)]
+    shots = []
+    for play in goals:
+        if play["x"] is None or play["y"] is None:
+            continue
+        slot = 0 if play["team_id"] == home else 1
+        x_pct, y_pct = ncaa_coordinates(play["x"], play["y"], slot)
+        shots.append({"m": "1" if play["scoring"] else "0", "t": _clock(play["clock"]), "x": str(x_pct), "y": str(y_pct), "team": str(slot), "player": str(numbers.get(play["athlete_id"]) or ""),
+                      "quarter": str(play["period"])})
+    return shots, len(shots), len(goals)
+
+
+def _chart(game: Dict[str, Any], box: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """The shot chart of the game, only when it is COMPLETE: FEB's chart has exactly the field goals of the play by play and one with some missing would make every zone look different."""
+    shots, covered, total = chart_shots(game)
+    complete = total > 0 and covered == total
+    teams = [{"id": b["id"], "name": b["name"], "teamCode": b["teamCode"], "PLAYER": [{"id": p["id"], "no": p["no"], "name": p["name"]} for p in b["PLAYER"]]} for b in box]
+    return {"quarters": None, "duration": None, "TEAM": teams if complete else [], "SHOTS": shots if complete else []}
+
+
 def to_canonical(game: Dict[str, Any], entry: Dict[str, Any], conference_names: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
     """The canonical document of a game as ``ncaa_page.parse_summary`` read it, for the competition ``entry`` of the catalogue (its sex, season and name). ``conference_names`` maps the id of a conference to its
     name (the list of its season). The game read is not changed."""
@@ -153,4 +188,4 @@ def to_canonical(game: Dict[str, Any], entry: Dict[str, Any], conference_names: 
     box = [_team_box(t, game["players"][t["id"]], game["totals"].get(t["id"], {}), t["score"] > other["score"], names) for t, other in ((home, away), (away, home))]
     return {"_id": source_id(SOURCE, game["game_id"]), "_league": SOURCE, "_season": str(entry["season_value"]), "HEADER": header,
             "PLAYBYPLAY": {"duration": None, "hasExtension": len(quarters) > scheme.periods, "LINES": _Lines(game, scheme.periods).build(game["plays"])},
-            "BOXSCORE": {"duration": None, "TEAM": box}, "SHOTCHART": {"SHOTS": [], "TEAM": []}}
+            "BOXSCORE": {"duration": None, "TEAM": box}, "SHOTCHART": _chart(game, box)}
