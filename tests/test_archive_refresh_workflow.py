@@ -213,3 +213,29 @@ class TestTheWeekend:
         from datetime import datetime
         runs = _runs_between(datetime(2026, 11, 9), datetime(2026, 11, 13, 23, 59))         # Monday to Friday, UTC
         assert len(runs) == 5 * 3
+
+
+class TestTheScrapeHasItsOwnTimeLimit:
+    """#1067: the job is cut at 90 minutes and the save does not run in a cancelled job, so a scrape that takes the whole time lost everything. The scrape now stops starting competitions on its own
+    (``--max-minutes``) and leaves the job time to save (measured on the load of Tercera FEB 2023 and 2022: 98 s to restore, 267 s to save); a step limit above it is the net if a competition hangs."""
+    wf = _load("archive-refresh.yml")
+
+    def numbers(self):
+        job = next(iter(self.wf["jobs"].values()))
+        scrape = _step(self.wf, "Scrape")
+        import re
+
+        limit = float(re.search(r"--max-minutes (\d+)", scrape["run"]).group(1))
+        return job["timeout-minutes"], scrape["timeout-minutes"], limit
+
+    def test_the_scrape_stops_by_itself_before_its_step_and_its_job_run_out(self):
+        job, step, limit = self.numbers()
+        assert limit < step < job
+
+    def test_there_is_room_to_save_after_the_limit_with_the_time_the_save_took_on_the_biggest_load(self):
+        job, step, limit = self.numbers()
+        assert job - limit >= 15 and job - step >= 5               # restore ~2 min before, save ~5 min after: with the archive growing, the margin is not the minimum
+
+    def test_a_scrape_cut_by_its_step_limit_is_a_failure_of_the_step_not_of_the_job_so_the_save_still_runs(self):
+        scrape, save = _step(self.wf, "Scrape"), _step(self.wf, "Save the archive")
+        assert scrape["continue-on-error"] is True and "!cancelled()" in save["if"] and "steps.restore.outcome == 'success'" in save["if"]
