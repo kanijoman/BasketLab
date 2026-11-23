@@ -118,7 +118,8 @@ def refresh_source(source: str, catalogue: List[Dict[str, Any]], db: Any, out_ro
     else:
         stored = [d for name in collections for d in db[name].find({}, {"_reliable": 1})]
         notes = list(getattr(SOURCES[source], "notes", []))
-        status.update({"state": "ok", "ok": True, "last_ok": _stamp(now), "window_days": window_days, "competitions": list(collections), "games": len(stored), **totals,
+        partial = getattr(SOURCES[source], "complete", True) is False        # it stopped for its budget (#888): what it read is kept, but the date the next run starts from does not move
+        status.update({"state": "ok", "ok": True, "last_ok": status["last_ok"] if partial else _stamp(now), "window_days": window_days, **({"partial": True} if partial else {}), "competitions": list(collections), "games": len(stored), **totals,
                        "unreliable": sum(1 for d in stored if not d.get("_reliable")), "rejected": rejected[:_REASONS], "rejected_total": len(rejected),
                        **({"notes": notes[:_NOTES], "notes_total": len(notes)} if notes else {})})
     folder.mkdir(parents=True, exist_ok=True)

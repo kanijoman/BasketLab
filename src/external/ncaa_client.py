@@ -18,7 +18,7 @@ import urllib.error
 import urllib.request
 from typing import Any, Callable, Dict, List, Optional, TypeVar
 
-from src.external.ncaa_page import NcaaPageError, parse_conferences, parse_standings
+from src.external.ncaa_page import NcaaPageError, parse_conferences, parse_scoreboard, parse_standings, parse_summary
 
 SITE = "https://site.api.espn.com/apis/site/v2/sports/basketball/{sex}-college-basketball"
 SITE_V2 = "https://site.api.espn.com/apis/v2/sports/basketball/{sex}-college-basketball"
@@ -103,3 +103,12 @@ class NcaaClient:
         """The conference each team played in that season (``ncaa_page.parse_standings``)."""
         url = f"{SITE_V2.format(sex=SEXES[sex])}/standings?group=50&level=2&season={self._season(start_year)}"
         return self._ask(url, parse_standings)
+
+    def scoreboard(self, sex: str, day: str) -> List[Dict[str, Any]]:
+        """The games of a day, ``YYYY-MM-DD`` (``ncaa_page.parse_scoreboard``): the Division I ones of that sex."""
+        url = f"{SITE.format(sex=SEXES[sex])}/scoreboard?dates={day.replace('-', '')}&groups=50&limit=400"
+        return self._ask(url, parse_scoreboard)
+
+    def game(self, sex: str, game_id: str) -> Dict[str, Any]:
+        """A game as ESPN's ``summary`` gives it (``ncaa_page.parse_summary``)."""
+        return self._ask(f"{SITE.format(sex=SEXES[sex])}/summary?event={game_id}", parse_summary)

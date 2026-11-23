@@ -90,3 +90,17 @@ def test_the_budget_of_a_run_counts_every_request_retries_included_and_stops_the
     with pytest.raises(NcaaBudgetExhausted):
         c.standings("M", 2025)
     assert len(site.requests) == 2 and "requests=2" in repr(c)
+
+
+def test_it_reads_the_scoreboard_of_a_day_with_the_url_of_its_sex_and_the_division():
+    site = Site({"/scoreboard?dates=20260115": text("scoreboard_mens_20260115")})
+    games = client(site)[0].scoreboard("M", "2026-01-15")
+    assert len(games) == 49 and "mens-college-basketball/scoreboard?dates=20260115&groups=50&limit=400" in site.requests[0][0]
+
+
+def test_it_reads_a_game_with_the_url_of_its_sex():
+    from ncaa_helpers import text as raw
+
+    site = Site({"/summary?event=401825641": raw("game_womens_401825641")})
+    game = client(site)[0].game("F", "401825641")
+    assert game["game_id"] == "401825641" and "womens-college-basketball/summary?event=401825641" in site.requests[0][0]

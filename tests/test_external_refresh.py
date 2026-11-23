@@ -285,10 +285,52 @@ class TestEntryPoint:
         registry.SOURCES["fiba"].boom = "down"
         assert cli.main(["--source", "fiba", *self._argv(tmp_path, "fiba")], db=db, now=NOW + timedelta(days=1)) == 1
 
-    def test_a_source_with_no_scraper_yet_exits_zero_so_the_job_stays_green(self, cli, tmp_path, db):
+    def test_a_source_with_no_scraper_yet_exits_zero_so_the_job_stays_green(self, cli, tmp_path, db, monkeypatch):
+        monkeypatch.setattr("src.external.sources.default_source", lambda name, budget=None: None)         # every source of today has its scraper (ACB, FIBA and NCAA): one that has none yet is simulated
         assert cli.main(["--source", "ncaa", *self._argv(tmp_path, "ncaa")], db=db, now=NOW) == 0
         assert not (tmp_path / "out").exists()
 
     def test_an_unknown_source_is_refused(self, cli, tmp_path, db):
         with pytest.raises(SystemExit):
             cli.main(["--source", "euroleague", *self._argv(tmp_path, "fiba")], db=db, now=NOW)
+
+
+class TestARunThatStoppedForItsBudget:
+    """A source that stops for its budget (the first load of NCAA goes by batches, #888) has not seen everything since the last good run: what it read is kept, but the date the next run starts
+    from must not move, or the days it did not reach would be skipped for ever."""
+
+    def run(self, tmp_path, db, source, when):
+        registry.SOURCES.pop("fiba", None)
+        registry.register(source)
+        return refresh_source("fiba", _catalogue(tmp_path, "fiba"), db, tmp_path / "out", when)
+
+    def test_a_partial_run_keeps_its_games_says_it_is_partial_and_does_not_move_the_date(self, tmp_path, db):
+        complete = FixtureSource("fiba")
+        self.run(tmp_path, db, complete, NOW)
+        partial = FixtureSource("fiba")
+        partial.complete = False
+        status = self.run(tmp_path, db, partial, NOW + timedelta(days=1))
+        assert status["ok"] is True and status["partial"] is True and status["last_ok"] == "2026-11-17T07:00:00Z" and status["games"] == 13
+        assert _status(tmp_path / "out", "fiba")["partial"] is True
+
+    def test_the_next_run_starts_from_the_date_of_the_last_complete_one(self, tmp_path, db):
+        self.run(tmp_path, db, FixtureSource("fiba"), NOW)
+        partial = FixtureSource("fiba")
+        partial.complete = False
+        self.run(tmp_path, db, partial, NOW + timedelta(days=1))
+        after = FixtureSource("fiba")
+        self.run(tmp_path, db, after, NOW + timedelta(days=2))
+        assert after.asked[0][1] == "2026-11-14"                      # 17/11 minus the window of 3 days: the partial run of the 18th did not move it
+
+    def test_a_first_load_that_never_completes_has_no_date_so_the_next_one_asks_for_everything(self, tmp_path, db):
+        partial = FixtureSource("fiba")
+        partial.complete = False
+        status = self.run(tmp_path, db, partial, NOW)
+        assert status["last_ok"] is None and status["partial"] is True
+        after = FixtureSource("fiba")
+        self.run(tmp_path, db, after, NOW + timedelta(days=1))
+        assert after.asked[0][1] is None
+
+    def test_a_complete_run_says_nothing_about_being_partial_and_moves_the_date(self, tmp_path, db):
+        status = self.run(tmp_path, db, FixtureSource("fiba"), NOW)
+        assert "partial" not in status and status["last_ok"] == "2026-11-17T07:00:00Z"
