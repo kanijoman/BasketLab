@@ -7612,7 +7612,7 @@
       "division": "D1",
       "gender": "M",
       "conference": "A-10",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "3"
       },
@@ -7627,7 +7627,7 @@
       "division": "D1",
       "gender": "M",
       "conference": "ACC",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "2"
       },
@@ -7642,7 +7642,7 @@
       "division": "D1",
       "gender": "M",
       "conference": "Am. East",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "1"
       },
@@ -7657,7 +7657,7 @@
       "division": "D1",
       "gender": "M",
       "conference": "American",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "62"
       },
@@ -7672,7 +7672,7 @@
       "division": "D1",
       "gender": "M",
       "conference": "Atlantic Sun",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "46"
       },
@@ -7687,7 +7687,7 @@
       "division": "D1",
       "gender": "M",
       "conference": "Big 12",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "8"
       },
@@ -7702,7 +7702,7 @@
       "division": "D1",
       "gender": "M",
       "conference": "Big East",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "4"
       },
@@ -7717,7 +7717,7 @@
       "division": "D1",
       "gender": "M",
       "conference": "Big Sky",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "5"
       },
@@ -7732,7 +7732,7 @@
       "division": "D1",
       "gender": "M",
       "conference": "Big South",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "6"
       },
@@ -7747,7 +7747,7 @@
       "division": "D1",
       "gender": "M",
       "conference": "Big Ten",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "7"
       },
@@ -7762,7 +7762,7 @@
       "division": "D1",
       "gender": "M",
       "conference": "Big West",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "9"
       },
@@ -7777,7 +7777,7 @@
       "division": "D1",
       "gender": "M",
       "conference": "CAA",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "10"
       },
@@ -7792,7 +7792,7 @@
       "division": "D1",
       "gender": "M",
       "conference": "CUSA",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "11"
       },
@@ -7807,7 +7807,7 @@
       "division": "D1",
       "gender": "M",
       "conference": "Horizon",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "45"
       },
@@ -7822,7 +7822,7 @@
       "division": "D1",
       "gender": "M",
       "conference": "Ivy",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "12"
       },
@@ -7837,7 +7837,7 @@
       "division": "D1",
       "gender": "M",
       "conference": "MAC",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "14"
       },
@@ -7852,7 +7852,7 @@
       "division": "D1",
       "gender": "M",
       "conference": "MEAC",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "16"
       },
@@ -7867,7 +7867,7 @@
       "division": "D1",
       "gender": "M",
       "conference": "Metro",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "13"
       },
@@ -7882,7 +7882,7 @@
       "division": "D1",
       "gender": "M",
       "conference": "Mountain West",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "44"
       },
@@ -7897,7 +7897,7 @@
       "division": "D1",
       "gender": "M",
       "conference": "MVC",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "18"
       },
@@ -7912,7 +7912,7 @@
       "division": "D1",
       "gender": "M",
       "conference": "NEC",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "19"
       },
@@ -7927,7 +7927,7 @@
       "division": "D1",
       "gender": "M",
       "conference": "OVC",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "20"
       },
@@ -7942,7 +7942,7 @@
       "division": "D1",
       "gender": "M",
       "conference": "Patriot",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "22"
       },
@@ -7957,7 +7957,7 @@
       "division": "D1",
       "gender": "M",
       "conference": "SEC",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "23"
       },
@@ -7972,7 +7972,7 @@
       "division": "D1",
       "gender": "M",
       "conference": "SoCon",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "24"
       },
@@ -7987,7 +7987,7 @@
       "division": "D1",
       "gender": "M",
       "conference": "Southland",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "25"
       },
@@ -8002,7 +8002,7 @@
       "division": "D1",
       "gender": "M",
       "conference": "Summit",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "49"
       },
@@ -8017,7 +8017,7 @@
       "division": "D1",
       "gender": "M",
       "conference": "Sun Belt",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "27"
       },
@@ -8032,7 +8032,7 @@
       "division": "D1",
       "gender": "M",
       "conference": "SWAC",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "26"
       },
@@ -8047,7 +8047,7 @@
       "division": "D1",
       "gender": "M",
       "conference": "UAC",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "30"
       },
@@ -8062,7 +8062,7 @@
       "division": "D1",
       "gender": "M",
       "conference": "WCC",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "29"
       },
@@ -8077,7 +8077,7 @@
       "division": "D1",
       "gender": "F",
       "conference": "A-10",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "3"
       },
@@ -8092,7 +8092,7 @@
       "division": "D1",
       "gender": "F",
       "conference": "ACC",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "2"
       },
@@ -8107,7 +8107,7 @@
       "division": "D1",
       "gender": "F",
       "conference": "Am. East",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "1"
       },
@@ -8122,7 +8122,7 @@
       "division": "D1",
       "gender": "F",
       "conference": "American",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "62"
       },
@@ -8137,7 +8137,7 @@
       "division": "D1",
       "gender": "F",
       "conference": "Atlantic Sun",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "46"
       },
@@ -8152,7 +8152,7 @@
       "division": "D1",
       "gender": "F",
       "conference": "Big 12",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "8"
       },
@@ -8167,7 +8167,7 @@
       "division": "D1",
       "gender": "F",
       "conference": "Big East",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "4"
       },
@@ -8182,7 +8182,7 @@
       "division": "D1",
       "gender": "F",
       "conference": "Big Sky",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "5"
       },
@@ -8197,7 +8197,7 @@
       "division": "D1",
       "gender": "F",
       "conference": "Big South",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "6"
       },
@@ -8212,7 +8212,7 @@
       "division": "D1",
       "gender": "F",
       "conference": "Big Ten",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "7"
       },
@@ -8227,7 +8227,7 @@
       "division": "D1",
       "gender": "F",
       "conference": "Big West",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "9"
       },
@@ -8242,7 +8242,7 @@
       "division": "D1",
       "gender": "F",
       "conference": "CAA",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "10"
       },
@@ -8257,7 +8257,7 @@
       "division": "D1",
       "gender": "F",
       "conference": "CUSA",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "11"
       },
@@ -8272,7 +8272,7 @@
       "division": "D1",
       "gender": "F",
       "conference": "Horizon",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "45"
       },
@@ -8287,7 +8287,7 @@
       "division": "D1",
       "gender": "F",
       "conference": "Ivy",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "12"
       },
@@ -8302,7 +8302,7 @@
       "division": "D1",
       "gender": "F",
       "conference": "MAC",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "14"
       },
@@ -8317,7 +8317,7 @@
       "division": "D1",
       "gender": "F",
       "conference": "MEAC",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "16"
       },
@@ -8332,7 +8332,7 @@
       "division": "D1",
       "gender": "F",
       "conference": "Metro",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "13"
       },
@@ -8347,7 +8347,7 @@
       "division": "D1",
       "gender": "F",
       "conference": "Mountain West",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "44"
       },
@@ -8362,7 +8362,7 @@
       "division": "D1",
       "gender": "F",
       "conference": "MVC",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "18"
       },
@@ -8377,7 +8377,7 @@
       "division": "D1",
       "gender": "F",
       "conference": "NEC",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "19"
       },
@@ -8392,7 +8392,7 @@
       "division": "D1",
       "gender": "F",
       "conference": "OVC",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "20"
       },
@@ -8407,7 +8407,7 @@
       "division": "D1",
       "gender": "F",
       "conference": "Patriot",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "22"
       },
@@ -8422,7 +8422,7 @@
       "division": "D1",
       "gender": "F",
       "conference": "SEC",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "23"
       },
@@ -8437,7 +8437,7 @@
       "division": "D1",
       "gender": "F",
       "conference": "SoCon",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "24"
       },
@@ -8452,7 +8452,7 @@
       "division": "D1",
       "gender": "F",
       "conference": "Southland",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "25"
       },
@@ -8467,7 +8467,7 @@
       "division": "D1",
       "gender": "F",
       "conference": "Summit",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "47"
       },
@@ -8482,7 +8482,7 @@
       "division": "D1",
       "gender": "F",
       "conference": "Sun Belt",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "27"
       },
@@ -8497,7 +8497,7 @@
       "division": "D1",
       "gender": "F",
       "conference": "SWAC",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "26"
       },
@@ -8512,7 +8512,7 @@
       "division": "D1",
       "gender": "F",
       "conference": "UAC",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "30"
       },
@@ -8527,7 +8527,7 @@
       "division": "D1",
       "gender": "F",
       "conference": "WCC",
-      "active": false,
+      "active": true,
       "ncaa": {
         "conference_id": "29"
       },

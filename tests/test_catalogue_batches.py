@@ -93,3 +93,41 @@ def test_fbcyl_seasons_are_turned_on_the_same_way_when_asked(catalogue):
     report = activate_seasons(catalogue, ["2025"], league="fbcyl")
     assert report["activated"] == 103 and all(e["active"] for e in _entries(catalogue) if e.get("league") == "fbcyl" and e["season_value"] == "2025")
     assert not any(e["active"] for e in _entries(catalogue) if e.get("league") == "fbcyl" and e["season_value"] == "2024")
+
+
+class TestTheNcaaSeasonIsActivatedTheSameWay:
+    """#1060: the 62 paused entries of NCAA 2025/26 (one per conference and sex) are turned on with the same tool, a season at a time, without touching FEB or what is already active."""
+
+    def run(self, path, *argv):
+        import run_catalogue_activate
+
+        return run_catalogue_activate.main(["--catalogue", str(path), *argv])
+
+    def ncaa(self, path):
+        return [e for e in json.loads(path.read_text(encoding="utf-8"))["competitions"] if e.get("league") == "ncaa"]
+
+    def test_the_tool_activates_the_ncaa_season_and_only_that(self, tmp_path):
+        path = tmp_path / "competitions.json"
+        shutil.copy(ROOT / DEFAULT_CATALOGUE, path)
+        data = json.loads(path.read_text(encoding="utf-8"))
+        for entry in data["competitions"]:
+            if entry.get("league") == "ncaa":
+                entry["active"] = False                                          # the file before the batch, whatever it is now
+        path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        before_feb = [e for e in data["competitions"] if e.get("league", "feb") != "ncaa"]
+        assert self.run(path, "--season", "2025", "--league", "ncaa") == 0
+        ncaa = self.ncaa(path)
+        assert len(ncaa) == 62 and all(e["active"] for e in ncaa) and {e["season_value"] for e in ncaa} == {"2025"}
+        assert [e for e in json.loads(path.read_text(encoding="utf-8"))["competitions"] if e.get("league", "feb") != "ncaa"] == before_feb
+
+    def test_a_second_run_changes_not_a_byte_and_the_catalogue_still_validates(self, tmp_path):
+        path = tmp_path / "competitions.json"
+        shutil.copy(ROOT / DEFAULT_CATALOGUE, path)
+        self.run(path, "--season", "2025", "--league", "ncaa")
+        once = path.read_bytes()
+        self.run(path, "--season", "2025", "--league", "ncaa")
+        assert path.read_bytes() == once and len(load_catalogue(path)) > 62
+
+    def test_the_real_catalogue_has_the_ncaa_season_active_and_nothing_else_of_ncaa(self):
+        real = [e for e in load_catalogue(ROOT / DEFAULT_CATALOGUE) if e["league"] == "ncaa"]
+        assert len(real) == 62 and all(e["active"] and e["season_value"] == "2025" for e in real)

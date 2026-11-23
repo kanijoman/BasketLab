@@ -3,6 +3,7 @@
     python run_catalogue_activate.py --season 2023 --season 2022 --exclude "TERCERA FEB"      # batch 1 of the FEB history
     python run_catalogue_activate.py --season 2025 --only "TERCERA FEB"                       # Tercera FEB has its own batches
     python run_catalogue_activate.py --season 2025 --league fbcyl                              # a paused FBCYL season
+    python run_catalogue_activate.py --season 2025 --league ncaa                               # a paused NCAA season (#1060: its conferences, both sexes)
 
 Never touches the current season, what is already active or other leagues; running it twice changes nothing. Then wait for a refresh to load the batch (docs/OPERATIONS.md).
 """
@@ -22,7 +23,7 @@ from src.services.competition_catalogue import DEFAULT_CATALOGUE  # noqa: E402
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--season", action="append", required=True, help="a season (the year it starts in); repeatable")
-    parser.add_argument("--league", default="feb", choices=("feb", "fbcyl"))
+    parser.add_argument("--league", default="feb", choices=("feb", "fbcyl", "ncaa"))
     parser.add_argument("--only", action="append", help="only this competition; repeatable")
     parser.add_argument("--exclude", action="append", help="leave this competition out; repeatable")
     parser.add_argument("--catalogue", default=DEFAULT_CATALOGUE)
