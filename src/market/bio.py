@@ -10,7 +10,7 @@ import re
 import unicodedata
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Tuple
 
-SOURCE_PRIORITY = ("feb", "fiba", "acb", "ncaa")        # the first source that says a field wins; FEB is the one the identity is anchored to
+SOURCE_PRIORITY = ("feb", "fiba", "acb", "euroleague", "ncaa")        # the first source that says a field wins; FEB is the one the identity is anchored to
 HEIGHT_CONFLICT_CM = 3                                  # two sources further apart than this are flagged
 HEIGHT_RANGE_CM = (120, 240)
 _INCHES_RANGE = (48, 95)                                # 4'0" .. 7'11"

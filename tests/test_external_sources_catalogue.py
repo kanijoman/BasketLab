@@ -27,6 +27,8 @@ def _external(source: str, **over):
         base["ncaa"] = {"conference_id": over.get("conference", "SEC")}          # the id of the conference is its identity (#966); the tests use its name
     if source == "acb":
         base["acb"] = {"competition_id": 1, "edition_id": 91}
+    if source == "euroleague":
+        base["euroleague"] = {"competition": "E"}
     return {**base, **over}
 
 
@@ -84,8 +86,8 @@ def test_the_categories_of_the_feb_and_fbcyl_publication_know_nothing_of_the_ext
     assert "FBCYL_Test_Cup_U18_2026_" not in found and "FIBA_Test_Cup_U18_2026_" not in found
 
 
-def test_the_external_sources_are_acb_fiba_and_ncaa():
-    assert EXTERNAL_LEAGUES == ("acb", "fiba", "ncaa")
+def test_the_external_sources_are_acb_euroleague_fiba_and_ncaa():
+    assert EXTERNAL_LEAGUES == ("acb", "euroleague", "fiba", "ncaa")
 
 
 class TestLoad:
@@ -130,7 +132,7 @@ class TestLoad:
 
     def test_an_unknown_source_is_still_refused(self, tmp_path):
         with pytest.raises(ValueError, match="league"):
-            load_catalogue(_write(tmp_path, _external("acb", league="euroleague")))
+            load_catalogue(_write(tmp_path, _external("acb", league="basketball")))
 
     def test_the_catalogue_of_the_repository_still_loads_with_external_entries_next_to_it(self, tmp_path):
         entries = load_catalogue(_write(tmp_path, *[_external(s) for s in EXTERNAL_LEAGUES], with_real=True))

@@ -81,8 +81,20 @@ def _check_acb(where: str, value: Any) -> Dict[str, Any]:
     return {**{k: value[k] for k in ids}, **({"max_games": cap} if cap is not None else {})}
 
 
+def _check_euroleague(where: str, value: Any) -> Dict[str, Any]:
+    """The ``euroleague`` object of an entry: the ``competition`` code of its API (``E`` the EuroLeague, ``U`` the EuroCup, ``J`` the U18 Next Generation Tournament; its season is the entry's year) and,
+    optionally, ``max_games``: how many games of it a run asks for at most (#1038)."""
+    code = value.get("competition") if isinstance(value, dict) else None
+    if code not in ("E", "U", "J"):
+        raise ValueError(f"{where}: a euroleague competition needs euroleague.competition, the code of its API (E, U or J), not {code!r}")
+    cap = value.get("max_games")
+    if cap is not None and (isinstance(cap, bool) or not isinstance(cap, int) or cap < 1):
+        raise ValueError(f"{where}: euroleague.max_games must be a whole number of games, 1 or more, not {cap!r}")
+    return {"competition": code, **({"max_games": cap} if cap is not None else {})}
+
+
 def _check_external(where: str, raw: Dict[str, Any]) -> Dict[str, Any]:
-    """An external competition (ACB, FIBA, NCAA): its division, its gender and, where the source splits by them, its conference. Nothing to scrape: no URL, no groups."""
+    """An external competition (ACB, Euroleague, FIBA, NCAA): its division, its gender and, where the source splits by them, its conference. Nothing to scrape: no URL, no groups."""
     from src.live_prep.competition_info import GENDERS
 
     league = raw["league"]
@@ -97,7 +109,7 @@ def _check_external(where: str, raw: Dict[str, Any]) -> Dict[str, Any]:
     if conference is None and league in CONFERENCE_REQUIRED:
         raise ValueError(f"{where}: a {league} competition lacks: conference (one competition per conference)")
     extra = ({"fiba": _check_fiba(where, raw.get("fiba"))} if league == "fiba" else {"acb": _check_acb(where, raw.get("acb"))} if league == "acb"
-             else {"ncaa": _check_ncaa(where, raw.get("ncaa"))} if league == "ncaa" else {})
+             else {"ncaa": _check_ncaa(where, raw.get("ncaa"))} if league == "ncaa" else {"euroleague": _check_euroleague(where, raw.get("euroleague"))} if league == "euroleague" else {})
     return {"source": league, "groups": "", "conference": conference.strip() if conference else None, **extra}
 
 
@@ -187,7 +199,7 @@ def refresh_entries(catalogue: List[Dict[str, Any]]) -> List[Any]:
 
 
 def external_entries(catalogue: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """The active external competitions (ACB, FIBA, NCAA), in the order of the catalogue: what their own refresh jobs and the publication of the external data read (#884)."""
+    """The active external competitions (ACB, Euroleague, FIBA, NCAA), in the order of the catalogue: what their own refresh jobs and the publication of the external data read (#884)."""
     return [e for e in catalogue if e["active"] and e["league"] in EXTERNAL_LEAGUES]
 
 

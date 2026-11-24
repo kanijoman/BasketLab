@@ -40,10 +40,10 @@ class TestSourceIds:
 
     def test_a_feb_id_or_a_foreign_prefix_is_not_an_external_id(self):
         assert split_source_id("2477341") is None                  # FEB ids are digits, never prefixed
-        assert split_source_id("euroleague:7") is None
+        assert split_source_id("zzz:7") is None
         assert split_source_id("ncaa:") is None
         with pytest.raises(ValueError):
-            source_id("euroleague", "7")
+            source_id("zzz", "7")
         with pytest.raises(ValueError):
             source_id("ncaa", "acb:7")                              # another source's id is not rewritten into this one
 
@@ -53,6 +53,7 @@ class TestPeriodScheme:
         ("fiba", "M", 4, 10), ("fiba", "F", 4, 10), ("acb", "M", 4, 10),
         ("ncaa", "M", 2, 20),                                        # NCAA men: two halves
         ("ncaa", "F", 4, 10),                                        # NCAA women: four quarters
+        ("euroleague", "M", 4, 10),                                  # the Euroleague: four quarters of 10 (the EuroCup and the U18 tournaments too)
     ])
     def test_the_regulation_of_each_source(self, source, gender, periods, minutes):
         scheme = period_scheme(source, gender)
@@ -73,7 +74,7 @@ class TestPeriodScheme:
 
     def test_an_unknown_source_or_gender_is_refused(self):
         with pytest.raises(ValueError):
-            period_scheme("euroleague", "M")
+            period_scheme("basketball", "M")
         with pytest.raises(ValueError):
             period_scheme("ncaa", "X")
 

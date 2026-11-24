@@ -9,7 +9,7 @@ let hosts: TwoHosts
 beforeEach(() => { resetWebData(); setDataBase(WEB_BASE); setExtDataBase(EXT_BASE); hosts = serveBoth() })
 
 describe('which publication holds a competition', () => {
-  it.each([[FIBA, 'fiba'], [NCAA, 'ncaa'], ['ACB_Liga_Endesa_2026_', 'acb'], [FEB, null], [FBCYL, null], ['NCAAB_2026', null], ['', null]])('%s is %s', (name, source) => {
+  it.each([[FIBA, 'fiba'], [NCAA, 'ncaa'], ['ACB_Liga_Endesa_2026_', 'acb'], ['EUROLEAGUE_EuroLeague_2025_', 'euroleague'], ['EUROLEAGUES_2025', null], [FEB, null], [FBCYL, null], ['NCAAB_2026', null], ['', null]])('%s is %s', (name, source) => {
     expect(sourceOf(name)).toBe(source)
   })
 })

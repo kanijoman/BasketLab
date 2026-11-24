@@ -9,7 +9,7 @@ const FBCYL_PREFIX = /^FBCYL_/i
 
 export type League = 'FEB' | 'FBCYL'
 /** The source of the data of a competition in the manifest (#884: ACB, FIBA and NCAA are competitions of their own, published in `web-data-ext`). */
-export type PublishedLeague = 'feb' | 'fbcyl' | 'acb' | 'fiba' | 'ncaa'
+export type PublishedLeague = 'feb' | 'fbcyl' | 'acb' | 'euroleague' | 'fiba' | 'ncaa'
 
 /** What the manifest says of a competition. */
 export interface PublishedCollection {
