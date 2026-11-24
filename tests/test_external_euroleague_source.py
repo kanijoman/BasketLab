@@ -6,7 +6,7 @@ For each competition of the catalogue (the EuroLeague, the EuroCup or the U18 Ne
 """
 import pytest
 
-from euroleague_helpers import fixture, listed, read_game
+from euroleague_helpers import fixture, read_game
 
 from src.external import registry
 from src.external.euroleague_client import EuroleagueBudgetExhausted, EuroleagueFetchError, EuroleagueNotFound
