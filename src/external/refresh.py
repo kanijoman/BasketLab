@@ -112,6 +112,7 @@ def refresh_source(source: str, catalogue: List[Dict[str, Any]], db: Any, out_ro
             known = frozenset(doc["_id"] for doc in db[name].find(_known_filter(SOURCES[source]), {"_id": 1}))
             counts = _merge(db[name], SOURCES[source].fetch(entry, since, known), entry["gender"], rejected)
             totals = {k: totals[k] + counts[k] + (rejudged if k == "updated" else 0) for k in totals}
+        getattr(SOURCES[source], "finish", lambda: None)()           # the end of the run: a source may fail it for what it saw in all the entries (NCAA, #1086)
         dump_archive(db, folder, light=lambda _name: False, only=list(collections), allow_shrink=False)
     except Exception as error:  # noqa: BLE001 - whatever the source does wrong stays in its own status
         status["error"] = f"{type(error).__name__}: {error}"[:300]
