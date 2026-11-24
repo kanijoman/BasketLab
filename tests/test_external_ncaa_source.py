@@ -165,6 +165,15 @@ class TestWhenThingsGoWrong:
         found = list(s.fetch(entry("29"), "2026-01-15", frozenset()))
         assert ids(found) == ["ncaa:401829197"] and len(client.requests) == 2 and s.complete is False and any("budget" in n for n in s.notes)
 
+    def test_the_spent_budget_is_noted_once_per_run_not_once_per_entry_regression(self):
+        """#1073: every catalogue entry after the budget ran out added the same note (55 in the first batch), burying the useful ones; the state already says ``partial``."""
+        client = FakeClient(budget=2)
+        s = NcaaSource(client, today=lambda: date(2026, 1, 16))
+        list(s.fetch(entry("29"), "2026-01-15", frozenset()))
+        list(s.fetch(entry("14"), "2026-01-15", frozenset()))
+        list(s.fetch(entry("4"), "2026-01-15", frozenset()))
+        assert [n for n in s.notes if n.startswith("budget")] == ["budget: spent"] and s.complete is False
+
     def test_a_scoreboard_that_cannot_be_read_stops_the_run_it_is_not_an_empty_day(self):
         class Down(FakeClient):
             def scoreboard(self, sex, day):
