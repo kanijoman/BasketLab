@@ -9,6 +9,9 @@ vi.mock('@/context/CollectionContext', () => ({
   useCollection: () => ({ collection: { name: 'LF_CHALLENGE', label: 'LF Challenge', isFbcyl: false } }),
 }))
 
+const left = vi.hoisted(() => ({ ids: new Set<string>(), asked: [] as Array<[string | undefined, string]> }))
+vi.mock('@/lib/useLeftPlayers', () => ({ useLeftPlayers: (collection: string | undefined, team: string) => { left.asked.push([collection, team]); return left.ids } }))
+
 import PlayerStatsPage from './PlayerStatsPage'
 
 // Issue #192 (U5a): Estadísticas de jugadores on the components of components/ui — one h1 (PageHeader), the team filter a labelled Select, the views Tabs
@@ -34,6 +37,7 @@ async function chooseTeam() {
 }
 
 beforeEach(() => {
+  left.ids = new Set(); left.asked = []
   api.getPlayerStats.mockReset().mockResolvedValue(PLAYERS)
   api.getTeamsInCollection.mockReset().mockResolvedValue(['Alfa', 'Bravo'])
   api.getPlayerConsistency.mockReset().mockResolvedValue({})
@@ -89,5 +93,23 @@ describe('PlayerStatsPage on the base components (issue #192)', () => {
     expect(screen.getByRole('button', { name: 'PTS', pressed: false })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'PTS', pressed: false }))
     expect(screen.getByRole('button', { name: 'PTS', pressed: true })).toBeInTheDocument()
+  })
+})
+
+// #1082: who has left the team (a baja in his line of the FEB) stays in the table of the team, dimmed and labelled: his figures are still in the totals of the team.
+describe('PlayerStatsPage: who has left the team (issue #1082)', () => {
+  it('lists him with the label «Baja» and dimmed, the others without it, and asks for the baja of that team', async () => {
+    left.ids = new Set(['2'])
+    api.getPlayerStats.mockResolvedValue(PLAYERS.map(p => ({ ...p, team_id: '101' })))
+    renderPage()
+    await chooseTeam()
+    expect(await screen.findByText('A. UNO')).toBeInTheDocument()
+    const gone = screen.getByText('B. DOS').closest('tr') as HTMLElement
+    expect(within(gone).getByText('Baja')).toBeInTheDocument()
+    expect(gone.className).toContain('opacity-60')
+    const stays = screen.getByText('C. TRES').closest('tr') as HTMLElement
+    expect(within(stays).queryByText('Baja')).not.toBeInTheDocument()
+    expect(stays.className).not.toContain('opacity-60')
+    expect(left.asked).toContainEqual(['LF_CHALLENGE', '101'])
   })
 })

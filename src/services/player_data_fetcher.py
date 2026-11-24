@@ -73,6 +73,14 @@ class PlayerDataFetcher:
         except Exception:
             return "", None, None
 
+    def get_player_trajectory(self, player_id: str, team_id: Optional[str]):
+        """The «Trayectoria» lines of the player page (``feb_trajectory``), or ``None`` when it cannot be had (#1082)."""
+        if not player_id or not team_id:
+            return None
+        from src.local_data.feb_trajectory import fetch_trajectory
+
+        return fetch_trajectory(team_id, player_id)
+
     def get_player_birth_info(
         self, player_id: str, team_id: Optional[str]
     ) -> "tuple[Optional[str], Optional[int], Optional[str]]":

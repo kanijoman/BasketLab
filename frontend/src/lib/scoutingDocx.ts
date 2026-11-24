@@ -131,6 +131,10 @@ export interface ScoutingDocxInput {
   teamName: string
   /** The crest, the photos and the identity of the team (`images/` of the publication); `null` for a competition that has none (an older season, FBCYL). */
   images: TeamImages | null
+  /** The players of the team that get a page (#1082: whoever left it has none, but his figures stay in the league the colours are measured against); all of them when absent. */
+  only?: ReadonlySet<string>
+  /** A note for the technical staff per `player_id` (#1083: the games he has missed), printed first in the notes section. */
+  notes?: Record<string, string>
   /** The charts of each player by `player_id`; a page has the sections of the charts it has. */
   charts?: Record<string, PlayerCharts>
   today: Date
@@ -140,7 +144,7 @@ export interface ScoutingDocxInput {
 
 /** The DOCX of the individual scouting of a team. Throws when the team has no players. */
 export async function scoutingDocx(input: ScoutingDocxInput): Promise<Blob> {
-  const roster = input.players.filter(p => p.team_name === input.teamName)
+  const roster = input.players.filter(p => p.team_name === input.teamName && (!input.only || input.only.has(String(p.player_id))))
   if (!roster.length) throw new Error('El equipo no tiene jugadores en esta competición.')
   const lib = await import('docx')
   const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, ShadingType, AlignmentType, ImageRun, HeadingLevel, PageBreak, BorderStyle, VerticalAlign, TableLayoutType } = lib
@@ -170,6 +174,12 @@ export async function scoutingDocx(input: ScoutingDocxInput): Promise<Blob> {
       ] }),
     ] })],
   })
+
+  const notesOf = (player: PlayerStat) => {
+    const note = input.notes?.[String(player.player_id)]
+    const blank = Array.from({ length: note ? 5 : 6 }, () => new Paragraph({ children: [new TextRun({ text: FILL_NOTES })] }))
+    return note ? [new Paragraph({ children: [new TextRun({ text: note, bold: true })] }), ...blank] : blank
+  }
 
   const identity = (player: PlayerStat) => {
     const extra = input.images?.players[playerKey(player)]
@@ -227,7 +237,7 @@ export async function scoutingDocx(input: ScoutingDocxInput): Promise<Blob> {
       paragraph('Totales acumulados:', 20, { bold: true }), statsTable(t.totals.headers, t.totals.cells.map(text => ({ text, fill: null })), { widths }),
       heading('2. Estadística Avanzada'), statsTable(t.advanced.headers, t.advanced.cells),
       ...charts(player),
-      heading('5. Notas del cuerpo técnico'), ...Array.from({ length: 6 }, () => new Paragraph({ children: [new TextRun({ text: FILL_NOTES })] })),
+      heading('5. Notas del cuerpo técnico'), ...notesOf(player),
     ]
   }
 

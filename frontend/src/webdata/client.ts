@@ -119,7 +119,9 @@ export interface TeamImages {
   team: string | null
   /** `data:image/png;base64,…` or `null` when it could not be had. */
   logo: string | null
-  players: Record<string, { name: string | null; no: string | null; photo: string | null; birth_date: string | null; height: string | null }>
+  players: Record<string, { name: string | null; no: string | null; photo: string | null; birth_date: string | null; height: string | null
+    /** `yyyy-mm-dd`: the alta and the baja of his line for this team in the «Trayectoria» of the FEB (#1082); absent in what was published before. */
+    alta?: string | null; baja?: string | null }>
 }
 export const loadWebImages = (collection: string, teamId: string): Promise<TeamImages> =>
   publication(collection).openSealed<TeamImages>(() => sealedFile(collection, r => r.team_id === teamId && r.mode === 'images'), 'El fichero')

@@ -280,3 +280,50 @@ class TestNotesSection:
         paragraphs = [p.text for p in Document(io.BytesIO(data)).paragraphs]
         assert any("Notas del cuerpo técnico" in t for t in paragraphs)
         assert sum(1 for t in paragraphs if t == "_" * 80) == 6
+
+
+# ---------------------------------------------------------------------------
+# #1082: who has left the team (a baja in his line of the FEB's «Trayectoria») has no page
+# ---------------------------------------------------------------------------
+
+class TestPlayersWhoLeft:
+    @staticmethod
+    def _text(docx_bytes: bytes) -> str:
+        import io
+        from docx import Document
+
+        doc = Document(io.BytesIO(docx_bytes))
+        cells = [c.text for table in doc.tables for row in table.rows for c in row.cells]
+        return "\n".join([p.text for p in doc.paragraphs] + cells)
+
+    def _build(self, trajectories):
+        players = [{**_make_player("Se Fue", "Team A"), "player_id": "p1"}, {**_make_player("Sigue Aqui", "Team A"), "player_id": "p2"}]
+        builder = IndividualScoutingDocxBuilder("FEB_LF2_2025_A", "Team A", MagicMock())
+        with (
+            patch("src.services.player_stats_service.PlayerStatsService") as MockSvc,
+            patch("src.services.player_data_fetcher.PlayerDataFetcher") as MockFetch,
+            patch("src.services.individual_scouting_service._fetch_bytes", return_value=None),
+            patch("src.services.individual_scouting_service._extract_shots", return_value=[]),
+            patch("src.shotcharts.zone_analysis.ZoneAnalyzer") as MockZones,
+        ):
+            MockSvc.return_value.load_season_data.return_value = players
+            MockFetch.return_value.get_player_dorsal_and_photo.return_value = ("7", None, "55")
+            MockFetch.return_value.get_player_birth_info.return_value = (None, None, None)
+            MockFetch.return_value.get_player_trajectory.side_effect = lambda pid, team: trajectories.get(pid)
+            MockZones.return_value.analyze_zones.return_value = {}
+            return builder.build()
+
+    @staticmethod
+    def _line(baja):
+        return [{"season": "26/27", "category": "1FEB", "team_id": "55", "alta": "2026-09-01", "baja": baja}]
+
+    def test_the_player_with_a_baja_already_reached_has_no_page_and_the_others_do(self):
+        text = self._text(self._build({"p1": self._line("2026-01-10"), "p2": self._line(None)}))
+        assert "Sigue Aqui" in text and "Se Fue" not in text
+
+    def test_a_baja_still_to_come_and_a_page_that_cannot_be_read_leave_him_in(self):
+        text = self._text(self._build({"p1": self._line("2999-01-01"), "p2": None}))
+        assert "Se Fue" in text and "Sigue Aqui" in text
+
+    def test_a_team_whose_players_all_left_gives_no_document(self):
+        assert self._build({"p1": self._line("2026-01-10"), "p2": self._line("2026-01-10")}) == b""

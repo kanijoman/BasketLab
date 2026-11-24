@@ -8,7 +8,7 @@ FBCYL (#721) has the crest and a photo per player too, but not the date of birth
 the player (photo; it says which photo he has now, so it is asked every time, and the image is downloaded only if its size changed).
 
 The publisher is the one that downloads, and only what changed: an image already in the previous publication is kept when the size the FEB announces (a ``HEAD``) is the one it had, since
-the FEB honours no conditional request (no ETag, a ``Last-Modified`` that is always now); a new one is downloaded; identity (birth date, height) is scraped once.
+the FEB honours no conditional request (no ETag, a ``Last-Modified`` that is always now); a new one is downloaded; identity (birth date, height) is scraped once, but the alta and the baja of the «Trayectoria» (#1082) are read every time: a baja comes after the first publication.
 """
 from __future__ import annotations
 
@@ -64,6 +64,11 @@ class Source:
         birth, _age, height = PlayerDataFetcher(None, "").get_player_birth_info(player_id, team_id)
         return birth, height
 
+    def trajectory(self, team_id: str, player_id: str) -> Optional[List[Dict[str, Optional[str]]]]:
+        """The lines of the «Trayectoria» of the player page (``feb_trajectory``), or ``None`` when the page cannot be had or read: a player is never hidden for not knowing (#1082)."""
+        from src.local_data.feb_trajectory import fetch_trajectory
+
+        return fetch_trajectory(team_id, player_id)
 
     def _esb(self, path: str) -> Any:
         import requests
@@ -223,6 +228,14 @@ def _image(url: Optional[str], kind: str, reduce: Callable[[bytes], Optional[byt
     return (_data_url(kind, reduced), len(raw)) if reduced else (None, None)
 
 
+def _stay(team_id: str, lines: Optional[List[Dict[str, Optional[str]]]], known: Dict[str, Any]) -> Tuple[Optional[str], Optional[str]]:
+    """``(alta, baja)`` of the line of this team in the «Trayectoria» (#1082; the team id is the one of the season, so there is one line); the last publication's when the page could not be had; ``(None, None)`` with no line."""
+    if lines is None:
+        return known.get("alta"), known.get("baja")
+    mine = [l for l in lines if l["team_id"] == str(team_id)]
+    return (mine[-1]["alta"], mine[-1]["baja"]) if mine else (None, None)
+
+
 def team_payload(collection: str, team_id: str, team: Dict[str, Any], previous: Dict[str, Any], source: Source, workers: int = WORKERS) -> Dict[str, Any]:
     """The images and the identity of a team: its crest and, per player, his photo, date of birth and height. ``previous`` is what the last publication said of the team;
     ``sources`` keeps, per image, the URL and the size the FEB announced, to tell next time whether it changed."""
@@ -231,15 +244,15 @@ def team_payload(collection: str, team_id: str, team: Dict[str, Any], previous: 
     logo_url = (source.team_logo_url(team_id) if fbcyl else team.get("logo") or TEAM_LOGO.format(tid=team_id))
     ordered = sorted(team["players"].items())
 
-    def one(item: Tuple[str, Dict[str, Any]]) -> Tuple[Tuple[Optional[str], Optional[int]], Tuple[Optional[str], Optional[str]], Optional[str]]:
+    def one(item: Tuple[str, Dict[str, Any]]) -> Tuple[Tuple[Optional[str], Optional[int]], Tuple[Optional[str], Optional[str]], Optional[str], Tuple[Optional[str], Optional[str]]]:
         pid, player = item
         known = (previous.get("players") or {}).get(pid) or {}
         url = source.photo_url(pid) if fbcyl else player["photo"]
         photo = _image(url, "jpeg", reduce_photo, {**((old_sources.get("players") or {}).get(pid) or {}), "data": known.get("photo")}, source)
         if fbcyl:
-            return photo, (None, None), url
+            return photo, (None, None), url, (None, None)
         identity = (known.get("birth_date"), known.get("height")) if ("birth_date" in known or "height" in known) else source.identity(team_id, pid)
-        return photo, identity, url
+        return photo, identity, url, _stay(team_id, source.trajectory(team_id, pid), known)
 
     with ThreadPoolExecutor(max_workers=workers) as pool:
         crest = pool.submit(_image, logo_url, "png", reduce_logo, {**(old_sources.get("logo") or {}), "data": previous.get("logo")}, source)
@@ -247,9 +260,9 @@ def team_payload(collection: str, team_id: str, team: Dict[str, Any], previous: 
         logo, logo_size = crest.result()
     players: Dict[str, Any] = {}
     sources: Dict[str, Any] = {"logo": {"url": logo_url, "size": logo_size}, "players": {}}
-    for (pid, player), ((photo, size), (birth, height), url) in zip(ordered, found):
+    for (pid, player), ((photo, size), (birth, height), url, (alta, baja)) in zip(ordered, found):
         sources["players"][pid] = {"url": url, "size": size}
-        players[pid] = {"name": player["name"], "no": player["no"], "photo": photo, "birth_date": birth, "height": height}
+        players[pid] = {"name": player["name"], "no": player["no"], "photo": photo, "birth_date": birth, "height": height, "alta": alta, "baja": baja}
     return {"format": FORMAT, "collection": collection, "team_id": team_id, "team": team["name"], "logo": logo, "players": players, "sources": sources}
 
 

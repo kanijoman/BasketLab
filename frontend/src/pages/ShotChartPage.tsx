@@ -5,6 +5,7 @@
  */
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useLeftPlayers } from '@/lib/useLeftPlayers'
 import { X } from 'lucide-react'
 
 import { useCollection } from '@/context/CollectionContext'
@@ -48,12 +49,16 @@ export default function ShotChartPage() {
   const selectedTeamName = teamList.find(t => t.id === selectedTeam)?.name ?? ''
 
   // Load players whenever a team is selected (pre-caches for player mode)
-  const { data: playerList = [] } = useQuery<PlayerStat[]>({
+  const { data: everybody = [] } = useQuery<PlayerStat[]>({
     queryKey: ['shot-player-list', collection?.name],
     queryFn: () => getPlayerStats(collection!.name),
     enabled: Boolean(collection) && Boolean(selectedTeam),
     staleTime: 10 * 60_000,
   })
+
+  // Whoever has left the selected team (a baja in his line of the FEB, #1082) is not offered; the others of the league stay
+  const left = useLeftPlayers(collection?.name, selectedTeam)
+  const playerList = useMemo(() => (left.size ? everybody.filter(p => !left.has(String(p.player_id))) : everybody), [everybody, left])
 
   // League quartiles: players' 2P% / 3P% are coloured against the league, not fixed thresholds
   const { data: playerQuartiles } = useQuery({
