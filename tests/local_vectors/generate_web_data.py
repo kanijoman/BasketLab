@@ -112,6 +112,10 @@ class FixtureFeb(Source):
     def identity(self, team_id, player_id):
         return "05/03/2000", "190 cm"
 
+    def trajectory(self, team_id, player_id):       # #1082: everyone has the line of his team; a player whose id is a multiple of 7 has left it (a baja already past)
+        left = int(player_id) % 7 == 0
+        return [{"season": "26/27", "category": "1FEB", "team_id": str(team_id), "alta": "2026-09-01", "baja": "2026-10-15" if left else None}]
+
     def photo_url(self, uuid):                      # FBCYL: the ESB says where the photo of a uuid is
         return f"https://fixture.test/photo/{uuid}"
 

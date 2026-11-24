@@ -11,6 +11,7 @@
 import { teamColumn } from '@/components/ui/TeamCell'
 import NoCollection from '@/components/ui/NoCollection'
 import { useMemo, useState } from 'react'
+import { useLeftPlayers } from '@/lib/useLeftPlayers'
 import { useQuery } from '@tanstack/react-query'
 import { type ColumnDef } from '@tanstack/react-table'
 import { Users, Info } from 'lucide-react'
@@ -413,8 +414,9 @@ export default function PlayerStatsPage() {
   })
   const consistencyByPlayerId: ConsistencyMap | null = consistencyRaw ?? null
 
-  // rawPlayers is already server-filtered by team; no client-side re-filter needed
-  const players = rawPlayers
+  // rawPlayers is already server-filtered by team; only who has left it (a baja in his line of the FEB, #1082) is taken out
+  const left = useLeftPlayers(collection?.name, rawPlayers[0]?.team_id != null ? String(rawPlayers[0].team_id) : '')
+  const players = useMemo(() => (left.size ? rawPlayers.filter(p => !left.has(String(p.player_id))) : rawPlayers), [rawPlayers, left])
 
   // Map player_id → full-season row for comparison
   const seasonById = useMemo(() => {

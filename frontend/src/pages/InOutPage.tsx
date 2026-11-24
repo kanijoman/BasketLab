@@ -203,7 +203,7 @@ export default function InOutPage() {
         {tab === 'IN/OUT' && (
           <div className="space-y-4">
             <div className="card p-4 max-w-xl">
-              <PlayerSelect key={collection?.name ?? ''} label="Jugador" value={p1} onChange={setP1} players={players} teams={teamList} />
+              <PlayerSelect collection={collection?.name} key={collection?.name ?? ''} label="Jugador" value={p1} onChange={setP1} players={players} teams={teamList} />
             </div>
 
             {inoutLoading && (
@@ -256,8 +256,8 @@ export default function InOutPage() {
         {tab === 'IN vs IN' && (
           <div className="space-y-4">
             <div className="card p-4 grid grid-cols-2 gap-4 max-w-3xl">
-              <PlayerSelect key={`${collection?.name ?? ''}_1`} label="Jugador 1" value={together1} onChange={(v) => setT1(v)} players={players} teams={teamList} />
-              <PlayerSelect key={`${collection?.name ?? ''}_2`} label="Jugador 2" value={together2} onChange={(v) => setT2(v)} players={players.filter(p => playerKey(p) !== together1)} teams={teamList} />
+              <PlayerSelect collection={collection?.name} key={`${collection?.name ?? ''}_1`} label="Jugador 1" value={together1} onChange={(v) => setT1(v)} players={players} teams={teamList} />
+              <PlayerSelect collection={collection?.name} key={`${collection?.name ?? ''}_2`} label="Jugador 2" value={together2} onChange={(v) => setT2(v)} players={players.filter(p => playerKey(p) !== together1)} teams={teamList} />
             </div>
 
             {(inout1Loading || inout2Loading) && (

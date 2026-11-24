@@ -39,6 +39,15 @@ async function parts(blob: Blob) {
 }
 
 describe('the document', () => {
+  it('prints the note of the technical staff first in the notes of the player it is for, and only there (#1083)', async () => {
+    const note = `${players[0].player_name} llega desde 18-10-2026 sin jugar (3 partidos)`
+    const base = { players, teamName: players[0].team_name, images, today: new Date('2026-03-05T12:00:00'), date: '05/03/2026' }
+    const { xml } = await parts(await scoutingDocx({ ...base, notes: { [String(players[0].player_id)]: note } }))
+    expect((xml.match(/sin jugar \(3 partidos\)/g) ?? []).length).toBe(1)
+    expect(xml.indexOf('5. Notas del cuerpo técnico')).toBeLessThan(xml.indexOf(note))
+    expect((await parts(await scoutingDocx(base))).xml).not.toContain('sin jugar')
+  })
+
   it('is a DOCX with a page per player: the header, the identity with the age, the three tables with their fills and the notes', async () => {
     const blob = await scoutingDocx({ players, teamName: players[0].team_name, images, today: new Date('2026-03-05T12:00:00'), date: '05/03/2026' })
     expect(blob.type).toBe('application/vnd.openxmlformats-officedocument.wordprocessingml.document')

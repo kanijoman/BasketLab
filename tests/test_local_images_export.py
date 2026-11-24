@@ -34,8 +34,9 @@ def jpeg(width, height) -> bytes:
 
 
 class FakeFeb(Source):
-    def __init__(self, images, identities=None, photos=None, crests=None):
+    def __init__(self, images, identities=None, photos=None, crests=None, trajectories=None):
         self.images, self.identities = dict(images), identities or {}
+        self.trajectories, self.trajectory_asks = trajectories or {}, []                 # player id -> the lines of its Trayectoria; absent = the page cannot be had
         self.photos, self.crests = photos or {}, crests or {}                      # FBCYL: the photo URL of a player uuid, the crest URL of a team id
         self.gets, self.heads, self.scrapes, self.lookups = [], [], [], []
 
@@ -50,6 +51,10 @@ class FakeFeb(Source):
     def identity(self, team_id, player_id):
         self.scrapes.append((team_id, player_id))
         return self.identities.get(player_id, (None, None))
+
+    def trajectory(self, team_id, player_id):
+        self.trajectory_asks.append((team_id, player_id))
+        return self.trajectories.get(player_id)
 
     def photo_url(self, uuid):
         self.lookups.append(("photo", uuid))
@@ -107,7 +112,7 @@ def test_the_first_publication_downloads_everything_and_scrapes_the_identity_of_
     payload = team_payload(COLLECTION, "1", team_sources(collection)["1"], {}, feb)
     assert sorted(feb.gets) == sorted([URLS["logo1"], URLS["p11"], URLS["p12"]]) and feb.heads == [] and sorted(feb.scrapes) == [("1", "11"), ("1", "12")]
     assert decode(payload["logo"]).height == LOGO_HEIGHT and decode(payload["players"]["11"]["photo"]).format == "JPEG"
-    assert payload["players"]["11"] | {"photo": None} == {"name": "A. UNO", "no": "4", "photo": None, "birth_date": "05/03/1998", "height": "198 cm"}
+    assert payload["players"]["11"] | {"photo": None} == {"name": "A. UNO", "no": "4", "photo": None, "birth_date": "05/03/1998", "height": "198 cm", "alta": None, "baja": None}
     assert payload["sources"]["players"]["11"] == {"url": URLS["p11"], "size": len(IMAGES[URLS["p11"]])}
 
 
@@ -189,7 +194,7 @@ def test_fbcyl_asks_the_esb_for_the_crest_and_for_the_photo_of_each_uuid_and_has
     payload = team_payload(FBCYL, "101", team_sources(fbcyl)["101"], {}, feb)
     assert sorted(feb.lookups) == [("crest", "101"), ("photo", "u1"), ("photo", "u2")] and feb.scrapes == []
     assert decode(payload["logo"]).height == LOGO_HEIGHT and decode(payload["players"]["u1"]["photo"]).format == "JPEG"
-    assert payload["players"]["u1"] == {"name": "A. UNO", "no": "4", "photo": payload["players"]["u1"]["photo"], "birth_date": None, "height": None}
+    assert payload["players"]["u1"] == {"name": "A. UNO", "no": "4", "photo": payload["players"]["u1"]["photo"], "birth_date": None, "height": None, "alta": None, "baja": None}
     assert payload["sources"]["players"]["u2"] == {"url": FB_URLS["ph2"], "size": len(FB_IMAGES[FB_URLS["ph2"]])}
 
 
@@ -225,3 +230,35 @@ def test_each_team_is_sealed_for_the_competition_and_the_clubs_and_an_unchanged_
     assert again.gets == [] and again.scrapes == [] and [e["file"] for e in second] == [e["file"] for e in entries]
     assert all((tmp_path / e["file"]).read_bytes() == bytes_before[e["file"]] for e in second)          # sealing is random: the same file, not a new seal
     assert Path(tmp_path / entries[0]["file"]).stat().st_size < 60_000
+
+
+def line(team, alta="2026-09-01", baja=None, season="26/27"):
+    return {"season": season, "category": "1FEB", "team_id": team, "alta": alta, "baja": baja}
+
+
+def test_the_alta_and_the_baja_of_the_line_of_his_team_are_published_and_other_teams_lines_are_ignored(collection):
+    trajectories = {"11": [line("0", baja="2025-01-31", season="25/26"), line("1", alta="2026-09-03", baja="2026-11-10")], "12": [line("1")]}
+    payload = team_payload(COLLECTION, "1", team_sources(collection)["1"], {}, FakeFeb(IMAGES, IDENTITIES, trajectories=trajectories))
+    assert (payload["players"]["11"]["alta"], payload["players"]["11"]["baja"]) == ("2026-09-03", "2026-11-10")
+    assert (payload["players"]["12"]["alta"], payload["players"]["12"]["baja"]) == ("2026-09-01", None)
+
+
+def test_a_baja_that_appears_later_is_published_the_identity_is_scraped_once_but_the_trajectory_every_time_regression(collection):
+    """Bug it prevents: the identity is scraped once, so a baja that came after the first publication would never be seen."""
+    first = team_payload(COLLECTION, "1", team_sources(collection)["1"], {}, FakeFeb(IMAGES, IDENTITIES, trajectories={"11": [line("1")], "12": [line("1")]}))
+    assert first["players"]["11"]["baja"] is None
+    feb = FakeFeb(IMAGES, IDENTITIES, trajectories={"11": [line("1", baja="2026-11-20")], "12": [line("1")]})
+    again = team_payload(COLLECTION, "1", team_sources(collection)["1"], first, feb)
+    assert again["players"]["11"]["baja"] == "2026-11-20" and again["players"]["12"]["baja"] is None
+    assert feb.scrapes == [] and sorted(feb.trajectory_asks) == [("1", "11"), ("1", "12")]
+
+
+def test_a_page_that_cannot_be_had_keeps_what_was_known_and_never_invents_a_baja(collection):
+    first = team_payload(COLLECTION, "1", team_sources(collection)["1"], {}, FakeFeb(IMAGES, IDENTITIES, trajectories={"11": [line("1", baja="2026-11-10")]}))
+    again = team_payload(COLLECTION, "1", team_sources(collection)["1"], first, FakeFeb(IMAGES, IDENTITIES))        # no page for anyone now
+    assert again["players"]["11"]["baja"] == "2026-11-10" and again["players"]["12"]["baja"] is None
+
+
+def test_a_player_without_a_line_for_his_team_has_neither_alta_nor_baja(collection):
+    payload = team_payload(COLLECTION, "1", team_sources(collection)["1"], {}, FakeFeb(IMAGES, IDENTITIES, trajectories={"11": [line("9")]}))
+    assert payload["players"]["11"]["alta"] is None and payload["players"]["11"]["baja"] is None

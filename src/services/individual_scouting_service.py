@@ -136,6 +136,14 @@ class IndividualScoutingDocxBuilder:
             except Exception:
                 pass
 
+        if not self.is_fbcyl:                                # #1082: whoever has a baja already reached in this team's line of the FEB is not scouted (FBCYL has no such table)
+            from src.local_data.feb_trajectory import left_team, today_iso
+
+            today = today_iso()
+            team_players = [p for p in team_players if not left_team(fetcher.get_player_trajectory(str(p.get("player_id", "")), team_id) or [], team_id, today)]
+            if not team_players:
+                return b""
+
         self._league_zones = self._load_league_zones(coll)
 
         doc = Document()

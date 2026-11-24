@@ -4,6 +4,7 @@ import { strFromU8, unzipSync } from 'fflate'
 import { downloadIndividualScoutingDocx } from './individualScouting'
 import * as client from './client'
 import * as web from '@/webdata/client'
+import * as source from '@/localdata/source'
 import { DATA_FLAG_KEY } from '@/datasource/switch'
 import { DataUnavailable } from '@/datasource/resolve'
 
@@ -20,6 +21,7 @@ beforeEach(() => {
   localStorage.clear(); localStorage.setItem('basketlab.data', 'api')
   raster.svgToPng.mockReset().mockResolvedValue(TINY_PNG)
   vi.spyOn(client, 'getShotRaw').mockResolvedValue([])                    // a test that wants shots says so; none must reach the network
+  vi.spyOn(source, 'loadCompetition').mockResolvedValue(null)             // the rows of the competition (for the notes of #1083): a test that wants them says so
 })
 afterEach(() => vi.restoreAllMocks())
 
@@ -28,6 +30,42 @@ async function text(blob: Blob) {
 }
 
 describe('the DOCX of the individual scouting', () => {
+  const imagesWith = (players: Record<string, Record<string, unknown>>) => ({ format: 1, collection: FEB, team_id: '101', team: 'ALFA', logo: null, players }) as never
+  const person = (extra: Record<string, unknown>) => ({ name: null, no: null, photo: null, birth_date: null, height: null, ...extra })
+
+  it('on: a player whose line of the FEB has a baja already reached has no page, and the others do (#1082)', async () => {
+    localStorage.setItem(DATA_FLAG_KEY, 'local')
+    vi.spyOn(client, 'getPlayerStats').mockResolvedValue(PLAYERS)
+    vi.spyOn(client, 'getLiveTeamNames').mockResolvedValue([{ id: '101', name: 'ALFA' }])
+    vi.spyOn(web, 'loadWebImages').mockResolvedValue(imagesWith({ '1': person({ baja: '2026-01-10' }), '2': person({ baja: '2999-01-01' }), '3': person({}) }))   // 2: a baja still to come
+    const xml = await text(await downloadIndividualScoutingDocx(FEB, '101'))
+    expect(xml).not.toContain('JUGADOR 1')
+    expect(xml).toContain('JUGADOR 2')
+    expect(xml).toContain('JUGADOR 3')
+  })
+
+  it('on: a team whose players all left is not made: there is nobody to scout', async () => {
+    localStorage.setItem(DATA_FLAG_KEY, 'local')
+    vi.spyOn(client, 'getPlayerStats').mockResolvedValue(PLAYERS)
+    vi.spyOn(client, 'getLiveTeamNames').mockResolvedValue([{ id: '101', name: 'ALFA' }])
+    vi.spyOn(web, 'loadWebImages').mockResolvedValue(imagesWith({ '1': person({ baja: '2026-01-10' }), '2': person({ baja: '2026-01-10' }), '3': person({ baja: '2026-01-10' }) }))
+    await expect(downloadIndividualScoutingDocx(FEB, '101')).rejects.toThrow('El equipo no tiene jugadores')
+  })
+
+  it('on: the notes carry the games a player has missed, counted from his alta, and nothing for who played the last one (#1083)', async () => {
+    localStorage.setItem(DATA_FLAG_KEY, 'local')
+    vi.spyOn(client, 'getPlayerStats').mockResolvedValue(PLAYERS)
+    vi.spyOn(client, 'getLiveTeamNames').mockResolvedValue([{ id: '101', name: 'ALFA' }])
+    vi.spyOn(web, 'loadWebImages').mockResolvedValue(imagesWith({ '3': person({ alta: '2026-10-20' }) }))
+    const game = (id: number, day: string) => ({ match_id: id, team_id: '101', starttime: `${day} - 18:00` })
+    vi.spyOn(source, 'loadCompetition').mockResolvedValue({ format: 1, collection: FEB, league: 'feb', games: 4, team_rows: [game(1, '04-10-2026'), game(2, '18-10-2026'), game(3, '25-10-2026'), game(4, '01-11-2026')],
+      player_rows: [{ match_id: 1, player_id: '1', team_id: '101' }, { match_id: 4, player_id: '2', team_id: '101' }] as never } as never)
+    const xml = await text(await downloadIndividualScoutingDocx(FEB, '101'))
+    expect(xml).toContain('JUGADOR 1 llega desde 18-10-2026 sin jugar (3 partidos)')      // 1 played only the first
+    expect(xml).not.toContain('JUGADOR 2 llega')                                         // 2 played the last one
+    expect(xml).toContain('JUGADOR 3 llega desde 25-10-2026 sin jugar (2 partidos)')      // 3 signed on 20-10: the games before do not count
+  })
+
   it('on: it is made here from the players of the competition and the images of the team', async () => {
     localStorage.setItem(DATA_FLAG_KEY, 'local')
     vi.spyOn(client, 'getPlayerStats').mockResolvedValue(PLAYERS)

@@ -4,6 +4,8 @@ import { API_BASE, getLiveTeamNames, getPlayerStats, getShotRaw, getShotZones, t
 import { fromSource, DataUnavailable } from '@/datasource/resolve'
 import { loadWebImages, type TeamImages } from '@/webdata/client'
 import type { PlayerCharts } from '@/lib/scoutingDocx'
+import { hasLeftTeam, staffNotes } from '@/lib/playerAvailability'
+import { loadCompetition } from '@/localdata/source'
 
 /** The images of the team, or `null` when the publication has none for this competition (an older season, FBCYL): the document is then made without them. */
 async function imagesOf(collection: string, teamId: string): Promise<TeamImages | null> {
@@ -22,6 +24,16 @@ async function lenient<T>(make: () => Promise<T>): Promise<T | undefined> {
   } catch (error) {
     if (error instanceof ScopedAccessError) throw error
     return undefined
+  }
+}
+
+/** The published rows of the competition (for the notes of #1083), or `null` when there are none: a note is a plus, never a reason not to make the document. */
+async function rowsOf(collection: string) {
+  try {
+    return await loadCompetition(collection)
+  } catch (error) {
+    if (error instanceof ScopedAccessError) throw error
+    return null
   }
 }
 
@@ -53,14 +65,15 @@ async function chartsOf(collection: string, teamId: string, roster: PlayerStat[]
 }
 
 async function inBrowser(collection: string, teamId: string, onProgress?: (p: DocxProgress) => void): Promise<Blob> {
-  const [{ scoutingDocx }, players, teams, images] = await Promise.all([import('@/lib/scoutingDocx'), getPlayerStats(collection), getLiveTeamNames(collection), imagesOf(collection, teamId)])
+  const [{ scoutingDocx }, players, teams, images, rows] = await Promise.all([import('@/lib/scoutingDocx'), getPlayerStats(collection), getLiveTeamNames(collection), imagesOf(collection, teamId), rowsOf(collection)])
   const today = new Date()
   const teamName = teams.find(t => t.id === teamId)?.name ?? ''
-  const roster = players.filter(p => p.team_name === teamName)
+  const roster = players.filter(p => p.team_name === teamName && !hasLeftTeam(images?.players[String(p.player_id)], today))      // #1082: whoever has a baja in this team is not scouted
+  const notes = rows?.league === 'feb' && rows.player_rows ? staffNotes(roster, teamId, rows.team_rows, rows.player_rows as never, images) : {}
   const charts = await chartsOf(collection, teamId, roster, players, onProgress)
   onProgress?.({ stage: 'document', current: roster.length, total: roster.length })
   return scoutingDocx({
-    players, teamName, images, charts, today,
+    players, teamName, images, charts, notes, today, only: new Set(roster.map(p => String(p.player_id))),
     date: today.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }),
   })
 }

@@ -3,14 +3,16 @@ import { useMemo, useState } from 'react'
 import type { PlayerStat } from '@/api/client'
 import { playerKey } from '@/lib/playerKey'
 import { Input, Select } from '@/components/ui/Field'
+import { useLeftPlayers } from '@/lib/useLeftPlayers'
 
 export type TeamOption = { id: string; name: string }
 
 export default function PlayerSelect({
-  label, value, onChange, players, teams: teamsProp,
-}: { label: string; value: string; onChange: (v: string) => void; players: PlayerStat[]; teams?: TeamOption[] }) {
+  label, value, onChange, players, teams: teamsProp, collection,
+}: { label: string; value: string; onChange: (v: string) => void; players: PlayerStat[]; teams?: TeamOption[]; collection?: string }) {
   const [nameFilter, setNameFilter] = useState('')
   const [teamFilter, setTeamFilter] = useState('')
+  const left = useLeftPlayers(collection, teamFilter)           // #1082: choosing a team hides who has left it; with «Todos los equipos» the list keeps everybody
 
   // Derive {id, name} pairs from the loaded players when no independent list is available
   const derivedTeams = useMemo((): TeamOption[] => {
@@ -34,9 +36,9 @@ export default function PlayerSelect({
       // Use team_id for stable matching — team names can change during the season
       const matchesTeam = teamFilter === '' || String(p.team_id ?? '') === teamFilter
       const matchesName = nameFilter === '' || p.player_name.toLowerCase().includes(nameFilter.toLowerCase())
-      return matchesTeam && matchesName
+      return matchesTeam && matchesName && !(teamFilter !== '' && left.has(String(p.player_id)))
     }),
-    [players, teamFilter, nameFilter],
+    [players, teamFilter, nameFilter, left],
   )
 
   return (
