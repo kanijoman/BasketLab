@@ -13,6 +13,7 @@ A game is three requests (the box with the bio of its players, the play by play 
 """
 from __future__ import annotations
 
+import http.client
 import json
 import time
 import urllib.error
@@ -86,7 +87,7 @@ class EuroleagueClient:
                 if error.code < 500 and error.code != 429:
                     raise EuroleagueFetchError(f"HTTP {error.code} for {url}") from error
                 last, wait = error, BLOCKED_WAIT_S * attempt if error.code == 429 else wait
-            except (OSError, ValueError) as error:                             # URLError, time out, connection reset, a JSON cut in the middle
+            except (OSError, ValueError, http.client.HTTPException) as error:          # URLError, time out, connection reset, a JSON cut in the middle, a response cut short (IncompleteRead is no OSError, #1088)
                 last = error
             if attempt < self.attempts:
                 self.sleep(wait)

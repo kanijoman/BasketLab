@@ -12,6 +12,7 @@ tests serve the real answers of ``tests/fixtures/ncaa`` and see the pauses witho
 """
 from __future__ import annotations
 
+import http.client
 import json
 import time
 import urllib.error
@@ -84,7 +85,7 @@ class NcaaClient:
                 if error.code < 500 and error.code != 429:
                     raise NcaaFetchError(f"HTTP {error.code} for {url}") from error
                 last = error
-            except (OSError, ValueError) as error:                             # URLError, time out, connection reset, a JSON cut in the middle
+            except (OSError, ValueError, http.client.HTTPException) as error:          # URLError, time out, connection reset, a JSON cut in the middle, a response cut short (IncompleteRead is no OSError, #1088)
                 last = error
             if attempt < self.attempts:
                 self.sleep(self.pause * 2 ** attempt)

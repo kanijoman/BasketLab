@@ -2,6 +2,7 @@
 
 Measured on 23/11/2026: ESPN answers 403 to a user agent that names a bot (the one of FIBA's client) and 200 to a plain browser one, so that is what is sent (it names no project and no key).
 """
+from http.client import IncompleteRead
 import urllib.error
 
 import pytest
@@ -57,6 +58,16 @@ def test_a_server_error_is_asked_again_after_a_wait_that_doubles_and_then_it_wor
     c, clock = client(site, pause=1.0)
     assert len(c.conferences("M", 2025)) == 31 and len(site.requests) == 3
     assert clock.sleeps[-2:] == [2.0, 4.0]
+
+
+def test_a_response_cut_short_is_asked_again_and_if_it_never_comes_whole_it_is_a_fetch_error_regression():
+    """#1088: the NCAA batch of 24/11/2026 died with ``IncompleteRead(645685 bytes read)`` after ~20 minutes: ``http.client.HTTPException`` is not an ``OSError``, so it skipped the retries and the whole run."""
+    cut = IncompleteRead(b"x" * 10)
+    c, _ = client(Site({CONFERENCES: [cut, text("conferences_mens_2026")]}))
+    assert len(c.conferences("M", 2025)) == 31
+    c, _ = client(Site({CONFERENCES: cut}), attempts=3)
+    with pytest.raises(NcaaFetchError, match="IncompleteRead"):
+        c.conferences("M", 2025)
 
 
 def test_a_page_that_is_not_there_is_not_asked_again_and_a_request_that_is_refused_says_so():

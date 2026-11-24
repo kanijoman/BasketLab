@@ -3,6 +3,7 @@
 Measured on 23/11/2026: the API answers 429 (Cloudflare, error 1015) from about 8 requests a second and recovers in about 2 minutes; three a second ran for hundreds of requests with no block. So the pause
 is half a second at least and a 429 is waited out for much longer than a server error.
 """
+from http.client import IncompleteRead
 import urllib.error
 
 import pytest
@@ -74,6 +75,12 @@ def test_a_server_error_is_asked_again_after_a_short_wait_that_doubles():
     site = Site({SEASONS: [http(503), OSError("reset"), text("seasons_J")]})
     c, clock = client(site)
     assert c.seasons("J") and len(site.requests) == 3 and max(clock.sleeps) < 30
+
+
+def test_a_response_cut_short_is_asked_again_like_any_network_failure_regression():
+    """#1088: ``IncompleteRead`` is not an ``OSError`` and used to skip the retries (found in the NCAA client)."""
+    site = Site({SEASONS: [IncompleteRead(b"x"), text("seasons_J")]})
+    assert client(site)[0].seasons("J") and len(site.requests) == 2
 
 
 def test_a_page_that_is_not_there_is_not_found_and_a_refusal_is_a_fetch_error_neither_asked_again():
