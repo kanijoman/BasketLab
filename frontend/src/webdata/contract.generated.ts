@@ -24,7 +24,7 @@ export interface RowsEntry {
   bytes: number
   sha256: string
   collection: string
-  league: 'feb' | 'fbcyl' | 'acb' | 'fiba' | 'ncaa'
+  league: 'feb' | 'fbcyl' | 'acb' | 'euroleague' | 'fiba' | 'ncaa'
   games: number
   wraps: Wrap[]
   category?: 'senior' | 'formacion'
@@ -46,7 +46,7 @@ export interface ReportIndexEntry {
 /** How fresh the data of an external source is (#884, ``web-data-ext``): its last run (``state`` ``ok`` or ``failed``), when it last worked, and how many games it holds, how many do not reconcile with their
     official box (kept in the archive, never published) and how many were published. A failed run still publishes the rows of the last good one: the web says «data from <last_ok>». */
 export interface SourceFreshness {
-  source: 'acb' | 'fiba' | 'ncaa'
+  source: 'acb' | 'euroleague' | 'fiba' | 'ncaa'
   state: string
   ok: boolean
   last_ok?: string

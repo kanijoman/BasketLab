@@ -51,8 +51,8 @@ def _c(source, **fields):
     return {"source": source, **fields}
 
 
-def test_the_priority_is_feb_fiba_acb_ncaa():
-    assert SOURCE_PRIORITY == ("feb", "fiba", "acb", "ncaa") and HEIGHT_CONFLICT_CM == 3
+def test_the_priority_is_feb_fiba_acb_euroleague_ncaa():
+    assert SOURCE_PRIORITY == ("feb", "fiba", "acb", "euroleague", "ncaa") and HEIGHT_CONFLICT_CM == 3
 
 
 def test_a_field_empty_in_one_source_is_filled_by_the_other():

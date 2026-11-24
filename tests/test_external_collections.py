@@ -29,6 +29,8 @@ def _entry(source, **over):
     base = {"competition": "D1" if source == "ncaa" else "U18 EuroBasket", "season_label": "2026/2027", "season_value": "2026", "league": source, "division": "D1", "gender": "M"}
     if source == "ncaa":
         base["conference"] = "SEC"
+    if source == "euroleague":
+        base["euroleague"] = {"competition": "E"}
     if source == "fiba":
         base["fiba"] = {"event": "fiba-test-event-2026"}
     if source == "acb":
@@ -67,17 +69,17 @@ class TestNames:
     def test_the_source_is_read_from_the_name(self, name, source):
         assert source_of(name) == source
 
-    @pytest.mark.parametrize("name", ["NCAA_D1_2026_SEC", "FIBA_U18_EuroBasket_2026_", "ACB_Liga_Endesa_2026_"])
+    @pytest.mark.parametrize("name", ["NCAA_D1_2026_SEC", "FIBA_U18_EuroBasket_2026_", "ACB_Liga_Endesa_2026_", "EUROLEAGUE_EuroLeague_2026_"])
     def test_an_external_collection_is_not_fbcyl_so_no_pipeline_takes_it_for_one(self, name):
         assert is_fbcyl(name) is False
 
     def test_the_sources_are_one_list(self):
-        assert EXTERNAL_LEAGUES == ("acb", "fiba", "ncaa")
+        assert EXTERNAL_LEAGUES == ("acb", "euroleague", "fiba", "ncaa")
 
 
 @pytest.mark.parametrize("source", EXTERNAL_LEAGUES)
 def test_the_rows_of_an_external_competition_say_their_source_as_their_league(source):
-    name = {"acb": "ACB_Liga_Endesa_2026_", "fiba": "FIBA_U18_EuroBasket_2026_", "ncaa": "NCAA_D1_2026_SEC"}[source]
+    name = {"acb": "ACB_Liga_Endesa_2026_", "euroleague": "EUROLEAGUE_EuroLeague_2026_", "fiba": "FIBA_U18_EuroBasket_2026_", "ncaa": "NCAA_D1_2026_SEC"}[source]
     db = new_mock_db("BASKETBALL")
     db[name].insert_many([badged(g, source) for g in games.build_games()])
     payload = export_collection(db[name], name)
@@ -97,10 +99,10 @@ class TestManifestContract:
         return {"schema": 1, "v": 2, **{k: [] for k in ("derived", "shots", "rotations", "matches", "possessions", "possession_csv", "lineups", "inout", "consistency", "rival_adjusted", "assist_connections", "calendar", "reports")},
                 "rows": [row]}
 
-    @pytest.mark.parametrize("league", ["feb", "fbcyl", "acb", "fiba", "ncaa"])
+    @pytest.mark.parametrize("league", ["feb", "fbcyl", "acb", "euroleague", "fiba", "ncaa"])
     def test_the_manifest_accepts_the_league_of_every_source(self, league):
         validate_manifest(self._manifest(league))
 
     def test_it_refuses_a_league_that_is_not_a_source(self):
         with pytest.raises(ValueError, match="league"):
-            validate_manifest(self._manifest("euroleague"))
+            validate_manifest(self._manifest("basketball"))

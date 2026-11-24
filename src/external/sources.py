@@ -1,6 +1,6 @@
 """The external sources that really exist (#887): what ``run_external_refresh.py --source X`` registers before it runs.
 
-FIBA (D3), ACB (D2) and NCAA (D4) have a scraper; a source without one is ``pending`` (``refresh_source``), which is not a failure. A source already registered is never
+FIBA (D3), ACB (D2), NCAA (D4) and the Euroleague (D6) have a scraper; a source without one is ``pending`` (``refresh_source``), which is not a failure. A source already registered is never
 replaced: the tests register their own, and a caller that wants another client says so first.
 """
 from __future__ import annotations
@@ -11,6 +11,9 @@ from src.external import registry
 from src.external.acb_client import AcbClient
 from src.external.acb_source import DEFAULT_BUDGET as ACB_BUDGET
 from src.external.acb_source import AcbSource
+from src.external.euroleague_client import EuroleagueClient
+from src.external.euroleague_source import DEFAULT_BUDGET as EUROLEAGUE_BUDGET
+from src.external.euroleague_source import EuroleagueSource
 from src.external.ncaa_client import NcaaClient
 from src.external.ncaa_source import DEFAULT_BUDGET as NCAA_BUDGET
 from src.external.ncaa_source import NcaaSource
@@ -29,6 +32,8 @@ def default_source(name: str, budget: Optional[int] = None):
         return FibaSource(make_client(), budget=budget or DEFAULT_BUDGET)
     if name == "acb":
         return AcbSource(AcbClient(max_requests=budget or ACB_BUDGET))
+    if name == "euroleague":
+        return EuroleagueSource(EuroleagueClient(max_requests=budget or EUROLEAGUE_BUDGET))
     if name == "ncaa":
         return NcaaSource(NcaaClient(max_requests=budget or NCAA_BUDGET))
     return None

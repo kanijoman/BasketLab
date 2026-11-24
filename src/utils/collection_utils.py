@@ -6,11 +6,11 @@ scattered across 5+ call sites as:
 """
 from typing import Optional
 
-EXTERNAL_SOURCES = ("acb", "fiba", "ncaa")     # the external sources of the data (#884): the one list the catalogue, the exporter and the manifest read
+EXTERNAL_SOURCES = ("acb", "euroleague", "fiba", "ncaa")     # the external sources of the data (#884): the one list the catalogue, the exporter and the manifest read
 
 
 def source_of(collection_name: str) -> Optional[str]:
-    """The external source (``acb``, ``fiba``, ``ncaa``) a collection belongs to, read from the exact prefix of its name (``NCAA_D1_2026_SEC``); ``None`` for FEB, FBCYL and anything else."""
+    """The external source (``acb``, ``euroleague``, ``fiba``, ``ncaa``) a collection belongs to, read from the exact prefix of its name (``NCAA_D1_2026_SEC``); ``None`` for FEB, FBCYL and anything else."""
     prefix = collection_name.split("_", 1)[0] if collection_name else ""
     return prefix.lower() if prefix in {s.upper() for s in EXTERNAL_SOURCES} else None
 

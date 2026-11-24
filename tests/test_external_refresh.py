@@ -292,7 +292,7 @@ class TestEntryPoint:
 
     def test_an_unknown_source_is_refused(self, cli, tmp_path, db):
         with pytest.raises(SystemExit):
-            cli.main(["--source", "euroleague", *self._argv(tmp_path, "fiba")], db=db, now=NOW)
+            cli.main(["--source", "basketball", *self._argv(tmp_path, "fiba")], db=db, now=NOW)
 
 
 class TestARunThatStoppedForItsBudget:
