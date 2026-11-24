@@ -9,8 +9,8 @@ yet and asks for each one, handing over the canonical document (``ncaa_canonical
   a day is read ONCE per run for every conference of the same sex.
 * **A budget of requests per run** (the client's): the first load of a season is thousands of games, so it goes by batches. When it is spent the source stops, keeps what it had and says it is NOT
   ``complete``: the refresh does not move the date the next run starts from, so no day is skipped; what is already stored is in ``known`` and is not asked for again.
-* **A game that cannot be had is skipped and said** (``notes``), never a reason to stop the rest. A site that changed its FORMAT is different: if NONE of the games could be read the run fails
-  (``NcaaPageError``), so that the issue opens instead of a quiet empty archive. A scoreboard that cannot be read stops the run (``NcaaFetchError``): it is not an empty day.
+* **A game that cannot be had is skipped and said** (``notes``), never a reason to stop the rest. A site that changed its FORMAT is different: if NONE of the games of the WHOLE RUN could be read (``finish()``, #1086: not per entry) the run fails
+  (``NcaaPageError`` naming a game), so that the issue opens instead of a quiet empty archive. A scoreboard that cannot be read stops the run (``NcaaFetchError``): it is not an empty day.
 """
 from __future__ import annotations
 
@@ -34,6 +34,8 @@ class NcaaSource:
         self.client, self.today = client, today or date.today
         self.notes: List[str] = []
         self.complete = True
+        self.read = 0                                  # games read in the whole run
+        self.failed_format: Optional[str] = None       # the last game whose summary was not in the expected format (``id: error``)
         self._boards: Dict[Tuple[str, date], List[Dict[str, Any]]] = {}
         self._names: Dict[Tuple[str, int], Dict[str, str]] = {}
 
@@ -75,8 +77,6 @@ class NcaaSource:
         if since:
             day = max(day, date.fromisoformat(since))
         last = min(date(season + 1, *SEASON_LAST_DAY), self.today())
-        failed_format = read = 0
-        last_format: Optional[NcaaPageError] = None
         while day <= last:
             try:
                 board = self._board(sex, day)
@@ -98,12 +98,15 @@ class NcaaSource:
                     self.notes.append(f"{listed['game_id']}: {error}")
                     continue
                 except NcaaPageError as error:
-                    failed_format += 1
-                    last_format = error
+                    self.failed_format = f"{listed['game_id']}: {error}"
                     self.notes.append(f"{listed['game_id']}: format: {error}")
                     continue
-                read += 1
+                self.read += 1
                 yield to_canonical(game, entry, names)
             day += timedelta(days=1)
-        if failed_format and not read and last_format is not None:
-            raise last_format                                              # none of the games that could be asked for could be read: the site changed, it is not a quiet empty run
+
+    def finish(self) -> None:
+        """The end of the run (#1086): if games were asked for and NONE of the whole run could be read because of their format, the site changed and the run fails (a quiet empty archive would hide it); a malformed
+        game among readable ones is only noted, and it must not stop the entries after it (it used to raise at the end of each entry's loop)."""
+        if self.failed_format and not self.read:
+            raise NcaaPageError(self.failed_format)

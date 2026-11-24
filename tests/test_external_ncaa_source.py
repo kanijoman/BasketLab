@@ -27,8 +27,9 @@ IDS = {name: name.rsplit("_", 1)[1] for sex in GAMES.values() for names in sex.v
 class FakeClient:
     """ESPN as the tests have it: the scoreboards of three days (only with the games the fixtures have the summary of), empty anywhere else."""
 
-    def __init__(self, budget=None, broken=None, missing=()):
+    def __init__(self, budget=None, broken=None, missing=(), unreadable=()):
         self.budget, self.requests, self.broken, self.missing = budget, [], broken, set(missing)
+        self.unreadable = set(unreadable)                          # the summary of these games is not in the expected format (the others are fine)
 
     def _spend(self, what):
         if self.budget is not None and len(self.requests) >= self.budget:
@@ -49,6 +50,8 @@ class FakeClient:
             raise NcaaNotFound(game_id)
         if self.broken:
             raise self.broken
+        if game_id in self.unreadable:
+            raise NcaaPageError("the game is not in the expected format (KeyError: 'id')")
         name = next(n for n, i in IDS.items() if i == game_id)
         return parse_summary(fixture(name))
 
@@ -153,10 +156,19 @@ class TestWhenThingsGoWrong:
         s = NcaaSource(FakeClient(broken=NcaaFetchError("HTTP 403")), today=lambda: date(2026, 1, 16))
         assert list(s.fetch(entry("29"), "2026-01-15", frozenset())) == [] and any("401829197" in n and "403" in n for n in s.notes)
 
-    def test_if_no_game_could_be_read_because_of_its_format_the_run_fails_instead_of_a_quiet_empty_archive(self):
+    def test_if_no_game_of_the_whole_run_could_be_read_because_of_its_format_the_run_fails_and_names_a_game(self):
         s = NcaaSource(FakeClient(broken=NcaaPageError("the columns changed")), today=lambda: date(2026, 1, 16))
-        with pytest.raises(NcaaPageError):
-            list(s.fetch(entry("29"), "2026-01-15", frozenset()))
+        assert list(s.fetch(entry("29"), "2026-01-15", frozenset())) == []        # the entry itself does not stop the others
+        with pytest.raises(NcaaPageError, match="401829197"):
+            s.finish()                                                            # the end of the run: nothing could be read anywhere, the site changed
+
+    def test_a_game_nobody_can_read_in_one_entry_does_not_stop_the_other_entries_regression(self):
+        """#1086: an entry whose only new game was malformed raised at the end of ITS loop and the whole source failed, so the games of the entries after it (and the date the next run starts from) were lost."""
+        s = NcaaSource(FakeClient(unreadable=["401829197"]), today=lambda: date(2026, 1, 16))
+        assert list(s.fetch(entry("29"), "2026-01-15", frozenset())) == []
+        assert ids(list(s.fetch(entry("1"), "2026-01-15", frozenset()))) == ["ncaa:401812120"]      # another entry reads its game
+        s.finish()                                                                 # something was read in the run: no failure
+        assert any(n.startswith("401829197: format:") for n in s.notes)
 
     def test_when_the_budget_is_spent_it_stops_keeps_what_it_had_and_says_the_run_is_not_complete(self):
         """The first load goes by batches: the games already read are kept, and a run that did not see everything must not advance the date the next one starts from."""
