@@ -13,6 +13,7 @@ The network is injected (``fetch``, ``sleep``, ``clock``) so the tests serve the
 """
 from __future__ import annotations
 
+import http.client
 import json
 import re
 import time
@@ -122,7 +123,7 @@ class AcbClient:
                 if error.code < 500 and error.code != 429:
                     raise AcbFetchError(f"HTTP {error.code} for {url}") from error
                 last = error
-            except (OSError, ValueError) as error:                             # URLError, time out, connection reset, a JSON cut in the middle
+            except (OSError, ValueError, http.client.HTTPException) as error:          # URLError, time out, connection reset, a JSON cut in the middle, a response cut short (IncompleteRead is no OSError, #1088)
                 last = error
             if attempt < self.attempts:
                 self.sleep(self.pause * 2 ** attempt)
