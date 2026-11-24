@@ -44,8 +44,9 @@ class NcaaSource:
         return next((t["conference_id"] for t in by_side if t["conference_id"]), None)
 
     def _stop(self, error: Exception) -> None:
+        if self.complete:                       # once per run: the entries after the first one only repeat it (#1073)
+            self.notes.append(f"budget: {error}")
         self.complete = False
-        self.notes.append(f"budget: {error}")
 
     def _board(self, sex: str, day: date) -> List[Dict[str, Any]]:
         if (sex, day) not in self._boards:
