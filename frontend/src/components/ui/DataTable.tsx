@@ -54,6 +54,8 @@ interface Props<TData> {
   exportOptions?: Omit<ExportOptions, 'captureRef'>
   /** Optional row click handler */
   onRowClick?: (row: Row<TData>) => void
+  /** Extra classes for the row of a datum (e.g. to dim it) */
+  rowClassName?: (datum: TData) => string
   /** Width (px) of the columns that do not set their own ``size`` (default 80) */
   defaultColumnSize?: number
   /** Height of the rows (default `normal`) */
@@ -110,6 +112,7 @@ export default function DataTable<TData>({
   loading = false,
   exportOptions,
   onRowClick,
+  rowClassName,
   defaultColumnSize = 80,
   density = 'normal',
   emptyMessage = 'Ningún dato coincide con los filtros aplicados.',
@@ -251,7 +254,7 @@ export default function DataTable<TData>({
                   <tr
                     key={row.id}
                     onClick={() => onRowClick?.(row)}
-                    className={`group border-b border-line/50 hover:bg-surface-raised transition-colors${onRowClick ? ' cursor-pointer' : ''}`}
+                    className={`group border-b border-line/50 hover:bg-surface-raised transition-colors${onRowClick ? ' cursor-pointer' : ''}${rowClassName ? ` ${rowClassName(row.original)}` : ''}`}
                   >
                     {row.getVisibleCells().map((cell, i) => {
                       const qClass = cellClass(cell)

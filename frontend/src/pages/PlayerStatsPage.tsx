@@ -21,6 +21,7 @@ import { getPlayerStats, getTeamsInCollection, getPlayerConsistency, type Player
 import { fmt, fmtPct } from '@/lib/utils'
 import PageTransition from '@/components/ui/PageTransition'
 import PageHeader from '@/components/ui/PageHeader'
+import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
 import Tabs from '@/components/ui/Tabs'
 import { Field, Select } from '@/components/ui/Field'
@@ -65,15 +66,24 @@ function buildNumCol(
   }
 }
 
-function nameCol(): ColumnDef<PlayerStat, unknown> {
+/** A player who has left the team (a baja in his line of the FEB, #1082) stays in the table, dimmed and labelled: his figures are still in the team's totals. */
+type Left = ReadonlySet<string>
+
+function nameCol(left: Left): ColumnDef<PlayerStat, unknown> {
   return {
     id: 'player_name',
     accessorKey: 'player_name',
     size: 140,
     header: 'Jugador',
-    cell: ({ getValue }) => (
-      <span className="font-medium text-ink whitespace-nowrap">{getValue() as string}</span>
-    ),
+    cell: ({ getValue, row }) => {
+      const gone = left.has(String(row.original.player_id))
+      return (
+        <span className={`font-medium whitespace-nowrap ${gone ? 'text-ink-muted' : 'text-ink'}`}>
+          {getValue() as string}
+          {gone && <Badge tone="outline" className="ml-2" title="Ya no está en el equipo: su ficha de la FEB tiene fecha de baja. Sus estadísticas siguen en los totales del equipo.">Baja</Badge>}
+        </span>
+      )
+    },
   }
 }
 
@@ -81,9 +91,9 @@ function nameCol(): ColumnDef<PlayerStat, unknown> {
 
 const PLAYER_CV: [number, number] = [50, 100]
 
-function buildBasicCols(cv: ConsistencyMap | null): ColumnDef<PlayerStat, unknown>[] {
+function buildBasicCols(cv: ConsistencyMap | null, left: Left): ColumnDef<PlayerStat, unknown>[] {
   return [
-    nameCol(),
+    nameCol(left),
     teamColumn<PlayerStat>({ compact: true }),
     buildNumCol('games_played',              'PJ',  { decimals: 0, size: 44 }),
     buildNumCol('minutes_per_game',          'MIN', { size: 52 },  cv, PLAYER_CV),
@@ -104,9 +114,9 @@ function buildBasicCols(cv: ConsistencyMap | null): ColumnDef<PlayerStat, unknow
   ]
 }
 
-function buildAdvancedCols(cv: ConsistencyMap | null): ColumnDef<PlayerStat, unknown>[] {
+function buildAdvancedCols(cv: ConsistencyMap | null, left: Left): ColumnDef<PlayerStat, unknown>[] {
   return [
-    nameCol(),
+    nameCol(left),
     teamColumn<PlayerStat>({ compact: true }),
     buildNumCol('games_played',      'PJ',     { decimals: 0, size: 44 }),
     buildNumCol('minutes_per_game',  'MIN',    { size: 52 },  cv, PLAYER_CV),
@@ -185,9 +195,9 @@ function buildProjectionQuartiles(data: PlayerStat[]): QuartileMap {
   return map
 }
 
-function buildProjectionCols(): ColumnDef<PlayerStat, unknown>[] {
+function buildProjectionCols(left: Left): ColumnDef<PlayerStat, unknown>[] {
   return [
-    nameCol(),
+    nameCol(left),
     teamColumn<PlayerStat>({ compact: true }),
     buildNumCol('games_played',    'PJ',  { decimals: 0, size: 44 }),
     buildNumCol('minutes_per_game','MIN', { size: 52 }),
@@ -414,9 +424,9 @@ export default function PlayerStatsPage() {
   })
   const consistencyByPlayerId: ConsistencyMap | null = consistencyRaw ?? null
 
-  // rawPlayers is already server-filtered by team; only who has left it (a baja in his line of the FEB, #1082) is taken out
+  // rawPlayers is already server-filtered by team; no client-side re-filter needed. Who has left the team (#1082) stays, dimmed and labelled «Baja»
   const left = useLeftPlayers(collection?.name, rawPlayers[0]?.team_id != null ? String(rawPlayers[0].team_id) : '')
-  const players = useMemo(() => (left.size ? rawPlayers.filter(p => !left.has(String(p.player_id))) : rawPlayers), [rawPlayers, left])
+  const players = rawPlayers
 
   // Map player_id → full-season row for comparison
   const seasonById = useMemo(() => {
@@ -443,10 +453,10 @@ export default function PlayerStatsPage() {
   }, [hasDateFilter, seasonPlayers, players, seasonById, teamFilter, trendStats])
 
   const activeCols = useMemo(() => {
-    if (tab === 'advanced')   return buildAdvancedCols(consistencyByPlayerId)
-    if (tab === 'projection') return buildProjectionCols()
-    return buildBasicCols(consistencyByPlayerId)
-  }, [tab, consistencyByPlayerId])
+    if (tab === 'advanced')   return buildAdvancedCols(consistencyByPlayerId, left)
+    if (tab === 'projection') return buildProjectionCols(left)
+    return buildBasicCols(consistencyByPlayerId, left)
+  }, [tab, consistencyByPlayerId, left])
   const reverseColumns = useMemo(() => {
     if (tab === 'advanced')   return ['drating', 'tov_pct_adv', 'turnover_rate']
     if (tab === 'projection') return ['per_proj']
@@ -595,6 +605,7 @@ export default function PlayerStatsPage() {
         <DataTable
           columns={activeCols}
           data={players}
+          rowClassName={p => (left.has(String(p.player_id)) ? 'opacity-60' : '')}
           quartiles={quartiles}
           reverseColumns={reverseColumns}
           loading={isLoading}

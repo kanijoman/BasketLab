@@ -96,16 +96,20 @@ describe('PlayerStatsPage on the base components (issue #192)', () => {
   })
 })
 
-// #1082: the table of a team leaves out who has left it (a baja in his line of the FEB).
+// #1082: who has left the team (a baja in his line of the FEB) stays in the table of the team, dimmed and labelled: his figures are still in the totals of the team.
 describe('PlayerStatsPage: who has left the team (issue #1082)', () => {
-  it('does not list him once a team is chosen and asks for the baja of that team', async () => {
+  it('lists him with the label «Baja» and dimmed, the others without it, and asks for the baja of that team', async () => {
     left.ids = new Set(['2'])
     api.getPlayerStats.mockResolvedValue(PLAYERS.map(p => ({ ...p, team_id: '101' })))
     renderPage()
     await chooseTeam()
     expect(await screen.findByText('A. UNO')).toBeInTheDocument()
-    expect(screen.queryByText('B. DOS')).not.toBeInTheDocument()
-    expect(screen.getByText('C. TRES')).toBeInTheDocument()
+    const gone = screen.getByText('B. DOS').closest('tr') as HTMLElement
+    expect(within(gone).getByText('Baja')).toBeInTheDocument()
+    expect(gone.className).toContain('opacity-60')
+    const stays = screen.getByText('C. TRES').closest('tr') as HTMLElement
+    expect(within(stays).queryByText('Baja')).not.toBeInTheDocument()
+    expect(stays.className).not.toContain('opacity-60')
     expect(left.asked).toContainEqual(['LF_CHALLENGE', '101'])
   })
 })
