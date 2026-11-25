@@ -29,6 +29,7 @@ SEASON_LAST_DAY = (4, 20)                      # after the Final Four of both se
 
 class NcaaSource:
     name = "ncaa"
+    light_history = True                         # #967: play-by-play and shots only of the current season and the previous one (the older ones keep the box)
 
     def __init__(self, client: NcaaClient, today: Optional[Callable[[], date]] = None) -> None:
         self.client, self.today = client, today or date.today

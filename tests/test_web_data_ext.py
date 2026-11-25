@@ -76,6 +76,22 @@ def test_the_whole_chain_publishes_the_reliable_games_of_a_source_under_its_own_
     assert rows["league"] == "fiba" and {r["team_id"] for r in rows["team_rows"]} == {"fiba:982047", "fiba:981204"}
 
 
+def test_an_old_season_kept_light_still_publishes_its_rows_and_nothing_breaks_regression(tmp_path, handler):
+    """#967: NCAA keeps play-by-play and shots only of the two latest seasons. The oldest one is restored with the box alone (its games keep the reliable flag) and its rows are still published."""
+    source = FixtureSource("ncaa")
+    source.light_history = True
+    registry.register(source)
+    entries = [{"competition": "D1 Men", "season_label": f"{y}/{y + 1}", "season_value": str(y), "league": "ncaa", "division": "D1", "gender": "M", "conference": "SEC", "ncaa": {"conference_id": "23"}} for y in (2024, 2025, 2026)]
+    path = tmp_path / "competitions.json"
+    path.write_text(json.dumps({"competitions": entries}), encoding="utf-8")
+    cat = load_catalogue(path)
+    refresh_source("ncaa", cat, new_mock_db("BASKETBALL"), tmp_path / "archive-ext", NOW)
+    manifest = _publish(tmp_path, handler, cat)                               # publishes from the archive as it was written: the oldest season is light
+    validate_manifest(manifest)
+    by_name = {r["collection"]: r for r in manifest["rows"]}
+    assert len(by_name) == 3 and all(r["games"] == 1 for r in by_name.values())
+
+
 def test_the_games_that_do_not_reconcile_stay_in_the_archive_but_not_in_what_is_published(tmp_path, handler):
     registry.register(FixtureSource("fiba"))
     cat = _catalogue(tmp_path, "fiba")

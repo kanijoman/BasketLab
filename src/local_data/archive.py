@@ -22,6 +22,7 @@ FORMAT = 1
 MANIFEST = "archive.json"
 SUFFIX = ".jsonl.gz"
 PLAY_BY_PLAY = ("PLAYBYPLAY", "moves")                  # FEB and FBCYL: what a light game leaves out
+LIGHT_EXTERNAL = ("PLAYBYPLAY", "SHOTCHART")            # an external source that asks for it (NCAA, #967): its older seasons keep the box alone
 META = "COLLECTION_META"                                # the metadata the FEB scrape writes per collection (#724): it travels in the archive, in a file of its own
 META_FILE = META + SUFFIX
 META_VOLATILE = ("saved_at",)                           # the time of the last scrape: it changes on every refresh and would commit the archive each time
@@ -52,10 +53,10 @@ def _games_collections(db: Any) -> List[str]:
     return sorted(set(feb_collection_names(db)) | set(fbcyl_collection_names(db)))
 
 
-def _lines(collection: Any, light: bool) -> Iterator[bytes]:
+def _lines(collection: Any, light: bool, drop: Iterable[str] = PLAY_BY_PLAY) -> Iterator[bytes]:
     for doc in sorted(collection.find({}), key=lambda d: (type(d["_id"]).__name__, str(d["_id"]))):
         if light:
-            doc = {k: v for k, v in doc.items() if k not in PLAY_BY_PLAY}
+            doc = {k: v for k, v in doc.items() if k not in drop}
         yield json_util.dumps(doc, json_options=_OPTIONS, separators=(",", ":")).encode("utf-8") + b"\n"
 
 
@@ -116,10 +117,10 @@ def _dump_meta(db: Any, out_dir: Path, only: Optional[Iterable[str]]) -> Optiona
 
 
 def dump_archive(db: Any, out_dir: Path, light: Optional[Callable[[str], bool]] = None, only: Optional[Iterable[str]] = None,
-                 allow_shrink: bool = True) -> Dict[str, Any]:
+                 allow_shrink: bool = True, drop: Iterable[str] = PLAY_BY_PLAY) -> Dict[str, Any]:
     """Write the file of every games collection and ``archive.json`` (returned); ``light(name)`` says which are kept without play-by-play
     (default: the ones outside the working set). With ``only`` the other files and entries are kept. Files of collections gone are removed.
-    ``allow_shrink=False`` (what a refresh uses) refuses, before touching anything, to replace the archive with fewer games."""
+    ``drop`` are the fields a light game leaves out. ``allow_shrink=False`` (what a refresh uses) refuses, before touching anything, to replace the archive with fewer games."""
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     names = _games_collections(db)
@@ -133,7 +134,7 @@ def dump_archive(db: Any, out_dir: Path, light: Optional[Callable[[str], bool]] 
         entries = {c["name"]: c for c in json.loads((out_dir / MANIFEST).read_text(encoding="utf-8"))["collections"]}
     for name in (names if only is None else [n for n in names if n in set(only)]):
         is_light = bool(light(name))
-        data = gzip.compress(b"".join(_lines(db[name], is_light)), compresslevel=9, mtime=0)
+        data = gzip.compress(b"".join(_lines(db[name], is_light, tuple(drop))), compresslevel=9, mtime=0)
         _write_if_changed(out_dir / _file(name), data)
         entries[name] = {"name": name, "file": _file(name), "light": is_light, "games": db[name].count_documents({}),
                          "bytes": len(data), "sha256": hashlib.sha256(data).hexdigest()}
