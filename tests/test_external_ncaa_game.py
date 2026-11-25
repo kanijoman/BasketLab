@@ -68,6 +68,21 @@ class TestAGame:
         benched = [p for team in game["players"].values() for p in team if p["dnp"]]
         assert benched and all(p["stats"] is None for p in benched)
 
+    def test_a_bench_player_ESPN_gives_without_id_is_left_out_and_the_game_is_read_regression(self):
+        """#1091: game 401829462 lists a player who did not play with only a short name (no id): the whole game was unreadable (KeyError 'id'). Nobody can be attributed to it, so it is skipped."""
+        game = parse_summary(fixture("game_mens_nameless_dnp_401829462"))
+        assert game["game_id"] == "401829462"
+        assert all(p["id"] != "None" for team in game["players"].values() for p in team)
+        assert not any(p["name"] == "" and p["dnp"] for team in game["players"].values() for p in team)
+
+    def test_a_player_without_id_who_did_play_is_an_error_not_a_lost_line(self):
+        data = fixture("game_mens_nameless_dnp_401829462")
+        athletes = data["boxscore"]["players"][0]["statistics"][0]["athletes"]
+        anonymous = next(a for a in athletes if "id" not in a["athlete"])
+        anonymous.update({"didNotPlay": False, "stats": next(a for a in athletes if a.get("stats"))["stats"]})
+        with pytest.raises(NcaaPageError):
+            parse_summary(data)
+
     def test_the_play_by_play_has_what_the_converter_needs(self):
         game = parse_summary(fixture(MENS))
         assert len(game["plays"]) == 458

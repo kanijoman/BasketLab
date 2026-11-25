@@ -112,8 +112,24 @@ class TestWhenThingsGoWrong:
 
     def test_if_no_game_could_be_read_because_of_its_format_the_run_fails_instead_of_a_quiet_empty_archive(self):
         s = EuroleagueSource(FakeClient(broken=EuroleaguePageError("the keys changed")))
-        with pytest.raises(EuroleaguePageError):
-            list(s.fetch(entry(), None, frozenset()))
+        assert list(s.fetch(entry(), None, frozenset())) == []
+        with pytest.raises(EuroleaguePageError, match="E2025_\d+: the keys changed"):
+            s.finish()
+
+    def test_games_nobody_can_read_in_one_entry_do_not_stop_the_other_entries_regression(self):
+        """#1086 in the Euroleague: the run raised at the end of the first entry whose games were all unreadable and the entries after it never ran. The failure is decided at the end of the whole run."""
+        class OneBrokenSeason(FakeClient):
+            def game(self, competition, line):
+                if line["season_code"] == "E2025":
+                    self._spend(("game", line["season_code"], line["game_code"]))
+                    raise EuroleaguePageError("the keys changed")
+                return super().game(competition, line)
+
+        s = EuroleagueSource(OneBrokenSeason())
+        assert list(s.fetch(entry(), None, frozenset())) == []
+        assert ids(s.fetch(entry("U"), None, frozenset())) == ["euroleague:U2025_195"]
+        s.finish()                                                   # something was read: the run does not fail
+        assert any("E2025_1" in n and "format" in n for n in s.notes)
 
     def test_a_season_the_api_does_not_have_gives_nothing_and_says_so(self):
         s = EuroleagueSource(FakeClient())

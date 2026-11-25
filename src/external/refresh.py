@@ -2,8 +2,7 @@
 
 For one source: restore its archive, ask the registered source for the games of each of its active competitions since the rewrite window, validate each one (``market.canonical.validate_game``; a game that is not
 canonical is rejected with its reason), mark it with its reconciliation (``market.box_reconciliation``: an unreliable game is kept and flagged ``_reliable: false``, never discarded), merge it by ``_id`` and write
-the archive back (the format of the private archive, ``local_data.archive``) in ``<out>/<source>/`` together with ``status.json`` (when it ran, when it last worked, how many games). A failure is reported in the status
-and leaves the archive as it was; it never reaches another source.
+the archive back (the format of the private archive, ``local_data.archive``) in ``<out>/<source>/`` together with ``status.json`` (when it ran, when it last worked, how many games). A failure is reported in the status, keeps the games the run had already merged (#1090) and does not move the date of the last good run; it never reaches another source.
 """
 from __future__ import annotations
 
@@ -91,6 +90,18 @@ def _pending(source: str, why: str) -> Dict[str, Any]:
     return {"source": source, "state": "pending", "ok": None, "reason": why}
 
 
+def _save_what_was_read(db: Any, folder: Path, collections: Dict[str, Any], status: Dict[str, Any], previous: Dict[str, Any]) -> Dict[str, Any]:
+    """A run that fails midway keeps the games it had already merged (#1090: a batch is ≈ 20 minutes of requests). The date of the last good run does not move, so the next run asks again; the counts are those of
+    what the archive now holds. If even saving fails, the error says it and the archive stays as it was."""
+    try:
+        dump_archive(db, folder, light=lambda _name: False, only=list(collections), allow_shrink=False)
+    except Exception as error:  # noqa: BLE001
+        return {"error": f"{status['error']}; and it could not save what it had read: {type(error).__name__}: {error}"[:300]}
+    stored = [d for name in collections for d in db[name].find({}, {"_reliable": 1})]
+    gained = len(stored) - previous.get("games", 0)
+    return {"games": len(stored), "unreliable": sum(1 for d in stored if not d.get("_reliable")), **({"saved": gained} if gained > 0 else {})}
+
+
 def refresh_source(source: str, catalogue: List[Dict[str, Any]], db: Any, out_root: Path, now: datetime, window_days: int = DEFAULT_WINDOW_DAYS) -> Dict[str, Any]:
     """Refresh one source into ``<out_root>/<source>/`` and return its status. A source that is not registered, or has no active competition, is ``pending`` and writes nothing."""
     collections = {name: entry for name, entry in external_collections(catalogue).items() if entry["league"] == source}
@@ -103,9 +114,11 @@ def refresh_source(source: str, catalogue: List[Dict[str, Any]], db: Any, out_ro
     # a failed run does not change what the archive holds: the status keeps the counts of the last good one (the freshness of the web must not say the source has fewer games)
     status: Dict[str, Any] = {"source": source, "state": "failed", "ok": False, "finished": _stamp(now), "last_ok": previous.get("last_ok"),
                               **{key: previous[key] for key in ("competitions", "games", "unreliable") if key in previous}}
+    restored = False
     try:
         if (folder / MANIFEST).is_file():
             load_archive(folder, db)
+        restored = True
         since, rejected, totals = _since(previous, window_days), [], {"new": 0, "updated": 0}
         for name, entry in collections.items():
             rejudged = _rejudge(db[name])
@@ -116,6 +129,8 @@ def refresh_source(source: str, catalogue: List[Dict[str, Any]], db: Any, out_ro
         dump_archive(db, folder, light=lambda _name: False, only=list(collections), allow_shrink=False)
     except Exception as error:  # noqa: BLE001 - whatever the source does wrong stays in its own status
         status["error"] = f"{type(error).__name__}: {error}"[:300]
+        if restored:
+            status.update(_save_what_was_read(db, folder, collections, status, previous))
     else:
         stored = [d for name in collections for d in db[name].find({}, {"_reliable": 1})]
         notes = list(getattr(SOURCES[source], "notes", []))
