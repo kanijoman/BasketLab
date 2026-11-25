@@ -54,10 +54,9 @@ describe('AboutPanel (issues #226 and #227)', () => {
     expect(p.onOpen).toHaveBeenCalledWith(LATEST.apk)
   })
 
-  it('the Google Play build says that Play updates it, with no button and no APK link even if an update were known (issue #830)', () => {
+  it('the Google Play build says that Play updates it and never offers an APK link, even if an update were known (issue #830)', () => {
     const p = panel({ version: { ...VERSION, distribution: 'play' }, update: { status: 'available', latest: LATEST } })
-    expect(screen.getByText(/se actualiza desde google play/i)).toBeTruthy()
-    expect(screen.queryByRole('button', { name: /buscar actualización/i })).toBeNull()
+    expect(screen.getByText(/se actualiza desde google play/i)).toBeTruthy()          // until Play has answered (#1043)
     expect(screen.queryByRole('button', { name: /descargar e instalar/i })).toBeNull()
     expect(p.onOpen).not.toHaveBeenCalled()
   })

@@ -58,15 +58,16 @@ function withResume(over: Partial<AppUpdateDeps> = {}) {
 }
 
 describe('the build for Google Play is updated by Play (issue #830)', () => {
-  it('asks nothing, shows no notice, and Acerca de says where it is updated from', async () => {
-    const fetchJson = vi.fn().mockResolvedValue(LATEST)
-    mount(deps({ fetchJson, getInstalled: async () => ({ name: '0.2.0', build: 40, builtAt: null, native: true, distribution: 'play' }) }))
+  it('never offers the APK (the update of the APK is not asked, no notice and no link) and Acerca de says what Play answers (issue #1043)', async () => {
+    const openUrl = vi.fn()
+    const updater = { getInfo: vi.fn().mockResolvedValue({ availability: 'none', installStatus: 'unknown', availableCode: null, flexibleAllowed: true }), startFlexible: vi.fn(), complete: vi.fn(), onStatus: vi.fn() }
+    mount(deps({ openUrl, play: { updater: () => updater }, getInstalled: async () => ({ name: '0.2.0', build: 52, builtAt: null, native: true, distribution: 'play' }) }))
     await screen.findByText('EQUIPO PROPIO')
     openAbout()
-    expect(await screen.findByText(/se actualiza desde google play/i)).toBeTruthy()
-    expect(fetchJson).not.toHaveBeenCalled()
+    expect(await screen.findByText(/tienes la última versión/i)).toBeTruthy()          // Play sees nothing newer and the published build is not newer than the installed one
     expect(screen.queryByRole('status', { name: /actualización/i })).toBeNull()
-    expect(screen.queryByRole('button', { name: /buscar actualización/i })).toBeNull()
+    expect(screen.queryByRole('button', { name: /^actualizar$/i })).toBeNull()
+    expect(openUrl).not.toHaveBeenCalled()
   })
 })
 
