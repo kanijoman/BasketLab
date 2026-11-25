@@ -8,7 +8,7 @@ FBCYL (#721) has the crest and a photo per player too, but not the date of birth
 the player (photo; it says which photo he has now, so it is asked every time, and the image is downloaded only if its size changed).
 
 The publisher is the one that downloads, and only what changed: an image already in the previous publication is kept when the size the FEB announces (a ``HEAD``) is the one it had, since
-the FEB honours no conditional request (no ETag, a ``Last-Modified`` that is always now); a new one is downloaded; identity (birth date, height) is scraped once, but the alta and the baja of the «Trayectoria» (#1082) are read every time: a baja comes after the first publication.
+the FEB honours no conditional request (no ETag, a ``Last-Modified`` that is always now); a new one is downloaded; identity (birth date, height) is scraped once, but the alta and the baja of the «Trayectoria» (#1082) are read again once a week per team (#1085: a baja comes after the first publication, but there are few and reading every page on each of the three daily publications cost 4 to 9 minutes).
 """
 from __future__ import annotations
 
@@ -16,7 +16,9 @@ import base64
 import io
 import json
 import re
+import zlib
 from concurrent.futures import ThreadPoolExecutor
+from datetime import date
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple
 
@@ -228,6 +230,14 @@ def _image(url: Optional[str], kind: str, reduce: Callable[[bytes], Optional[byt
     return (_data_url(kind, reduced), len(raw)) if reduced else (None, None)
 
 
+REREAD_DAYS = 7              # the «Trayectoria» of a team is read again once in this many days (#1085); the day is spread by team so the files do not all change on the same one
+
+
+def reread_today(team_id: str, today: date) -> bool:
+    """Whether the pages of the players of this team are read again today: one day in ``REREAD_DAYS``, a different one for each team (stateless: nothing is stored to know it)."""
+    return (today.toordinal() + zlib.crc32(str(team_id).encode("utf-8"))) % REREAD_DAYS == 0
+
+
 def _stay(team_id: str, lines: Optional[List[Dict[str, Optional[str]]]], known: Dict[str, Any]) -> Tuple[Optional[str], Optional[str]]:
     """``(alta, baja)`` of the line of this team in the «Trayectoria» (#1082; the team id is the one of the season, so there is one line); the last publication's when the page could not be had; ``(None, None)`` with no line."""
     if lines is None:
@@ -236,13 +246,14 @@ def _stay(team_id: str, lines: Optional[List[Dict[str, Optional[str]]]], known: 
     return (mine[-1]["alta"], mine[-1]["baja"]) if mine else (None, None)
 
 
-def team_payload(collection: str, team_id: str, team: Dict[str, Any], previous: Dict[str, Any], source: Source, workers: int = WORKERS) -> Dict[str, Any]:
-    """The images and the identity of a team: its crest and, per player, his photo, date of birth and height. ``previous`` is what the last publication said of the team;
+def team_payload(collection: str, team_id: str, team: Dict[str, Any], previous: Dict[str, Any], source: Source, workers: int = WORKERS, today: Optional[date] = None) -> Dict[str, Any]:
+    """The images and the identity of a team: its crest and, per player, his photo, date of birth and height, and his alta and baja (read the first time he is seen and then once a week, ``reread_today``). ``previous`` is what the last publication said of the team;
     ``sources`` keeps, per image, the URL and the size the FEB announced, to tell next time whether it changed."""
     old_sources = previous.get("sources") or {}
     fbcyl = bool(team.get("fbcyl"))
     logo_url = (source.team_logo_url(team_id) if fbcyl else team.get("logo") or TEAM_LOGO.format(tid=team_id))
     ordered = sorted(team["players"].items())
+    due = reread_today(team_id, today or date.today())
 
     def one(item: Tuple[str, Dict[str, Any]]) -> Tuple[Tuple[Optional[str], Optional[int]], Tuple[Optional[str], Optional[str]], Optional[str], Tuple[Optional[str], Optional[str]]]:
         pid, player = item
@@ -252,7 +263,8 @@ def team_payload(collection: str, team_id: str, team: Dict[str, Any], previous: 
         if fbcyl:
             return photo, (None, None), url, (None, None)
         identity = (known.get("birth_date"), known.get("height")) if ("birth_date" in known or "height" in known) else source.identity(team_id, pid)
-        return photo, identity, url, _stay(team_id, source.trajectory(team_id, pid), known)
+        seen = "alta" in known                                       # a player the last publication did not have is read now, whatever the day
+        return photo, identity, url, _stay(team_id, source.trajectory(team_id, pid) if due or not seen else None, known)
 
     with ThreadPoolExecutor(max_workers=workers) as pool:
         crest = pool.submit(_image, logo_url, "png", reduce_logo, {**(old_sources.get("logo") or {}), "data": previous.get("logo")}, source)
