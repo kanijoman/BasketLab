@@ -102,6 +102,11 @@ def _player_stats(keys: List[str], values: List[str]) -> Dict[str, int]:
             "tov": int(row["turnovers"]), "stl": int(row["steals"]), "blk": int(row["blocks"]), "orb": int(row["offensiveRebounds"]), "drb": int(row["defensiveRebounds"]), "pf": int(row["fouls"])}
 
 
+def _unnamed_bench(athlete: Dict[str, Any]) -> bool:
+    """A listed player ESPN gives with no id who did not play (#1091: only a short name): nobody can be attributed to it and it has no numbers, so it is left out. With numbers and no id it is an error."""
+    return "id" not in athlete["athlete"] and (bool(athlete.get("didNotPlay")) or not athlete.get("stats"))
+
+
 def _player(athlete: Dict[str, Any], keys: List[str]) -> Dict[str, Any]:
     info = athlete["athlete"]
     values = athlete.get("stats") or []
@@ -138,7 +143,7 @@ def parse_summary(data: Any) -> Dict[str, Any]:
         for entry in data["boxscore"]["players"]:
             groups = entry["statistics"]
             keys = groups[0]["keys"] if groups else []
-            players[str(entry["team"]["id"])] = [_player(a, keys) for g in groups for a in g["athletes"]]
+            players[str(entry["team"]["id"])] = [_player(a, keys) for g in groups for a in g["athletes"] if not _unnamed_bench(a)]
         totals = {str(t["team"]["id"]): {s["name"]: s.get("displayValue") for s in t.get("statistics") or []} for t in data["boxscore"]["teams"]}
         plays = [_play(p) for p in data.get("plays") or []]
         status = (competition.get("status") or {}).get("type", {}).get("name")
