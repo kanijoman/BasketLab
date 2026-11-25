@@ -236,6 +236,37 @@ class TestIsolation:
         assert saved["ok"] is False and saved["last_ok"] == "2026-11-17T07:00:00Z" and saved["finished"] == "2026-11-18T07:00:00Z"
         assert (saved["games"], saved["unreliable"]) == (13, 12)                  # what the archive holds does not change because a run failed: the status keeps the counts of the last good one
 
+    def test_a_run_that_fails_midway_keeps_what_it_had_already_read_and_does_not_move_its_date_regression(self, tmp_path, db):
+        """#1090: the archive was written only after every entry, so an exception at game 900 of 1,200 lost the 20 minutes of reading. The games already merged are saved; ``last_ok`` stays, so the next run asks again."""
+        class Dies(FixtureSource):
+            def fetch(self, entry, since, known=frozenset()):
+                for doc in self.docs[:5]:
+                    yield doc
+                raise RuntimeError("the connection died at game 6")
+
+        registry.register(Dies("ncaa"))
+        cat = _catalogue(tmp_path, "ncaa")
+        status = refresh_source("ncaa", cat, db, tmp_path / "out", NOW)
+        assert status["ok"] is False and "game 6" in status["error"] and status["last_ok"] is None
+        assert status["saved"] == 5 and _status(tmp_path / "out", "ncaa")["saved"] == 5
+        fresh = new_mock_db("BASKETBALL")
+        again = FixtureSource("ncaa")
+        registry.SOURCES.clear()
+        registry.register(again)
+        done = refresh_source("ncaa", cat, fresh, tmp_path / "out", NOW + timedelta(days=1))
+        assert done["ok"] is True and done["games"] == 13 and done["new"] == 8       # the 5 saved ones are not new again
+        assert again.asked == [("NCAA test", None)] and len(again.known[-1]) == 5      # no good run yet: everything is asked for, but it knows what it already has
+
+    def test_a_run_that_fails_before_restoring_the_archive_does_not_write_one(self, tmp_path, db, monkeypatch):
+        registry.register(FixtureSource("ncaa"))
+        cat = _catalogue(tmp_path, "ncaa")
+        refresh_source("ncaa", cat, db, tmp_path / "out", NOW)
+        before = _bytes(tmp_path / "out", "ncaa")
+        import src.external.refresh as refresh
+        monkeypatch.setattr(refresh, "load_archive", lambda *a, **k: (_ for _ in ()).throw(OSError("the archive cannot be read")))
+        status = refresh_source("ncaa", cat, new_mock_db("BASKETBALL"), tmp_path / "out", NOW + timedelta(days=1))
+        assert status["ok"] is False and "saved" not in status and _bytes(tmp_path / "out", "ncaa") == before
+
     def test_a_failure_of_one_source_does_not_stop_the_others(self, tmp_path, db):
         registry.register(FixtureSource("ncaa", boom="NCAA is down"))
         registry.register(FixtureSource("fiba"))
