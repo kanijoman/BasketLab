@@ -6,6 +6,7 @@ did not change (the same size) and scrape the identity of a player once.
 import base64
 import io
 import json
+from datetime import date, timedelta
 from pathlib import Path
 
 import pytest
@@ -243,19 +244,51 @@ def test_the_alta_and_the_baja_of_the_line_of_his_team_are_published_and_other_t
     assert (payload["players"]["12"]["alta"], payload["players"]["12"]["baja"]) == ("2026-09-01", None)
 
 
-def test_a_baja_that_appears_later_is_published_the_identity_is_scraped_once_but_the_trajectory_every_time_regression(collection):
+def _day(team_id, due):
+    """A day on which the pages of the team are (``due``) or are not read again."""
+    from src.local_data.images_export import reread_today
+
+    return next(d for d in (date(2026, 11, 1) + timedelta(days=i) for i in range(7)) if reread_today(team_id, d) is due)
+
+
+def test_a_baja_that_appears_later_is_published_the_identity_is_scraped_once_but_the_trajectory_is_read_again_regression(collection):
     """Bug it prevents: the identity is scraped once, so a baja that came after the first publication would never be seen."""
     first = team_payload(COLLECTION, "1", team_sources(collection)["1"], {}, FakeFeb(IMAGES, IDENTITIES, trajectories={"11": [line("1")], "12": [line("1")]}))
     assert first["players"]["11"]["baja"] is None
     feb = FakeFeb(IMAGES, IDENTITIES, trajectories={"11": [line("1", baja="2026-11-20")], "12": [line("1")]})
-    again = team_payload(COLLECTION, "1", team_sources(collection)["1"], first, feb)
+    again = team_payload(COLLECTION, "1", team_sources(collection)["1"], first, feb, today=_day("1", True))
     assert again["players"]["11"]["baja"] == "2026-11-20" and again["players"]["12"]["baja"] is None
     assert feb.scrapes == [] and sorted(feb.trajectory_asks) == [("1", "11"), ("1", "12")]
 
 
+def test_the_pages_of_a_team_are_read_once_a_week_not_on_every_publication_1085(collection):
+    first = team_payload(COLLECTION, "1", team_sources(collection)["1"], {}, FakeFeb(IMAGES, IDENTITIES, trajectories={"11": [line("1")], "12": [line("1")]}), today=_day("1", False))
+    feb = FakeFeb(IMAGES, IDENTITIES, trajectories={"11": [line("1", baja="2026-11-20")], "12": [line("1")]})
+    quiet = team_payload(COLLECTION, "1", team_sources(collection)["1"], first, feb, today=_day("1", False))
+    assert feb.trajectory_asks == [] and quiet["players"]["11"]["baja"] is None                 # not read: the baja shows up on the day of the team
+    week = [team_payload(COLLECTION, "1", team_sources(collection)["1"], first, FakeFeb(IMAGES, IDENTITIES, trajectories={"11": [line("1", baja="2026-11-20")]}), today=date(2026, 11, 1) + timedelta(days=i)) for i in range(7)]
+    assert sum(p["players"]["11"]["baja"] == "2026-11-20" for p in week) == 1                     # exactly one day of seven
+
+
+def test_the_day_is_spread_between_teams_so_their_files_do_not_all_change_together():
+    from src.local_data.images_export import reread_today
+
+    days = {next(d for d in range(7) if reread_today(str(team), date(2026, 11, 1) + timedelta(days=d))) for team in range(900000, 900040)}
+    assert len(days) >= 5
+
+
+def test_a_player_the_last_publication_did_not_have_is_read_whatever_the_day_regression(collection):
+    """Bug it prevents: a signing on a day the team is not read would show with no alta, so his missed games before arriving would count."""
+    first = team_payload(COLLECTION, "1", team_sources(collection)["1"], {}, FakeFeb(IMAGES, IDENTITIES, trajectories={"11": [line("1")]}), today=_day("1", False))
+    first["players"].pop("12")
+    feb = FakeFeb(IMAGES, IDENTITIES, trajectories={"11": [line("1")], "12": [line("1", alta="2026-11-18")]})
+    again = team_payload(COLLECTION, "1", team_sources(collection)["1"], first, feb, today=_day("1", False))
+    assert feb.trajectory_asks == [("1", "12")] and again["players"]["12"]["alta"] == "2026-11-18"
+
+
 def test_a_page_that_cannot_be_had_keeps_what_was_known_and_never_invents_a_baja(collection):
     first = team_payload(COLLECTION, "1", team_sources(collection)["1"], {}, FakeFeb(IMAGES, IDENTITIES, trajectories={"11": [line("1", baja="2026-11-10")]}))
-    again = team_payload(COLLECTION, "1", team_sources(collection)["1"], first, FakeFeb(IMAGES, IDENTITIES))        # no page for anyone now
+    again = team_payload(COLLECTION, "1", team_sources(collection)["1"], first, FakeFeb(IMAGES, IDENTITIES), today=_day("1", True))        # no page for anyone now
     assert again["players"]["11"]["baja"] == "2026-11-10" and again["players"]["12"]["baja"] is None
 
 
