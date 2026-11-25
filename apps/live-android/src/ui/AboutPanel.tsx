@@ -5,6 +5,7 @@ import { useTheme, type ThemePreference } from './useTheme'
 import { ALERT_MODES, type AlertMode } from './useAlertMode'
 import type { AppVersion } from '../about/appInfo'
 import type { LatestInfo, UpdateResult } from '../about/update'
+import { playUpdateText, type PlayUpdateState } from '../about/playUpdate'
 
 
 interface DiagnosticsInput {
@@ -42,6 +43,18 @@ export function UpdateBanner({ latest, onOpen }: { latest: LatestInfo; onOpen: (
   )
 }
 
+/** The same notice for the build of Google Play (issue #1043): what Play says, with the button of the step that follows. The caller hides it during a match. */
+export function PlayUpdateBanner({ state, onAction }: { state: PlayUpdateState; onAction: () => void }) {
+  const said = playUpdateText(state)
+  if (!said.text || state.status === 'up_to_date' || state.status === 'unknown') return null
+  return (
+    <div className="update-banner" role="status" aria-label="Actualización disponible">
+      <span>{said.text}</span>
+      {said.action && <button type="button" onClick={onAction}>{said.action}</button>}
+    </div>
+  )
+}
+
 /** One discreet line with the versions, always at hand in the match screen. */
 export function VersionFooter({ version, engineVersion }: { version: AppVersion | null; engineVersion: string | null }) {
   const app = version && version.name !== 'dev' ? version.name : 'desarrollo'
@@ -63,6 +76,19 @@ interface Props {
   onCheck: () => void
   onOpen: (url: string) => void
   diagnostics: string
+  /** The build for Google Play (issue #1043): what Play says and the button of the next step; disabled while a match is on. */
+  play?: { state: PlayUpdateState | null; locked: boolean; onAction: () => void }
+}
+
+/** The state of the update in the Play build: what Play says, or where the app is updated from while it has not answered. A button that restarts the app waits for the end of a match. */
+function PlayStatus({ update }: { update?: Props['play'] }) {
+  const said = update?.state ? playUpdateText(update.state) : null
+  return (
+    <>
+      <p className="detail">{said?.text ?? 'Se actualiza desde Google Play.'}</p>
+      {said?.action && update?.locked && <p className="detail">Disponible cuando acabe el partido.</p>}
+    </>
+  )
 }
 
 function UpdateStatus({ update, onOpen }: { update: UpdateResult | null; onOpen: (url: string) => void }) {
@@ -84,7 +110,7 @@ const APPEARANCE: { value: ThemePreference; label: string }[] = [
   { value: 'system', label: 'Sistema' }, { value: 'light', label: 'Claro' }, { value: 'dark', label: 'Oscuro' },
 ]
 
-export default function AboutPanel({ sessionLog, experimental, alertMode, engineVersion, schemaVersion, version, update, checking, onCheck, onOpen, diagnostics }: Props) {
+export default function AboutPanel({ sessionLog, experimental, alertMode, engineVersion, schemaVersion, version, update, checking, onCheck, onOpen, diagnostics, play: playUpdate }: Props) {
   const { preference, setPreference } = useTheme()
   const [note, setNote] = useState<{ text: string; error: boolean } | null>(null)
   const dev = !version || version.name === 'dev'
@@ -113,9 +139,12 @@ export default function AboutPanel({ sessionLog, experimental, alertMode, engine
           {[engineVersion && `Motor ${engineVersion}`, schemaVersion && `esquema de paquete ${schemaVersion}`].filter(Boolean).join(' · ')}
         </p>
       )}
-      {play ? <p className="detail">Se actualiza desde Google Play.</p> : <UpdateStatus update={update} onOpen={onOpen} />}
+      {play ? <PlayStatus update={playUpdate} /> : <UpdateStatus update={update} onOpen={onOpen} />}
       <div className="about-actions">
-        {!play && update?.status !== 'unsupported' && version?.native && (
+        {play && version?.native && playUpdate?.state && playUpdateText(playUpdate.state).action && (
+          <button type="button" className="secondary" disabled={playUpdate.locked} onClick={playUpdate.onAction}>{playUpdateText(playUpdate.state).action}</button>
+        )}
+        {(play ? version?.native : update?.status !== 'unsupported' && version?.native) && (
           <button type="button" className="secondary" disabled={checking} onClick={onCheck}>
             {checking ? 'Buscando…' : 'Buscar actualización'}
           </button>

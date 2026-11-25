@@ -43,8 +43,9 @@ import { IndexedDbFinishedStore, safeFinishedStore, type FinishedStore } from '.
 import { useStoredMatches } from './useStoredMatches'
 import { defaultPdf, useMatchReports, type PdfDeps } from './useMatchReports'
 import { useEntryPoints } from './useEntryPoints'
-import AboutPanel, { UpdateBanner, VersionFooter, buildDiagnostics } from './AboutPanel'
-import { useAppUpdate, type AppUpdateDeps } from '../about/useAppUpdate'
+import AboutPanel, { PlayUpdateBanner, UpdateBanner, VersionFooter, buildDiagnostics } from './AboutPanel'
+import { DEFAULT_UPDATE_DEPS, useAppUpdate, type AppUpdateDeps } from '../about/useAppUpdate'
+import { DEFAULT_PLAY_DEPS, usePlayUpdate } from '../about/usePlayUpdate'
 import PackagesTab, { type MatchKind } from './PackagesTab'
 import TabBar from './TabBar'
 import { useTab, type TabId } from './useTab'
@@ -286,6 +287,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
     onFinished: keepFinished, onRecording: keepRecording })
   liveRef.current = live
   const update = useAppUpdate(appUpdate)
+  const play = usePlayUpdate(update.installed, (appUpdate ?? DEFAULT_UPDATE_DEPS).fetchJson, appUpdate?.play ?? DEFAULT_PLAY_DEPS)
 
   const step = useCallback(async (to: number) => {
     if (busy.current) return
@@ -458,7 +460,8 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
     </>
   )
   const aboutTab = (
-    <AboutPanel version={update.installed} update={update.result} checking={update.checking} onCheck={update.checkNow}
+    <AboutPanel version={update.installed} update={update.result} checking={update.checking || play.checking} onCheck={play.state ? play.checkNow : update.checkNow}
+      play={{ state: play.state, locked: live.running, onAction: () => { void (play.state?.status === 'downloaded' ? play.restart() : play.start()) } }}
       onOpen={update.open} diagnostics={buildDiagnostics({ version: update.installed, userAgent: navigator.userAgent,
         packageId: meta?.package_id ?? null, schemaVersion: meta?.schema_version ?? null, feed: live.state.kind,
         engineVersion: meta?.engine_version ?? null, sessionLog: session.lines })} sessionLog={session.lines} engineVersion={meta?.engine_version ?? null} schemaVersion={meta?.schema_version ?? null}
@@ -468,6 +471,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
     <main className="screen with-tabs">
       <BrandHeader />
       {update.result?.status === 'available' && !live.running && <UpdateBanner latest={update.result.latest} onOpen={update.open} />}
+      {play.state && !live.running && <PlayUpdateBanner state={play.state} onAction={() => { void (play.state?.status === 'downloaded' ? play.restart() : play.start()) }} />}
       <div role="tabpanel" key={tab} className="tab-fade" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
         {tab === 'partido' ? matchTab : tab === 'boxscore' ? <BoxscoreTab snapshot={snap} entries={out?.analysis?.boxscore} teams={out?.analysis?.boxscore_teams} own={own} rival={rival} homeId={snap?.home_id ?? meta?.home_id} /> : tab === 'paquetes' ? panelOf(library) : aboutTab}
       </div>

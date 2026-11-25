@@ -2,6 +2,7 @@ import { Browser } from '@capacitor/browser'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { getInstalledVersion, type AppVersion } from './appInfo'
 import { capacitorDevice } from '../feed/device'
+import type { PlayUpdateDeps } from './usePlayUpdate'
 import { checkForUpdate, fetchJson, type StorageLike, type UpdateResult } from './update'
 
 /** Everything the update check touches from the outside (injected in tests). */
@@ -14,6 +15,8 @@ export interface AppUpdateDeps {
   now?: () => number
   /** Calls back when the app returns to the foreground (issue #335); returns the function that stops listening. */
   onResume?: (callback: () => void) => () => void
+  /** The check of Google Play for the build of the store (issue #1043); the default talks to Play through its plugin. */
+  play?: PlayUpdateDeps
 }
 
 export const DEFAULT_UPDATE_DEPS: AppUpdateDeps = {
