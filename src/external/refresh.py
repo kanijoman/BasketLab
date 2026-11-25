@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
 
 from src.external.registry import SOURCES
-from src.local_data.archive import MANIFEST, dump_archive, load_archive
+from src.local_data.archive import LIGHT_EXTERNAL, MANIFEST, dump_archive, load_archive
 from src.market.box_reconciliation import CORE_STATS, RECONCILE_VERSION, reconcile_game
 from src.market.canonical import validate_game
 from src.services.competition_catalogue import external_collections
@@ -58,9 +58,10 @@ def _known_filter(source: Any) -> Dict[str, Any]:
 
 
 def _rejudge(collection: Any) -> int:
-    """Judge again, from what is stored (no request), the games flagged unreliable under an older version of the rule. Once per version: the stamp stops a really bad game from being judged on every run."""
+    """Judge again, from what is stored (no request), the games flagged unreliable under an older version of the rule. Once per version: the stamp stops a really bad game from being judged on every run.
+    A light game (an old season of a source with ``light_history``, #967) has no play-by-play to judge with: it keeps the flag it was given."""
     done = 0
-    for stored in list(collection.find({"_reliable": False, "_reconciled_with": {"$not": {"$gte": RECONCILE_VERSION}}})):
+    for stored in list(collection.find({"_reliable": False, "_reconciled_with": {"$not": {"$gte": RECONCILE_VERSION}}, "PLAYBYPLAY": {"$exists": True}})):
         doc = _marked({k: v for k, v in stored.items() if k not in ("_reliable", "_mismatches", "_reconciled_with")})
         collection.replace_one({"_id": doc["_id"]}, doc)
         done += doc != stored
@@ -90,11 +91,22 @@ def _pending(source: str, why: str) -> Dict[str, Any]:
     return {"source": source, "state": "pending", "ok": None, "reason": why}
 
 
-def _save_what_was_read(db: Any, folder: Path, collections: Dict[str, Any], status: Dict[str, Any], previous: Dict[str, Any]) -> Dict[str, Any]:
+def _dump(db: Any, folder: Path, source: str, collections: Dict[str, Any], catalogue: List[Dict[str, Any]]) -> None:
+    """Write the archive of the source. A source with ``light_history`` (NCAA, #967) keeps play-by-play and shots only of the two latest seasons of its catalogue (listed or paused ones count: the season
+    that comes first is the oldest); the older ones keep the box alone. The others keep everything."""
+    if not getattr(SOURCES[source], "light_history", False):
+        dump_archive(db, folder, light=lambda _name: False, only=list(collections), allow_shrink=False)
+        return
+    keep = set(sorted({e["season_value"] for e in catalogue if e["league"] == source})[-2:])
+    old = {name for name, entry in collections.items() if entry["season_value"] not in keep}
+    dump_archive(db, folder, light=lambda name: name in old, only=list(collections), allow_shrink=False, drop=LIGHT_EXTERNAL)
+
+
+def _save_what_was_read(db: Any, folder: Path, source: str, collections: Dict[str, Any], catalogue: List[Dict[str, Any]], status: Dict[str, Any], previous: Dict[str, Any]) -> Dict[str, Any]:
     """A run that fails midway keeps the games it had already merged (#1090: a batch is ≈ 20 minutes of requests). The date of the last good run does not move, so the next run asks again; the counts are those of
     what the archive now holds. If even saving fails, the error says it and the archive stays as it was."""
     try:
-        dump_archive(db, folder, light=lambda _name: False, only=list(collections), allow_shrink=False)
+        _dump(db, folder, source, collections, catalogue)
     except Exception as error:  # noqa: BLE001
         return {"error": f"{status['error']}; and it could not save what it had read: {type(error).__name__}: {error}"[:300]}
     stored = [d for name in collections for d in db[name].find({}, {"_reliable": 1})]
@@ -126,11 +138,11 @@ def refresh_source(source: str, catalogue: List[Dict[str, Any]], db: Any, out_ro
             counts = _merge(db[name], SOURCES[source].fetch(entry, since, known), entry["gender"], rejected)
             totals = {k: totals[k] + counts[k] + (rejudged if k == "updated" else 0) for k in totals}
         getattr(SOURCES[source], "finish", lambda: None)()           # the end of the run: a source may fail it for what it saw in all the entries (NCAA, #1086)
-        dump_archive(db, folder, light=lambda _name: False, only=list(collections), allow_shrink=False)
+        _dump(db, folder, source, collections, catalogue)
     except Exception as error:  # noqa: BLE001 - whatever the source does wrong stays in its own status
         status["error"] = f"{type(error).__name__}: {error}"[:300]
         if restored:
-            status.update(_save_what_was_read(db, folder, collections, status, previous))
+            status.update(_save_what_was_read(db, folder, source, collections, catalogue, status, previous))
     else:
         stored = [d for name in collections for d in db[name].find({}, {"_reliable": 1})]
         notes = list(getattr(SOURCES[source], "notes", []))

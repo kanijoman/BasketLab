@@ -169,6 +169,19 @@ class TestGamesStoredAsUnreliableWhenTheRuleChanges:
         assert doc["_reliable"] is True and "_mismatches" not in doc and status["unreliable"] == 0 and status["updated"] == 1
         assert len(source.known[-1]) == 1                                      # it was never asked for again: it is a known id
 
+    def test_a_light_game_without_play_by_play_is_not_judged_again_regression(self, tmp_path):
+        """#967: an old season of NCAA keeps the box alone; judging it again without its play-by-play would flip a good game. Its flag stays."""
+        from src.local_data.archive import dump_archive
+
+        _source, cat, name = self._stored_unreliable(tmp_path, stamp=None)
+        db = new_mock_db("BASKETBALL")
+        refresh_source("fiba", cat, db, tmp_path / "out", NOW + timedelta(days=1))          # restores the archive (judged again: reliable)
+        db[name].update_one({}, {"$set": {"_reliable": False, "_mismatches": ["ORB"]}, "$unset": {"_reconciled_with": "", "PLAYBYPLAY": ""}})
+        dump_archive(db, tmp_path / "out" / "fiba", light=lambda _n: False, only=[name], allow_shrink=False)
+        again = new_mock_db("BASKETBALL")
+        status = refresh_source("fiba", cat, again, tmp_path / "out", NOW + timedelta(days=2))
+        assert again[name].find_one()["_reliable"] is False and status["updated"] == 0
+
     def test_a_game_judged_with_the_current_rule_is_left_as_it_is(self, tmp_path):
         from src.market.box_reconciliation import RECONCILE_VERSION
 
@@ -219,6 +232,70 @@ class TestGamesStoredBeforeAFieldExisted:
         self._run(tmp_path, source, db)
         self._run(tmp_path, source, db, day=1)
         assert len(source.known[-1]) == 2
+
+
+class TestLightSeasons:
+    """#967 (decision of 24/11/2026): a source that asks for it (NCAA) keeps play-by-play and shots only of the current season and the previous one; the older ones keep the box alone."""
+
+    @staticmethod
+    def _catalogue(tmp_path, seasons):
+        entries = [{"competition": "D1 Men", "season_label": f"{y}/{y + 1}", "season_value": str(y), "league": "ncaa", "division": "D1", "gender": "M", "conference": "SEC", "ncaa": {"conference_id": "23"}, "active": True}
+                   for y in seasons]
+        path = tmp_path / "competitions.json"
+        path.write_text(json.dumps({"competitions": entries}), encoding="utf-8")
+        return load_catalogue(path)
+
+    @staticmethod
+    def _stored(out, name):
+        import gzip
+
+        manifest = json.loads((out / "ncaa" / "archive.json").read_text(encoding="utf-8"))
+        entry = next(c for c in manifest["collections"] if c["name"] == name)
+        docs = [json.loads(line) for line in gzip.decompress((out / "ncaa" / entry["file"]).read_bytes()).splitlines()]
+        return entry, docs
+
+    def _run(self, tmp_path, db, source, days=0, seasons=(2023, 2024, 2025)):
+        registry.SOURCES.clear()
+        registry.register(source)
+        return refresh_source("ncaa", self._catalogue(tmp_path, seasons), db, tmp_path / "out", NOW + timedelta(days=days))
+
+    def test_only_the_two_latest_seasons_keep_play_by_play_and_shots(self, tmp_path, db):
+        source = FixtureSource("ncaa")
+        source.light_history = True
+        self._run(tmp_path, db, source)
+        names = sorted(external_collections(self._catalogue(tmp_path, (2023, 2024, 2025))))
+        full = [self._stored(tmp_path / "out", n) for n in names[1:]]
+        old_entry, old_docs = self._stored(tmp_path / "out", names[0])
+        assert old_entry["light"] is True and old_docs and all("PLAYBYPLAY" not in d and "SHOTCHART" not in d and "BOXSCORE" in d for d in old_docs)
+        assert all(e["light"] is False and any("PLAYBYPLAY" in d for d in docs) for e, docs in full)
+        assert any("SHOTCHART" in d for _e, docs in full for d in docs)
+
+    def test_a_source_that_does_not_ask_for_it_keeps_every_season_complete(self, tmp_path, db):
+        self._run(tmp_path, db, FixtureSource("ncaa"))
+        names = sorted(external_collections(self._catalogue(tmp_path, (2023, 2024, 2025))))
+        entry, docs = self._stored(tmp_path / "out", names[0])
+        assert entry["light"] is False and any("PLAYBYPLAY" in d for d in docs)
+
+    def test_running_again_changes_nothing_and_the_light_games_are_not_asked_for_again(self, tmp_path, db):
+        source = FixtureSource("ncaa")
+        source.light_history = True
+        self._run(tmp_path, db, source)
+        first = _bytes(tmp_path / "out", "ncaa")
+        fresh = new_mock_db("BASKETBALL")                         # a refresh restores the (light) archive into an empty Mongo
+        again = FixtureSource("ncaa")
+        again.light_history = True
+        status = self._run(tmp_path, fresh, again, days=1)
+        assert _bytes(tmp_path / "out", "ncaa") == first and status["new"] == 0 and status["ok"] is True
+        assert len(again.known[0]) == 13                           # the games of the oldest season are known: no request for them
+
+    def test_a_season_that_becomes_old_is_lightened_on_the_next_run(self, tmp_path, db):
+        source = FixtureSource("ncaa")
+        source.light_history = True
+        self._run(tmp_path, db, source, seasons=(2024, 2025))
+        name = sorted(external_collections(self._catalogue(tmp_path, (2024, 2025))))[0]
+        assert self._stored(tmp_path / "out", name)[0]["light"] is False
+        self._run(tmp_path, new_mock_db("BASKETBALL"), source, days=1, seasons=(2024, 2025, 2026))             # 2026 starts: the catalogue lists three seasons
+        assert self._stored(tmp_path / "out", name)[0]["light"] is True
 
 
 class TestIsolation:
