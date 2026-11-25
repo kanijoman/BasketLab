@@ -8,8 +8,8 @@ over the canonical document (``euroleague_canonical``). A game that has been pla
   one, so the id of a game is ``euroleague:<season code>_<game code>`` (``euroleague:E2025_1``).
 * **A budget of requests per run**, the one of the client (``max_requests``, retries included): when it is spent the run stops cleanly and says so (once, not once per entry), and the next day's run goes on
   where this one stopped. The first load of a season is about 1,200 requests, so it goes by batches. ``euroleague.max_games`` of an entry caps the games a run asks for of that competition.
-* **A page that cannot be had is skipped and said** (``notes``), never a reason to stop the rest: the game is asked again the next run. A site that changed its FORMAT is different: if NONE of the games it asked
-  for could be read, the run fails (``EuroleaguePageError``), so that the issue opens instead of a quiet empty archive.
+* **A page that cannot be had is skipped and said** (``notes``), never a reason to stop the rest: the game is asked again the next run. A site that changed its FORMAT is different: if NONE of the games the whole run asked
+  for could be read, the run fails at its end (``finish``) (``EuroleaguePageError``), so that the issue opens instead of a quiet empty archive.
 """
 from __future__ import annotations
 
@@ -30,6 +30,8 @@ class EuroleagueSource:
         self.client = client
         self.notes: List[str] = []
         self.complete = True
+        self.read = 0
+        self.failed_format: Optional[str] = None                         # the first game of the run that could not be read because of its format
 
     @staticmethod
     def game_id(line: Dict[str, Any]) -> str:
@@ -64,8 +66,7 @@ class EuroleagueSource:
 
     def fetch(self, entry: Dict[str, Any], since: Optional[str], known: AbstractSet[str]) -> Iterator[Dict[str, Any]]:
         competition, cap = entry["euroleague"]["competition"], entry["euroleague"].get("max_games")
-        failed_format = read = 0
-        last_format: Optional[EuroleaguePageError] = None
+        read = 0
         try:
             for season in self._seasons(entry):
                 for line in self._played(competition, season, known):
@@ -82,14 +83,18 @@ class EuroleagueSource:
                         self.notes.append(f"{self.game_id(line)}: {error}")
                         continue
                     except EuroleaguePageError as error:
-                        failed_format += 1
-                        last_format = error
+                        self.failed_format = self.failed_format or f"{self.game_id(line)}: {error}"
                         self.notes.append(f"{self.game_id(line)}: format: {error}")
                         continue
                     read += 1
+                    self.read += 1
                     yield to_canonical(game, entry)
         except EuroleagueBudgetExhausted as error:
             self._stop(error)
             return
-        if failed_format and not read and last_format is not None:
-            raise last_format                                              # none of the games that could be asked for could be read: the site changed, it is not a quiet empty run
+
+    def finish(self) -> None:
+        """The end of the run (#1086, as in NCAA): if games were asked for and NONE of the whole run could be read because of their format, the site changed and the run fails (not a quiet empty archive); an
+        entry whose games are all unreadable must not stop the entries after it."""
+        if self.failed_format and not self.read:
+            raise EuroleaguePageError(self.failed_format)
