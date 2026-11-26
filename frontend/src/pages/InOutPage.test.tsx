@@ -116,3 +116,44 @@ describe('InOutPage export (issue #759)', () => {
     expect(lines).toContain('Net Rating,7.5,1.5,6')
   })
 })
+
+// The analysis that is PUBLISHED (and the API's) never carries the name of the player nor of his team: `{player_id, player_team_id, games_analyzed, on, off}`. The tests above gave it names, and
+// the page then broke on the real data with «Cannot read properties of undefined (reading 'replace')» (LF Challenge 2026/27, F. DEMBELE of B.F. Leon): the name of the file of the export.
+describe('InOutPage with the analysis as it is published, without names (regression)', () => {
+  const PUBLISHED = (id: string, on: number) => ({ player_id: id, player_team_id: '1', games_analyzed: 5, on: BLOCK(on, 110.2), off: BLOCK(0, 98) })
+  beforeEach(() => {
+    api.getPlayerStats.mockResolvedValue(PLAYERS)
+    api.getInOutAnalysis.mockImplementation(async (_c: string, id: string) => PUBLISHED(id, id === '7' ? 7.5 : 1.5))
+  })
+
+  it('shows the player and the team from the list of the competition and exports with their names', async () => {
+    const blobs = captureDownloads()
+    renderPage()
+    await screen.findByRole('option', { name: /A\. JUGADORA/ })
+    fireEvent.change(screen.getByLabelText('Jugador'), { target: { value: '7' } })
+    expect(await screen.findByText('— Alfa')).toBeInTheDocument()
+    expect(screen.getAllByText('A. JUGADORA').length).toBeGreaterThan(0)
+    fireEvent.click(await screen.findByRole('button', { name: /Exportar/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'CSV' }))
+    expect((await blobs[0].text()).split('\n')).toContain('Net Rating,7.5,0,7.5')
+  })
+
+  it('IN vs IN names both players too', async () => {
+    renderPage()
+    await screen.findByRole('option', { name: /A\. JUGADORA/ })
+    fireEvent.keyDown(screen.getByRole('tab', { name: 'IN/OUT' }), { key: 'ArrowRight' })
+    fireEvent.change(screen.getByLabelText('Jugador 1'), { target: { value: '7' } })
+    fireEvent.change(screen.getByLabelText('Jugador 2'), { target: { value: '8' } })
+    expect(await screen.findByText(/Impacto diferencial \(A\. JUGADORA − B\. JUGADORA\)/)).toBeInTheDocument()
+  })
+
+  it('an analysis the publication could not make (empty) shows nothing and does not break the page', async () => {
+    api.getInOutAnalysis.mockResolvedValue({})
+    renderPage()
+    await screen.findByRole('option', { name: /A\. JUGADORA/ })
+    fireEvent.change(screen.getByLabelText('Jugador'), { target: { value: '7' } })
+    await waitFor(() => expect(api.getInOutAnalysis).toHaveBeenCalled())
+    expect(screen.getByRole('heading', { level: 1, name: 'Análisis IN/OUT' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Exportar/ })).toBeNull()
+  })
+})

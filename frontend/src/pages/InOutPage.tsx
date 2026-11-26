@@ -11,6 +11,7 @@ import { useCollection } from '@/context/CollectionContext'
 import {
   getPlayerStats,
   getInOutAnalysis,
+  type InOutResult,
   type InOutStatBlock,
   type PlayerStat,
 } from '@/api/client'
@@ -148,27 +149,37 @@ export default function InOutPage() {
   // Independent team list — available before player data loads; use team_id for stable matching
   const teamList = useTeamOptions(collection?.name, { onlyWithId: true })
 
-  const { data: inout, isFetching: inoutLoading } = useQuery({
+  const { data: inoutRaw, isFetching: inoutLoading } = useQuery({
     queryKey: ['inout', collection?.name, p1],
     queryFn:  () => getInOutAnalysis(collection!.name, p1),
     enabled:  Boolean(collection) && Boolean(p1),
   })
 
   // IN vs IN: independent ON-court queries for each player
-  const { data: inout1, isFetching: inout1Loading } = useQuery({
+  const { data: inout1Raw, isFetching: inout1Loading } = useQuery({
     queryKey: ['inout', collection?.name, together1],
     queryFn:  () => getInOutAnalysis(collection!.name, together1),
     enabled:  Boolean(collection) && Boolean(together1),
   })
-  const { data: inout2, isFetching: inout2Loading } = useQuery({
+  const { data: inout2Raw, isFetching: inout2Loading } = useQuery({
     queryKey: ['inout', collection?.name, together2],
     queryFn:  () => getInOutAnalysis(collection!.name, together2),
     enabled:  Boolean(collection) && Boolean(together2),
   })
 
+  // The analysis that is published (and the API's) carries no name of the player nor of his team: they come from the list of the competition. One that cannot be made comes empty: nothing to show.
+  const named = (raw: InOutResult | null | undefined, id: string): InOutResult | null => {
+    if (!raw?.on || !raw?.off) return null
+    const known = players.find(p => playerKey(p) === id || String(p.player_id) === id)
+    return { ...raw, player_name: raw.player_name || known?.player_name || '', team_name: raw.team_name || known?.team_name || '' }
+  }
+  const inout = useMemo(() => named(inoutRaw, p1), [inoutRaw, p1, players])           // eslint-disable-line react-hooks/exhaustive-deps
+  const inout1 = useMemo(() => named(inout1Raw, together1), [inout1Raw, together1, players])  // eslint-disable-line react-hooks/exhaustive-deps
+  const inout2 = useMemo(() => named(inout2Raw, together2), [inout2Raw, together2, players])  // eslint-disable-line react-hooks/exhaustive-deps
+
   // Export (issue #759): the figures of the cards and a capture of the results; only when there is something to export
   const resultsRef = useRef<HTMLDivElement>(null)
-  const slug = (text: string) => text.replace(/[^\p{L}\p{N}]+/gu, '_').replace(/^_|_$/g, '')
+  const slug = (text: string) => (text || 'jugador').replace(/[^\p{L}\p{N}]+/gu, '_').replace(/^_|_$/g, '')
   const vsReady = Boolean(inout1 && inout2 && !inout1Loading && !inout2Loading)
   const exportOptions = useMemo(() => {
     const where = collection?.name ?? ''
