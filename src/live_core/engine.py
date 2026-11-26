@@ -46,9 +46,14 @@ def _dorsals(doc: Dict[str, Any]) -> Dict[str, Dict[str, str]]:
 
 
 def _events(doc: Dict[str, Any]) -> List[Event]:
+    """The lines of the document in order, one per number: when a number shows up twice the last one of the document wins (#1121), so the result is the same at every poll."""
     lines = ((doc.get("PLAYBYPLAY") or {}).get("LINES")) or []
-    parsed = [e for e in (parse_line(line) for line in lines) if e is not None]
-    return sorted(parsed, key=lambda e: e.num)
+    by_num: Dict[int, Event] = {}
+    for line in lines:
+        event = parse_line(line)
+        if event is not None:
+            by_num[event.num] = event
+    return [by_num[num] for num in sorted(by_num)]
 
 
 class LiveEngine:
