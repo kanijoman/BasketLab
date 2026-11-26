@@ -32,6 +32,17 @@ def _facts(entry: Dict[str, Any]) -> Dict[str, Any]:
     return {**facts, **({"group_label": entry["conference"]} if entry.get("conference") else {})}
 
 
+def conference_members(collection: Any, conference_id: str) -> List[str]:
+    """The ids of the teams of the conference ``conference_id`` that appear in the games of its competition (#1103). A conference competition of NCAA keeps every game whose HOME team belongs to it, so the
+    visitors of other conferences (and the teams that are not Division I, which have no conference) are in the rows with a game or two: the web lists only the members. Sorted, for a stable manifest."""
+    members = set()
+    for doc in collection.find({}, {"HEADER.TEAM.id": 1, "HEADER.TEAM.conference_id": 1}):
+        for team in (doc.get("HEADER") or {}).get("TEAM") or []:
+            if team.get("conference_id") is not None and str(team["conference_id"]) == str(conference_id):
+                members.add(str(team["id"]))
+    return sorted(members)
+
+
 def publish_external(archive_dir: Path, out_dir: Path, catalogue: List[Dict[str, Any]], handler: Any, sealer: Any) -> Dict[str, Any]:
     """Publish the external competitions of ``catalogue`` that are in the archive; returns the manifest. With no archive the manifest is valid and empty."""
     archive_dir, db = Path(archive_dir), handler.connection.client["BASKETBALL"]
@@ -54,4 +65,5 @@ def publish_external(archive_dir: Path, out_dir: Path, catalogue: List[Dict[str,
         freshness.append({"source": source, "state": status.get("state", "ok"), "ok": status.get("ok") is not False, **({"last_ok": status["last_ok"]} if status.get("last_ok") else {}),
                           **({"finished": status["finished"]} if status.get("finished") else {}), "games": int(status.get("games", count)), "unreliable": int(status.get("unreliable", 0)), "published": count})
     names = [name for name, entry in wanted.items() if published.get(entry["league"]) and db[name].count_documents({}) > 0]
-    return publish_web_data(handler, out_dir, sealer, names, genders={n: wanted[n]["gender"] for n in names}, categories={n: _facts(wanted[n]) for n in names}, sources=freshness)
+    members = {n: conference_members(db[n], wanted[n]["ncaa"]["conference_id"]) for n in names if (wanted[n].get("ncaa") or {}).get("conference_id")}
+    return publish_web_data(handler, out_dir, sealer, names, genders={n: wanted[n]["gender"] for n in names}, categories={n: _facts(wanted[n]) for n in names}, sources=freshness, members=members)

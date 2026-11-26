@@ -31,6 +31,7 @@ export interface RowsEntry {
   age_group?: 'U12' | 'U14' | 'U16' | 'U18'
   competition_label?: string
   group_label?: string
+  members?: string[]
   gender?: 'F' | 'M'
 }
 

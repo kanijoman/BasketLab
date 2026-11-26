@@ -1,14 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ScopedAccessError } from '@live-package/crypto'
-import { DATA_FLAG_KEY, localDataEnabled, localPlayerStats, localTeamStats, resetLocalData } from './source'
-import { loadWebRows, WebDataUnavailable } from '@/webdata/client'
+import { DATA_FLAG_KEY, localDataEnabled, localPlayerStats, localTeamNames, localTeamStats, resetLocalData } from './source'
+import { loadWebMembers, loadWebRows, WebDataUnavailable } from '@/webdata/client'
 import teams from '../../../tests/local_vectors/team_stats_feb.json'
 import players from '../../../tests/local_vectors/players_feb.json'
 import fbcylTeams from '../../../tests/local_vectors/team_stats_fbcyl.json'
 import fbcylPlayers from '../../../tests/local_vectors/players_fbcyl.json'
 
 // The published rows come from `webdata/client`; here they are not published unless a test says so (the manual export `local-data/` is the fallback).
-vi.mock('@/webdata/client', async importOriginal => ({ ...(await importOriginal<object>()), loadWebRows: vi.fn() }))
+vi.mock('@/webdata/client', async importOriginal => ({ ...(await importOriginal<object>()), loadWebRows: vi.fn(), loadWebMembers: vi.fn() }))
 
 // The local data source (issue #327, step 2): the web reads the exported files instead of the API when `?data=local` is on, and says so
 // (null) whenever it cannot answer, so that the caller falls back to the API instead of showing an empty table.
@@ -35,6 +35,7 @@ const turnOn = () => localStorage.setItem(DATA_FLAG_KEY, 'local')
 beforeEach(() => {
   localStorage.clear(); resetLocalData(); window.history.replaceState(null, '', '/')
   vi.mocked(loadWebRows).mockReset().mockRejectedValue(new WebDataUnavailable('no publicado'))
+  vi.mocked(loadWebMembers).mockReset().mockResolvedValue(null)
 })
 const realFetch = globalThis.fetch
 afterEach(() => { globalThis.fetch = realFetch })          // not unstubAllGlobals: it would drop the in-memory localStorage of the setup
@@ -146,5 +147,39 @@ describe('the rows of the publication', () => {
     serve({}); turnOn()
     vi.mocked(loadWebRows).mockResolvedValue({ format: 99, collection: FEB, league: 'feb', games: 1, team_rows: [], player_rows: null } as never)
     expect(await localTeamStats(FEB, {})).toBeNull()
+  })
+})
+
+// Issue #1103: a conference competition of NCAA holds the games whose HOME team belongs to it, so the visitors of other conferences are in its rows with a game or two. The manifest says which teams
+// are the conference's (`members`) and the lists show only those; the rows stay, so what a member did against them counts as it did.
+describe('the teams a conference lists (issue #1103)', () => {
+  const ROWS = { format: 1, collection: FEB, league: 'feb', games: 12, team_rows: teams.rows, player_rows: players.rows }
+  beforeEach(() => { serve(); turnOn(); vi.mocked(loadWebRows).mockResolvedValue(ROWS as never) })
+
+  it('the team table lists only the members, with the figures they have with all their games', async () => {
+    const all = await localTeamStats(FEB, {})
+    vi.mocked(loadWebMembers).mockResolvedValue(new Set(['101', '102']))
+    resetLocalData()
+    vi.mocked(loadWebRows).mockResolvedValue(ROWS as never)
+    const listed = await localTeamStats(FEB, {})
+    expect(listed?.team_stats.map(t => t.team_id).sort()).toEqual(['101', '102'])
+    expect(listed?.opponent_stats.map(t => t.team_id).sort()).toEqual(['101', '102'])
+    expect(listed?.team_stats.find(t => t.team_id === '101')).toEqual(all?.team_stats.find(t => t.team_id === '101'))   // what a member did against the others still counts
+  })
+
+  it('the names to pick from and the players are the ones of the members only', async () => {
+    vi.mocked(loadWebMembers).mockResolvedValue(new Set(['101']))
+    expect(await localTeamNames(FEB)).toEqual(['ALPHA'])
+    const listed = (await localPlayerStats(FEB, {})) ?? []
+    expect(listed.length).toBeGreaterThan(0)
+    expect(new Set(listed.map(p => String(p.team_id)))).toEqual(new Set(['101']))
+  })
+
+  it('a competition that says nothing of its members, or whose manifest cannot be read, lists every team', async () => {
+    expect((await localTeamStats(FEB, {}))?.team_stats).toHaveLength(4)
+    resetLocalData()
+    vi.mocked(loadWebRows).mockResolvedValue(ROWS as never)
+    vi.mocked(loadWebMembers).mockRejectedValue(new WebDataUnavailable('no manifest'))
+    expect((await localTeamStats(FEB, {}))?.team_stats).toHaveLength(4)
   })
 })

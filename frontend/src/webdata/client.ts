@@ -69,7 +69,8 @@ async function reportIndexOf(collection: string): Promise<{ manifest: WebDataMan
 /** The teams that have reports in the competition, by name. */
 export async function loadReportTeams(collection: string): Promise<Array<{ id: string; name: string }>> {
   const { index } = await reportIndexOf(collection)
-  const teams = new Map(index.reports.map(r => [r.team_id, r.team]))
+  const members = await loadWebMembers(collection).catch(() => null)                 // #1103: the visitors of other conferences have a report but are not listed
+  const teams = new Map(index.reports.filter(r => !members || members.has(r.team_id)).map(r => [r.team_id, r.team]))
   return [...teams].map(([id, name]) => ({ id, name })).sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))        // as `$sort` does: by code unit, not by the locale
 }
 
@@ -152,6 +153,13 @@ const KEPT = ['gender', 'category', 'age_group', 'competition_label', 'group_lab
 export async function loadWebCollectionInfos(): Promise<PublishedInfo[]> {
   const rows = [...(await web.loadManifest()).rows, ...((await externalManifest())?.rows ?? [])]
   return rows.map(row => ({ collection: row.collection, league: row.league, games: row.games, ...Object.fromEntries(KEPT.filter(key => row[key] !== undefined).map(key => [key, row[key]])) }))
+}
+
+/** The ids of the teams a conference lists (NCAA, #1103): its competition holds every game whose home team belongs to it, so the visitors of other conferences are in its rows but not in its lists. `null` when the competition says nothing of it (every team is listed). */
+export async function loadWebMembers(collection: string): Promise<Set<string> | null> {
+  const rows = [...(await web.loadManifest()).rows, ...((await externalManifest())?.rows ?? [])]
+  const members = rows.find(r => r.collection === collection)?.members
+  return members && members.length ? new Set(members) : null
 }
 
 /** How fresh the data of each external source is: when its last run was, when it last worked and how many games it holds, publishes and left out as unreliable. Empty when the publication cannot be had or says nothing (#884). */
