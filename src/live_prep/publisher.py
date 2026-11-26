@@ -58,12 +58,14 @@ def _catalogue_competitions(catalogue: Any = None) -> List[Dict[str, Any]]:
 
 
 def build_index(packages: List[Dict[str, Any]], now: Optional[str] = None, rounds: Optional[List[Dict[str, Any]]] = None,
-                club_team_id: Optional[str] = None, sealer: Optional[Sealer] = None) -> Dict[str, Any]:
+                club_team_id: Optional[str] = None, sealer: Optional[Sealer] = None, teams: Optional[Dict[str, List[Dict[str, str]]]] = None) -> Dict[str, Any]:
     version = sealer.index_version if sealer else INDEX_VERSION
     index: Dict[str, Any] = {"v": version, "generated_at": now or datetime.now(timezone.utc).isoformat(), **(sealer.index_extra() if sealer else {}),
                              "packages": packages}
     if rounds is not None:
         index.update({"rounds": rounds, "club_team_id": club_team_id})
+        if teams:
+            index["teams"] = teams                    # #1105: by collection, every team of the competition (a team that rests the listed rounds can still be marked)
     return index
 
 
@@ -167,8 +169,9 @@ def publish_all(db: Any, out: Any, passphrase: Any, collections: List[str], team
 
 def publish_round_bundles(db: Any, out: Any, passphrase: Any, collections: List[str], team_id: str, service: Any = None,
                           build: Optional[Callable[..., Any]] = None, errors: Optional[List[str]] = None,
-                          competitions: Optional[Dict[str, Dict[str, Any]]] = None) -> List[Dict[str, Any]]:
-    """One bundle per round that is next in each competition (several when matches were postponed or advanced, #450); a competition that fails is reported in ``errors`` and skipped."""
+                          competitions: Optional[Dict[str, Dict[str, Any]]] = None, teams: Optional[Dict[str, List[Dict[str, str]]]] = None) -> List[Dict[str, Any]]:
+    """One bundle per round that is next in each competition (several when matches were postponed or advanced, #450); a competition that fails is reported in ``errors`` and skipped. ``teams``, when given,
+    is filled with the teams of each competition's calendar (#1105)."""
     from src.live_prep.club_fetcher import fetch_club_name
     from src.live_prep.roster_fetcher import fetch_rosters
     from src.live_prep.round_packages import ROUNDS_DIR, build_round_packages_from_db, publish_rounds
@@ -181,9 +184,12 @@ def publish_round_bundles(db: Any, out: Any, passphrase: Any, collections: List[
     entries: List[Dict[str, Any]] = []
     for collection in collections:
         try:
-            rounds = service.next_rounds(collection)["rounds"]
+            found = service.next_rounds(collection)
+            rounds = found["rounds"]
             if not rounds:
                 continue
+            if teams is not None and found.get("teams"):
+                teams[collection] = found["teams"]
             # the games are read ONCE for every match of every round that is next; each round then gets its own bundle (issue #450). The rosters are FEB's: a FBCYL team id is not a FEB
             # team id, and what FEB answered for it would be another team's (issue #446)
             builder = build or functools.partial(build_round_packages_from_db, roster_source=None if is_fbcyl(collection) else fetch_rosters,
@@ -269,10 +275,11 @@ def main(argv: Optional[List[str]] = None) -> int:
         groups = fbcyl_groups(catalogue)
         fbcyl = fbcyl_round_collections(db, catalogue)
         competitions = {**competitions, **fbcyl_infos({c: groups[c] for c in fbcyl}, catalogue, http_rows, [config["team_id"]])}
+        teams: Dict[str, List[Dict[str, str]]] = {}
         rounds = publish_round_bundles(db, args.out, sealer, collections + fbcyl, config["team_id"], service=MatchScheduleService(db, fbcyl_groups=groups), errors=errors,
-                                       competitions=competitions)
+                                       competitions=competitions, teams=teams)
         (Path(args.out) / "index.json").write_text(
-            json.dumps(build_index(entries, rounds=rounds, club_team_id=config["team_id"], sealer=sealer), ensure_ascii=False, indent=1), encoding="utf-8")
+            json.dumps(build_index(entries, rounds=rounds, club_team_id=config["team_id"], sealer=sealer, teams=teams), ensure_ascii=False, indent=1), encoding="utf-8")
     lines = [f"# Paquetes live ({len(entries)})", ""]
     lines += [f"- {e['match']['start']} · {e['rival']} · {e['bytes'] // 1024} KB" for e in entries]
     lines += ["", f"## Jornadas completas ({len(rounds)})", ""]

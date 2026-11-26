@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { EngineApi } from '../engine/client'
 import { decryptScoped, failureText, isScoped, type Wrap } from '../package/crypto'
 import { installPackage } from '../package/install'
-import { fetchIndex, fetchPackageText, fetchRoundText, parseRoundBundle, pickPackage, type Fetcher, type PackageIndexEntry, type RoundBundle, type RoundIndexEntry, type RoundMatch } from '../package/remote'
+import { fetchIndex, fetchPackageText, fetchRoundText, parseRoundBundle, pickPackage, type Fetcher, type PackageIndex, type PackageIndexEntry, type RoundBundle, type RoundIndexEntry, type RoundMatch } from '../package/remote'
 import { RIGHTS_EVENT, addRight, loadRights, parseInvite, scopeKeys } from '../package/rights'
 import RoundPackages from './RoundPackages'
 import type { PackageStore } from '../package/storage'
@@ -43,6 +43,7 @@ function EntryTeams({ entry }: { entry: PackageIndexEntry }) {
 export default function RemotePackages({ engine, store, onLoaded, fetcher, loaded, viewing, onOpenLoaded }: Props) {
   const [entries, setEntries] = useState<PackageIndexEntry[] | null>(null)
   const [rounds, setRounds] = useState<RoundIndexEntry[]>([])
+  const [teams, setTeams] = useState<NonNullable<PackageIndex['teams']>>({})
   const [openKey, setOpenKey] = useState<string | null>(null)
   const [rights, setRights] = useState(() => loadRights())
   const [invite, setInvite] = useState('')
@@ -76,6 +77,7 @@ export default function RemotePackages({ engine, store, onLoaded, fetcher, loade
       const index = await fetchIndex(fetcher)
       setEntries(index.packages)
       setRounds(index.rounds)
+      setTeams(index.teams ?? {})
       setOpenKey(index.open_key ?? null)
     } catch (e) {
       setEntries(null)
@@ -181,7 +183,7 @@ export default function RemotePackages({ engine, store, onLoaded, fetcher, loade
               ))}
             </ul>
           )}
-          <RoundPackages rounds={rounds} canOpen={round => canOpen(round.wraps)} busy={busy}
+          <RoundPackages rounds={rounds} teams={teams} canOpen={round => canOpen(round.wraps)} busy={busy}
             onDownload={(round, match, ownId) => void downloadRoundMatch(round, match, ownId)} isLoaded={isLoaded}
             viewing={viewing} onOpenLoaded={onOpenLoaded} />
         </>

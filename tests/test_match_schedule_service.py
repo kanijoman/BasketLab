@@ -41,6 +41,13 @@ def _service(db=None, calendar=ALL, status=None, now=NOW, competitions=COMPETITI
         competitions=lambda: competitions)
 
 
+class TestTheTeamsOfACompetition:
+    def test_the_next_rounds_say_every_team_of_the_calendar_resting_or_not_1105(self):
+        found = _service().next_rounds("LF_CHALLENGE_2026")
+        assert {t["id"] for t in found["teams"]} == {str(i) for m in ALL for i in (m.home_id, m.away_id)} and found["rounds"]
+        assert [t["name"] for t in found["teams"]] == sorted(t["name"] for t in found["teams"])
+
+
 class TestCalendarUrl:
     @pytest.mark.parametrize("name, norm", [("LF CHALLENGE", "lfchallenge"), ("LF2", "lf2"), ("Liga Endesa", "ligaendesa"),
                                             ("LEB  ORO", "leboro"), ("Primera FEB", "primerafeb")])

@@ -82,6 +82,8 @@ export interface PackageIndex {
   /** Rounds of every competition; absent in an index that predates them. */
   rounds: RoundIndexEntry[]
   club_team_id?: string | null
+  /** Every team of each competition by collection (#1105), also the ones that rest the listed rounds; absent in an index that predates it. */
+  teams?: Record<string, Array<{ id: string; name: string }>>
 }
 
 /** The part of ``fetch`` that is used (so tests can pass a light fake). */

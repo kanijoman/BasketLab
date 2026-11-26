@@ -375,3 +375,38 @@ describe('RoundPackages: the reminders of the matches of interest (issue #482)',
     expect(await screen.findByText(/solo funcionan en la app instalada/i)).toBeTruthy()
   })
 })
+
+// #1105: a team that rests the listed rounds can be chosen and marked as «de interés», and the list says why it has no match.
+describe('RoundPackages: a team that rests the listed rounds (#1105)', () => {
+  const TEAMS = { SEGUNDA_FEB_A: [side('1008857', 'LEONESA'), side('2', 'ZAMORA'), side('3', 'GETAFE'), side('4', 'TOLEDO'), side('9', 'UNILEON IRIEGO BF LEÓN')] }
+  const choose = (container: HTMLElement) => {
+    pickOption('Competición', 'SEGUNDA FEB')
+    pickOption('Grupo', 'Liga Regular "A"')
+    pickOption('Equipo', '9')
+    return container
+  }
+
+  it('is in the team selector, says it has no match in the published rounds and can be starred', () => {
+    const { container } = show(ROUNDS, { teams: TEAMS })
+    choose(container)
+    expect(codes(container)).toEqual([])
+    expect(screen.getByText(/UNILEON IRIEGO BF LEÓN no juega en las jornadas publicadas/i)).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Marcar UNILEON IRIEGO BF LEÓN como de interés' }))
+    expect(JSON.parse(localStorage.getItem('basketlab-live-favorites') ?? '[]')).toEqual([expect.objectContaining({ teamId: '9', name: 'UNILEON IRIEGO BF LEÓN' })])
+    expect(screen.getByRole('button', { name: 'Quitar UNILEON IRIEGO BF LEÓN de los equipos de interés' })).toBeTruthy()
+  })
+
+  it('a team that does play still shows its match and no «does not play» note', () => {
+    const { container } = show(ROUNDS, { teams: TEAMS })
+    pickOption('Competición', 'SEGUNDA FEB')
+    pickOption('Equipo', '2')
+    expect(codes(container)).toEqual(['1'])
+    expect(screen.queryByText(/no juega en las jornadas publicadas/i)).toBeNull()
+  })
+
+  it('without the teams of the index nothing changes: the resting team is not on offer', () => {
+    show(ROUNDS)
+    pickOption('Competición', 'SEGUNDA FEB')
+    expect(optionLabels('Equipo')).not.toContain('UNILEON IRIEGO BF LEÓN')
+  })
+})

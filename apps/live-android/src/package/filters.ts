@@ -71,8 +71,8 @@ export interface FilterOptions {
 }
 
 /** What each selector offers: the leagues (only when there is more than one), the competitions of the league, the groups of the competition and the teams of the
- *  competition and group (none while no competition is chosen). */
-export function optionsOf(rounds: RoundIndexEntry[], filters: RoundFilters): FilterOptions {
+ *  competition and group (none while no competition is chosen), the ones that rest the listed rounds included when the index says every team of the competition (#1105). */
+export function optionsOf(rounds: RoundIndexEntry[], filters: RoundFilters, teamsOf: Record<string, TeamOption[]> = {}): FilterOptions {
   const unique = (values: string[]) => Array.from(new Set(values.filter(Boolean))).sort((a, b) => a.localeCompare(b))
   const leagues = unique(rounds.map(leagueOf))
   const ofLeague = rounds.filter(r => !filters.league || leagueOf(r) === filters.league)
@@ -80,6 +80,7 @@ export function optionsOf(rounds: RoundIndexEntry[], filters: RoundFilters): Fil
   const scoped = ofCompetition.filter(r => !filters.group || competitionOf(r).group === filters.group)
   const teams = new Map<string, string>()
   for (const r of scoped) for (const m of r.matches) for (const t of [m.home, m.away]) if (!teams.has(t.id)) teams.set(t.id, t.name.trim())
+  for (const r of scoped) for (const t of teamsOf[r.collection] ?? []) if (!teams.has(t.id)) teams.set(t.id, t.name.trim())      // #1105: the ones that rest the listed rounds
   return {
     leagues: leagues.length > 1 ? leagues : [],
     competitions: unique(ofLeague.map(r => competitionOf(r).name)),

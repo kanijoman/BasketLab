@@ -129,7 +129,7 @@ class MatchScheduleService:
         return self._result(entries[:limit], url, None)
 
     def next_rounds(self, collection: str) -> Dict[str, Any]:
-        """``{"rounds": [{"round", "matches"}, ...], "calendar_url", "warning"}``: the matches still to play that come next, grouped by round
+        """``{"rounds": [{"round", "matches"}, ...], "calendar_url", "warning", "teams"}`` (``teams``: every team of the calendar, #1105): the matches still to play that come next, grouped by round
         (issues #286, #172, #450). A match is ``{code, start, round, home: {id, name}, away: {id, name}}``; one that kicked off long ago counts
         as played and one without a date is not listed.
 
@@ -158,13 +158,20 @@ class MatchScheduleService:
             return {**empty, "calendar_url": url, "warning": f"No se pudo leer el calendario de FEB: {exc}"}
         return self._next_rounds_of(calendar, url)
 
+    @staticmethod
+    def _teams_of(calendar: List[CalendarMatch]) -> List[Dict[str, str]]:
+        """Every team of the calendar, resting or not, by name (#1105): the app offers them to filter and to mark as «de interés» even when they do not play the rounds it lists."""
+        teams = {str(i): (n or "").strip() for m in calendar for i, n in ((m.home_id, m.home_name), (m.away_id, m.away_name)) if i}
+        return sorted(({"id": i, "name": n} for i, n in teams.items() if n), key=lambda t: t["name"])
+
     def _next_rounds_of(self, calendar: List[CalendarMatch], url: Optional[str], extra: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """The rule that picks the next rounds, the same for the calendar of FEB and the one of FBCYL."""
         empty = {"rounds": [], "calendar_url": None}
         limit = self._now() - STALE_AFTER
         pending = [m for m in calendar if m.kind == "scheduled" and m.start and datetime.fromisoformat(m.start) >= limit]
+        teams = self._teams_of(calendar)
         if not pending:
-            return {**empty, "calendar_url": url, "warning": "No quedan partidos por jugar en el calendario"}
+            return {**empty, "calendar_url": url, "warning": "No quedan partidos por jugar en el calendario", "teams": teams}
         first = min(datetime.fromisoformat(m.start) for m in pending)
         chosen: Dict[int, List[CalendarMatch]] = {}
         for rnd, block_start, block in _round_blocks(pending):
@@ -172,7 +179,7 @@ class MatchScheduleService:
                 chosen.setdefault(rnd, []).extend(block)
         rounds = sorted(chosen.items(), key=lambda item: min(m.start for m in item[1]))
         listed = [{"round": rnd, "matches": [{**self._next_match(m), **(extra or {})} for m in pending if m in set(ms)]} for rnd, ms in rounds]
-        return {"rounds": listed, "calendar_url": url, "warning": None}
+        return {"rounds": listed, "calendar_url": url, "warning": None, "teams": teams}
 
     @staticmethod
     def _next_match(m: CalendarMatch) -> Dict[str, Any]:
