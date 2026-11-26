@@ -1,7 +1,7 @@
 /** The matches to follow (issues #286, #172, #440, #511): the next match of each team, filtered by league, competition, group and team, the teams "de interés" first. */
 import { useMemo, useState } from 'react'
 import { isFavorite, loadFavorites, teamScope, toggleFavorite, type Favorite } from '../package/favorites'
-import { NO_FILTERS, competitionOf, loadFilters, optionsOf, saveFilters, type RoundFilters } from '../package/filters'
+import { NO_FILTERS, competitionOf, loadFilters, optionsOf, saveFilters, type RoundFilters, type TeamOption } from '../package/filters'
 import { competitionLabel, type RoundIndexEntry, type RoundMatch } from '../package/remote'
 import { nextMatchesOfFavorites, nextMatchList } from '../package/upcoming'
 import { LEAD_OPTIONS } from '../notify/schedule'
@@ -12,6 +12,8 @@ export { competitionLabel }
 
 interface Props {
   rounds: RoundIndexEntry[]
+  /** Every team of each competition by collection (#1105): the ones that rest the listed rounds can be chosen and starred. */
+  teams?: Record<string, TeamOption[]>
   /** Can this device open the round (a password for the old ones, a right for the ones sealed by scope)? */
   canOpen: (round: RoundIndexEntry) => boolean
   /** `file#code#team` of the download in progress. */
@@ -84,20 +86,21 @@ function Reminders({ next, now, reminders }: { next: ReturnType<typeof nextMatch
   )
 }
 
-export default function RoundPackages({ rounds, canOpen, busy, onDownload, isLoaded, viewing = true, onOpenLoaded, now, reminders }: Props) {
+export default function RoundPackages({ rounds, teams: teamsOfIndex, canOpen, busy, onDownload, isLoaded, viewing = true, onOpenLoaded, now, reminders }: Props) {
   const [favorites, setFavorites] = useState<Favorite[]>(() => loadFavorites())
   const [chosen, setChosen] = useState<RoundFilters>(() => loadFilters())
   // a remembered league, competition, group or team that is not published any more must not hide everything: each one is checked against what is on offer
   const checked = (f: RoundFilters): RoundFilters => {
-    const leagues = optionsOf(rounds, { ...NO_FILTERS }).leagues
+    const leagues = optionsOf(rounds, { ...NO_FILTERS }, teamsOfIndex).leagues
     const league = leagues.includes(f.league) ? f.league : ''
-    const competition = optionsOf(rounds, { ...NO_FILTERS, league }).competitions.includes(f.competition) ? f.competition : ''
-    const group = optionsOf(rounds, { ...NO_FILTERS, league, competition }).groups.includes(f.group) ? f.group : ''
-    const team = optionsOf(rounds, { ...NO_FILTERS, league, competition, group }).teams.some(t => t.id === f.team) ? f.team : ''
+    const competition = optionsOf(rounds, { ...NO_FILTERS, league }, teamsOfIndex).competitions.includes(f.competition) ? f.competition : ''
+    const group = optionsOf(rounds, { ...NO_FILTERS, league, competition }, teamsOfIndex).groups.includes(f.group) ? f.group : ''
+    const team = optionsOf(rounds, { ...NO_FILTERS, league, competition, group }, teamsOfIndex).teams.some(t => t.id === f.team) ? f.team : ''
     return { ...f, league, competition, group, team }
   }
   const filters = checked(chosen)
-  const { leagues, competitions, groups, teams } = optionsOf(rounds, filters)
+  const { leagues, competitions, groups, teams } = optionsOf(rounds, filters, teamsOfIndex)
+  const chosenTeam = filters.team ? teams.find(t => t.id === filters.team) ?? null : null
   const moment = now ?? new Date()
   const shown = useMemo(() => nextMatchList(rounds, filters, favorites, moment), [rounds, favorites, filters.league, filters.competition, filters.group, filters.team, moment.getTime()]) // eslint-disable-line react-hooks/exhaustive-deps
   const nextOfInterest = nextMatchesOfFavorites(rounds, favorites, now)
@@ -140,8 +143,17 @@ export default function RoundPackages({ rounds, canOpen, busy, onDownload, isLoa
         )}
         {filtered && <button type="button" className="secondary" onClick={() => change(NO_FILTERS)}>Quitar filtros</button>}
       </div>
+      {chosenTeam && (
+        <p className="round-team chosen-team">
+          <Star team={chosenTeam} scope={teamScope(rounds.find(r => competitionOf(r).name === filters.competition)?.competition)} favorites={favorites} onToggle={toggle} />
+          <strong className="team-name">{chosenTeam.name}</strong>
+        </p>
+      )}
       {shown.length === 0 && (
-        <p className="detail">{filtered ? 'Ningún partido coincide con los filtros.' : 'No hay partidos por jugar en las jornadas publicadas.'}</p>
+        <p className="detail">
+          {chosenTeam ? `${chosenTeam.name} no juega en las jornadas publicadas (descansa esta jornada): su próximo partido saldrá aquí cuando se publique.`
+            : filtered ? 'Ningún partido coincide con los filtros.' : 'No hay partidos por jugar en las jornadas publicadas.'}
+        </p>
       )}
       <ul className="remote-packages match-list">
         {shown.map(({ round, match, sides }) => {

@@ -150,3 +150,24 @@ describe('orderRounds with teams of interest', () => {
     expect(orderRounds(withClub, []).map(r => r.collection)).toEqual(['A', 'B'])
   })
 })
+
+// #1105: the teams on offer came from the matches of the listed rounds, so a team that rests them (UNILEON in the group A-1 of FBCYL) was not there and could not be marked as «de interés».
+describe('the teams the index says of a competition (#1105)', () => {
+  const REST = { SEGUNDA_FEB_A: [side('1008857', 'CULTURAL Y DEPORTIVA LEONESA'), side('2', 'ZAMORA'), side('3', 'GETAFE'), side('4', 'TOLEDO'), side('9', 'UNILEON  ')], TERCERA_FEB_AB: [side('77', 'OTRO')] }
+  const chosen = { ...NO_FILTERS, competition: 'SEGUNDA FEB', group: 'Liga Regular "A"' }
+
+  it('offers the teams that rest the listed rounds, once each, with the names clean and sorted', () => {
+    expect(optionsOf(ALL, chosen, REST).teams.map(t => t.name)).toEqual(['CULTURAL Y DEPORTIVA LEONESA', 'GETAFE', 'TOLEDO', 'UNILEON', 'ZAMORA'])
+    expect(optionsOf(ALL, chosen, REST).teams.find(t => t.name === 'UNILEON')?.id).toBe('9')
+  })
+
+  it('only those of the chosen competition and group, and none while no competition is chosen', () => {
+    expect(optionsOf(ALL, { ...NO_FILTERS, competition: 'SEGUNDA FEB' }, REST).teams.map(t => t.id)).not.toContain('77')
+    expect(optionsOf(ALL, NO_FILTERS, REST).teams).toEqual([])
+  })
+
+  it('an index without teams offers what it always did', () => {
+    expect(optionsOf(ALL, chosen).teams.map(t => t.name)).toEqual(['CULTURAL Y DEPORTIVA LEONESA', 'GETAFE', 'TOLEDO', 'ZAMORA'])
+    expect(optionsOf(ALL, chosen, {}).teams).toEqual(optionsOf(ALL, chosen).teams)
+  })
+})

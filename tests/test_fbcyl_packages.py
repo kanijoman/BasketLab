@@ -100,6 +100,37 @@ class TestTheNextRounds:
         assert found["rounds"] == [] and "ESB down" in found["warning"]
 
 
+class TestTheTeamsOfACompetition:
+    """#1105: the teams the app offers to filter and to mark as «de interés» came from the matches of the rounds it lists, so a team that rests that round (UNILEON in the group A-1) was not there and could
+    not be marked. The service also says every team of the calendar of the competition, resting or not."""
+
+    def test_every_team_of_the_calendar_is_listed_also_the_ones_that_rest_the_next_rounds(self, rows):
+        found = service(rows).next_rounds(COLLECTION)
+        playing = {t["id"] for r in found["rounds"] for m in r["matches"] for t in (m["home"], m["away"])}
+        listed = {t["id"]: t["name"] for t in found["teams"]}
+        assert set(listed) == {str(r[k]) for r in rows for k in ("idLocalTeam", "idVisitorTeam")}
+        assert playing < set(listed)                                   # at least one team rests: 13 teams play in pairs, so one is always left out
+        assert all(listed.values()) and [t["name"] for t in found["teams"]] == sorted(t["name"] for t in found["teams"])
+
+    def test_a_calendar_that_cannot_be_read_has_no_teams_and_a_group_without_pending_matches_still_has_them(self, rows):
+        broken = MatchScheduleService(object(), fetch_fbcyl_calendar=lambda g: (_ for _ in ()).throw(RuntimeError("down")), fbcyl_groups={COLLECTION: "7298"}, now=lambda: NOW)
+        assert broken.next_rounds(COLLECTION).get("teams", []) == []
+        over = MatchScheduleService(object(), fetch_fbcyl_calendar=lambda group: calendar_matches(rows), fbcyl_groups={COLLECTION: "7298"}, now=lambda: datetime(2030, 1, 1))
+        found = over.next_rounds(COLLECTION)
+        assert found["rounds"] == [] and len(found["teams"]) == 13
+
+    def test_the_publisher_hands_them_over_and_the_index_carries_them_by_collection(self, rows, tmp_path):
+        from src.live_prep.competition_info import fbcyl_infos
+        from src.live_prep.publisher import build_index, publish_round_bundles
+
+        infos = fbcyl_infos({COLLECTION: "7298"}, load_catalogue(DEFAULT_CATALOGUE), lambda group: rows, [CLUB])
+        teams = {}
+        entries = publish_round_bundles(object(), tmp_path, PASSWORD, [COLLECTION], CLUB, service=service(rows), build=_build([]), competitions=infos, teams=teams)
+        assert len(teams[COLLECTION]) == 13
+        assert build_index([], rounds=entries, club_team_id=CLUB, teams=teams)["teams"] == teams
+        assert "teams" not in build_index([], rounds=entries, club_team_id=CLUB)         # an index without them is what it was
+
+
 class TestTheCatalogue:
     def test_the_active_fbcyl_groups_of_the_catalogue_are_listed_by_the_name_of_their_collection(self):
         catalogue = load_catalogue(DEFAULT_CATALOGUE)

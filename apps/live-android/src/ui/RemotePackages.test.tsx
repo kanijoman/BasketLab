@@ -8,6 +8,7 @@ import type { PackageSummary } from '../package/summary'
 import type { PackageStore, StoredPackage } from '../package/storage'
 import type { EngineApi } from '../engine/client'
 import { PACKAGES_BASE_URL } from '../package/remote'
+import { pickOption } from '../test/select'
 
 // The packages open with the key of the scope the index publishes: nobody types a password (the password of the packages was removed).
 const repoRoot = path.resolve(import.meta.dirname, '../../../..')
@@ -177,7 +178,7 @@ async function sealedRound() {
   return { ...sealed, sha: await sha(sealed.file) }
 }
 
-async function roundFetcher(over: { club?: boolean; withPackage?: boolean } = {}) {
+async function roundFetcher(over: { club?: boolean; withPackage?: boolean; teams?: Record<string, Array<{ id: string; name: string }>> } = {}) {
   const round = await sealedRound()
   const side = (id: string, name: string) => ({ id, name })
   const matches = [
@@ -186,7 +187,7 @@ async function roundFetcher(over: { club?: boolean; withPackage?: boolean } = {}
     { code: '103', start: '2027-10-17T19:00', home: side('31', 'EQ 31'), away: side('32', 'EQ 32'), own_id: '31', own_ids: ['31', '32'], is_club: false },
   ]
   const index = {
-    v: 2, open_key: demo.open_key, club_team_id: '1008631', packages: over.withPackage ? [{
+    v: 2, open_key: demo.open_key, club_team_id: '1008631', ...(over.teams ? { teams: over.teams } : {}), packages: over.withPackage ? [{
       team_id: '1008631', rival_id: '1008898', rival: 'RECOLETAS ZAMORA', file: '1008631/1008898.bpkg', sha256: 'x', bytes: 100, wraps: demo.package.wraps,
       match: { code: '102', start: '2027-10-17T17:00', round: 2, home: side('1008631', 'LEON'), away: side('1008898', 'RECOLETAS ZAMORA') },
     }] : [], rounds: [
@@ -287,5 +288,17 @@ describe('RemotePackages: one list of upcoming matches', () => {
     expect(row.textContent).toContain('RECOLETAS ZAMORA')
     expect(row.textContent).toContain('LEON')
     expect(row.querySelector('strong')?.textContent).toBe('LEON')       // ours, in bold
+  })
+})
+
+// #1105: the teams of each competition come in the index, so a team that rests the listed rounds can be chosen and marked
+describe('RemotePackages: the teams the index says of a competition (#1105)', () => {
+  it('a team that does not play the listed rounds is in the team selector and says why it has no match', async () => {
+    const teams = { DEMO_2026: [{ id: '11', name: 'EQ 11' }, { id: '777', name: 'UNILEON IRIEGO BF LEÓN' }] }
+    render(<RemotePackages engine={engine()} store={memoryStore()} onLoaded={vi.fn()} fetcher={await roundFetcher({ teams })} />)
+    await screen.findAllByText(/EQ 31/)
+    pickOption('Competición', 'DEMO 2026')
+    pickOption('Equipo', '777')
+    expect(screen.getByText(/UNILEON IRIEGO BF LEÓN no juega en las jornadas publicadas/i)).toBeTruthy()
   })
 })
