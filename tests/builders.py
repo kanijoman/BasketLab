@@ -11,7 +11,7 @@ from __future__ import annotations
 from typing import Any, Dict, Iterable, List, Optional
 
 from src.live_core.advice import AdviceEngine
-from src.live_core.clock import period_and_remaining, period_length, period_start
+from src.live_core.clock import clock_text, period_and_remaining, period_length, period_start
 from src.live_core.events import Event
 from src.live_core.state import LiveGame
 
@@ -91,22 +91,34 @@ class Match:
         self._now = 0
         self._miss_pending = False
         self._fouls: Dict[str, int] = {}
+        self._late = False
+        self.events: List[Event] = []      # in the order they were logged: what ``document()`` writes
 
     # -- events ----------------------------------------------------------------------------------------------------------------------
 
     def _event(self, kind: str, team: Optional[str], at: int, **kw: Any) -> "Match":
         if team is not None and team not in (self.own, self.rival):
             raise ValueError(f"equipo desconocido: {team!r} (los de este partido son {self.own} y {self.rival})")
-        if at < self._now:
-            raise ValueError(f"el tiempo no puede ir hacia atrás: {at} s después de {self._now} s")
+        if at < self._now and not self._late:
+            raise ValueError(f"el tiempo no puede ir hacia atrás: {at} s después de {self._now} s (usa ``late()`` para una línea registrada tarde)")
         period, remaining = period_and_remaining(at)
         self._num += 1
-        self._now = at
+        self._now = max(self._now, at)
         name = kw.pop("name", kw.get("player_id"))
         if kw.get("player_id"):
             kw.setdefault("license", f"L-{kw['player_id']}")        # what FEB writes in ``idLicense``: how the engine knows who was fouled
-        self.game.apply(Event(num=self._num, period=period, remaining=remaining, elapsed=at, kind=kind, team_id=team, name=name, **kw))
+        event = Event(num=self._num, period=period, remaining=remaining, elapsed=at, kind=kind, team_id=team, name=name, **kw)
+        self.events.append(event)
+        self.game.apply(event)
         return self
+
+    def late(self, call: str, *args: Any, **kw: Any) -> "Match":
+        """An action logged LATE, as FEB does: it gets the next line number but a clock earlier than the lines before it. ``late("turnover", RIVAL, at=300)``."""
+        self._late = True
+        try:
+            return getattr(self, call)(*args, **kw)
+        finally:
+            self._late = False
 
     def score(self, team: str, points: int, at: int, player: Optional[str] = None) -> "Match":
         """A made basket (2 or 3 points) or a free throw (1)."""
@@ -134,10 +146,12 @@ class Match:
     def steal(self, team: str, at: int, player: Optional[str] = None) -> "Match":
         return self._event("steal", team, at, player_id=player or ("p1" if team == self.own else "r1"))
 
-    def foul(self, team: str, player: str, at: int, drawn_by: Optional[str] = None) -> "Match":
-        """A personal foul of ``player``; ``drawn_by`` is who suffers it (the receiver FEB writes in the line)."""
+    def foul(self, team: str, player: str, at: int, drawn_by: Optional[str] = None, kind: str = "personal") -> "Match":
+        """A foul of ``player`` (``kind``: personal, technical, unsportsmanlike); ``drawn_by`` is who suffers it (the receiver FEB writes in the line)."""
+        if kind not in ("personal", "technical", "unsportsmanlike"):
+            raise ValueError(f"una falta es personal, technical o unsportsmanlike, no {kind!r}")
         self._fouls[player] = self._fouls.get(player, 0) + 1
-        return self._event("foul", team, at, player_id=player, foul_type="personal", pf_count=self._fouls[player], fouled=f"L-{drawn_by}" if drawn_by else None)
+        return self._event("foul", team, at, player_id=player, foul_type=kind, pf_count=self._fouls[player], fouled=f"L-{drawn_by}" if drawn_by else None)
 
     def assist(self, team: str, at: int, player: Optional[str] = None) -> "Match":
         return self._event("assist", team, at, player_id=player or ("p1" if team == self.own else "r1"))
@@ -179,3 +193,40 @@ class Match:
     def evaluate(self, **kw: Any) -> List[Any]:
         """The alerts of the real engine for the state now (a fresh engine: use ``engine()`` to keep its memory between evaluations)."""
         return self.engine(**kw).evaluate(self.snapshot())
+
+    # -- the FEB document of the match ------------------------------------------------------------------------------------------------
+
+    def document(self) -> Dict[str, Any]:
+        """The match as FEB serves it: a document with the play-by-play lines (newest first, as the feed lists them) that ``LiveEngine`` and the sessions read."""
+        players: Dict[str, str] = {}
+        for ev in self.events:
+            if ev.player_id and ev.team_id:
+                players.setdefault(ev.player_id, ev.team_id)
+        last = self.events[-1] if self.events else None
+        return {
+            "HEADER": {"TEAM": [{"id": self.own, "name": self.own}, {"id": self.rival, "name": self.rival}],
+                       "quarter": last.period if last else 1, "time": clock_text(last.remaining) if last else "10:00"},
+            "BOXSCORE": {"TEAM": [{"id": team, "PLAYER": [{"id": pid, "name": pid} for pid, owner in players.items() if owner == team]} for team in (self.own, self.rival)]},
+            "PLAYBYPLAY": {"LINES": [_line(ev) for ev in reversed(self.events)]},
+        }
+
+
+_ACTIONS = {"fg2": "shoot", "fg3": "shoot", "ft": "fthrow", "rebound": "rebound", "turnover": "lose", "steal": "recovery", "assist": "assist", "block": "blockshot",
+            "timeout": "timeout", "foul": "foul", "sub_in": "subst", "sub_out": "subst", "period_end": "period"}
+_BODIES = {"rebound": "REBOTE (Rebotes: 1)", "turnover": "PÉRDIDA (Pérdidas: 1)", "steal": "ROBO (Robos: 1)", "assist": "ASISTENCIA (Asistencias: 1)",
+           "block": "TAPÓN (Tapones: 1)", "timeout": "Tiempo muerto", "sub_in": "Entra a pista", "sub_out": "Sale de pista"}
+
+
+def _line(ev: Event) -> Dict[str, Any]:
+    """One play-by-play line (the text is what ``events.parse_line`` reads) of an event."""
+    who = f"({ev.team_id}) {ev.name}: " if ev.name else ""
+    if ev.kind in ("fg2", "fg3", "ft"):
+        body = f"TIRO DE {ev.kind[-1] if ev.kind != 'ft' else 1} {'ANOTADO' if ev.made else 'FALLADO'}"
+    elif ev.kind == "foul":
+        body = f"FALTA {'Técnica' if ev.foul_type == 'technical' else ev.foul_type.capitalize()} (Faltas: {ev.pf_count or 1}. Faltas de equipo: 1)"
+    elif ev.kind == "period_end":
+        who, body = "", f"Fin del Cuarto {ev.period}"
+    else:
+        body = _BODIES[ev.kind]
+    return {"num": str(ev.num), "quarter": str(ev.period), "time": clock_text(ev.remaining), "idTeam": ev.team_id, "idPlayer": ev.player_id, "idLicense": ev.license,
+            "action": _ACTIONS[ev.kind], "text": who + body, "deleted": None, "logParam4": ev.fouled}
