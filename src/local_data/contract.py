@@ -37,6 +37,7 @@ class RowsEntry(FileEntry):
     age_group: NotRequired[Literal["U12", "U14", "U16", "U18"]]     # only in formacion
     competition_label: NotRequired[str]        # the name people read (the youth codes of FEB are not)
     group_label: NotRequired[str]              # FBCYL (#920): the group as the site writes it, since the name of its collection is not readable
+    members: NotRequired[List[str]]            # NCAA (#1103): the team ids a conference lists (the visitors of other conferences are in its rows but not in its lists)
     gender: NotRequired[Literal["F", "M"]]     # the family of the competition (women's / men's), when it is known (#843): the win probability is calibrated per family
 
 

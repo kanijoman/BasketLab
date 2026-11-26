@@ -142,3 +142,13 @@ def test_the_rows_entry_of_the_manifest_has_the_category_when_it_is_known_and_th
     before = {p.name: p.read_bytes() for p in (tmp_path / "rows").glob("*.json")}
     publish_web_data(handler, tmp_path, ScopedSealer(MASTER), [FEB, FBCYL], categories=said)
     assert {p.name: p.read_bytes() for p in (tmp_path / "rows").glob("*.json")} == before
+
+
+def test_the_rows_entry_lists_the_members_of_a_conference_only_when_it_has_them_and_validates_1103(handler, tmp_path):
+    from src.local_data.contract import validate_manifest
+
+    manifest = publish_web_data(handler, tmp_path, ScopedSealer(MASTER), [FEB, FBCYL], members={FEB: ["ncaa:2", "ncaa:1"]})
+    validate_manifest(manifest)
+    by = {e["collection"]: e for e in manifest["rows"]}
+    assert by[FEB]["members"] == ["ncaa:2", "ncaa:1"] and "members" not in by[FBCYL]
+    assert "members" not in publish_web_data(handler, tmp_path / "none", ScopedSealer(MASTER), [FEB])["rows"][0]

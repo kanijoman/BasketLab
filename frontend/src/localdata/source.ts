@@ -20,7 +20,7 @@ import type { DerivedCoverage, OriginRow, PeriodRow, SituationRow, TimeoutRow } 
 import { shotRaw, shotZones, type ShotFilter, type Shots } from './shots'
 import type { MatchAnalysis, MatchSummary, PossessionStat, RotationResult, TeamConsistencyResponse, ShotRawData, ShotZoneData } from '@/api/client'
 import { collectionList } from './collections'
-import { loadWebCollectionInfos, loadWebAssistConnections, loadWebCollections, loadWebConsistency, loadWebDerived, loadWebInOut, loadWebLineups, loadWebMatches, loadWebPossessionCsv, loadWebPossessions, loadWebRivalAdjusted, loadWebRotations, loadWebRows, loadWebShots, WebDataUnavailable, type PublishedAssistConnections, type PublishedConsistency, type PublishedInOut, type PublishedMatches, type PublishedRivalAdjusted, type PublishedPossessionCsv, type PublishedPossessions, type Rotations } from '@/webdata/client'
+import { loadWebCollectionInfos, loadWebAssistConnections, loadWebCollections, loadWebConsistency, loadWebDerived, loadWebInOut, loadWebMembers, loadWebLineups, loadWebMatches, loadWebPossessionCsv, loadWebPossessions, loadWebRivalAdjusted, loadWebRotations, loadWebRows, loadWebShots, WebDataUnavailable, type PublishedAssistConnections, type PublishedConsistency, type PublishedInOut, type PublishedMatches, type PublishedRivalAdjusted, type PublishedPossessionCsv, type PublishedPossessions, type Rotations } from '@/webdata/client'
 
 // the switch lives in `datasource/switch` (issue #329); these two are what this module's callers and tests have always imported from here
 export { DATA_FLAG_KEY, localDataEnabled } from '@/datasource/switch'
@@ -98,6 +98,21 @@ async function exportedRows(name: string): Promise<Competition | null> {
   return data?.format === FORMAT ? data : null
 }
 
+/** The teams a conference lists (#1103), or `null` for every team: the publication says it only for the conferences of NCAA, and a manifest that cannot be read lists everyone (nothing is hidden for not knowing). */
+async function membersOf(collection: string): Promise<Set<string> | null> {
+  try {
+    return await loadWebMembers(collection)
+  } catch {
+    return null
+  }
+}
+
+/** ``items`` of the teams the competition lists: the visitors of other conferences are left out of the lists, never out of the rows (what the members did against them counts). */
+async function listed<T>(collection: string, items: T[], teamOf: (item: T) => unknown): Promise<T[]> {
+  const members = await membersOf(collection)
+  return members ? items.filter(item => members.has(String(teamOf(item)))) : items
+}
+
 export function loadCompetition(name: string): Promise<Competition | null> {
   let load = competitions.get(name)
   if (!load) {
@@ -112,7 +127,9 @@ export function loadCompetition(name: string): Promise<Competition | null> {
 export async function localTeamStats(collection: string, filters: TeamTableFilter): Promise<TeamTables | null> {
   if (dataSourceOf('team-stats') !== 'local') return null
   const data = await loadCompetition(collection)
-  return data ? aggregateTeams(data.team_rows, filters) : null
+  if (!data) return null
+  const tables = aggregateTeams(data.team_rows, filters)
+  return { team_stats: await listed(collection, tables.team_stats, t => t.team_id), opponent_stats: await listed(collection, tables.opponent_stats, t => t.team_id) }
 }
 
 /** The last game of a team (issue #716: the weekly report's «Último partido»), or `null` when the competition is not published or the team has no game with a date. No switch of its own: the report asks it. */
@@ -125,7 +142,8 @@ export async function localLastMatch(collection: string, teamName: string): Prom
 export async function localPlayerStats(collection: string, filters: PlayerTableFilter): Promise<PlayerStat[] | null> {
   if (dataSourceOf('player-stats') !== 'local') return null
   const data = await loadCompetition(collection)
-  return data ? playerTable(data, filters) : null
+  const table = data ? playerTable(data, filters) : null
+  return table ? listed(collection, table, p => p.team_id) : null
 }
 
 /** The quartiles of the players of the competition (issue #707), as `GET /players/{collection}/quartiles`; `null` to use the API. */
@@ -199,7 +217,7 @@ export async function localTeamNames(collection: string): Promise<string[] | nul
   if (dataSourceOf('team-stats') !== 'local') return null
   const data = await loadCompetition(collection)
   if (!data) return null
-  return [...new Set(data.team_rows.map(row => row.team_name))].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
+  return [...new Set((await listed(collection, data.team_rows, row => row.team_id)).map(row => row.team_name))].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
 }
 
 /** The phases of a competition among the published ones (the names of the manifest; the manual export in development), or `null` to use the API. */
@@ -343,7 +361,8 @@ export async function localMatchAnalysis(collection: string, matchId: string | n
 /** Posesiones (issue #679): the table of the page, as `GET /possessions/{collection}`; `null` to use the API. */
 export async function localPossessionStats(collection: string): Promise<PossessionStat[] | null> {
   if (dataSourceOf('possessions') !== 'local') return null
-  return (await loadOnce(possessionLoads, collection, loadWebPossessions))?.table ?? null
+  const table = (await loadOnce(possessionLoads, collection, loadWebPossessions))?.table
+  return table ? listed(collection, table, t => t.team_id ?? t.team_name) : null
 }
 
 /** The consistency of the teams, as `GET /teams/{collection}/consistency`, from the same published file as the table; `null` to use the API. */

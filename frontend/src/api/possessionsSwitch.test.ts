@@ -2,12 +2,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ScopedAccessError } from '@live-package/crypto'
 import { fetchPossessionQualityCsv, fetchPossessionsCsv, getPossessionStats, getTeamConsistency } from './client'
 import { DATA_FLAG_KEY, resetLocalData } from '@/localdata/source'
-import { loadWebPossessionCsv, loadWebPossessions, WebDataUnavailable } from '@/webdata/client'
+import { loadWebMembers, loadWebPossessionCsv, loadWebPossessions, WebDataUnavailable } from '@/webdata/client'
 import { DataUnavailable } from '@/datasource/resolve'
 
 // Issue #679: Posesiones is its own dataset (`possessions`): on, the table, the consistency and the two CSV files are the ones computed when the competition was published (the
 // downloads are made in the browser, with the BOM Excel needs once at their start); off, or when they are not published, the API.
-vi.mock('@/webdata/client', async importOriginal => ({ ...(await importOriginal<object>()), loadWebPossessions: vi.fn(), loadWebPossessionCsv: vi.fn() }))
+vi.mock('@/webdata/client', async importOriginal => ({ ...(await importOriginal<object>()), loadWebPossessions: vi.fn(), loadWebPossessionCsv: vi.fn(), loadWebMembers: vi.fn() }))
 
 const COLLECTION = 'L_F_-2_2025_2026_Liga_Regular_B'
 const TABLE = [{ team_name: 'ALPHA', pace: 70.5 }]
@@ -21,6 +21,7 @@ beforeEach(() => {
   localStorage.clear(); localStorage.setItem('basketlab.data', 'api'); resetLocalData(); calls = []
   vi.mocked(loadWebPossessions).mockReset().mockResolvedValue(POSSESSIONS as never)
   vi.mocked(loadWebPossessionCsv).mockReset().mockResolvedValue(CSV as never)
+  vi.mocked(loadWebMembers).mockReset().mockResolvedValue(null)                     // the manifest says nothing of members (#1103): this test counts the calls
   globalThis.fetch = vi.fn(async (url: string) => {
     calls.push(String(url))
     return { ok: true, json: async () => (String(url).includes('consistency') ? { own: { API: {} }, rival: {} } : [{ team_name: 'DE LA API' }]), blob: async () => new Blob(['de la api']) }

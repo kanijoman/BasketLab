@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ScopedAccessError } from '@live-package/crypto'
 import { addRight, parseInvite, type Right } from '@live-package/rights'
-import { loadWebImages, loadWebConsistency, loadWebRivalAdjusted, loadReportTeams, loadScoutingScopes, loadWebReport, loadWebDerived, loadWebInOut, loadWebLineups, loadWebMatches, loadWebPossessionCsv, loadWebPossessions, loadWebRotations, loadWebRows, loadWebScouting, loadWebShots, resetWebData, setDataBase, WebDataUnavailable, publishedSectionsOf } from './client'
+import { loadWebImages, loadWebConsistency, loadWebRivalAdjusted, loadWebMembers, loadReportTeams, loadScoutingScopes, loadWebReport, loadWebDerived, loadWebInOut, loadWebLineups, loadWebMatches, loadWebPossessionCsv, loadWebPossessions, loadWebRotations, loadWebRows, loadWebScouting, loadWebShots, resetWebData, setDataBase, WebDataUnavailable, publishedSectionsOf } from './client'
 import { FBCYL, FEB, readPublished as read, serveWebData, WEB_BASE as BASE, type WebDataHost } from '@/test/webDataHost'
 
 // The browser side of `web-data` (issues #328, #639), tested against a REAL publication of the exporter (`tests/local_vectors/web_data`, made by
@@ -51,6 +51,17 @@ describe('the reports of web-data, opened in the browser', () => {
     expect(await loadReportTeams(FEB)).toEqual([
       { id: '101', name: 'ALPHA' }, { id: '102', name: 'BRAVO' }, { id: '103', name: 'CHARLIE' }, { id: '104', name: 'DELTA' },
     ])
+  })
+
+  it('a conference lists only its members (#1103): the manifest says them, and the teams of the reports leave out the visitors of other conferences', async () => {
+    expect(await loadWebMembers(FEB)).toBeNull()                          // a competition that says nothing lists every team
+    const manifest = JSON.parse(read('index.json'))
+    manifest.rows.find((r: { collection: string }) => r.collection === FEB).members = ['101', '103']
+    host.override['index.json'] = JSON.stringify(manifest)
+    resetWebData()
+    expect([...(await loadWebMembers(FEB)) ?? []]).toEqual(['101', '103'])
+    expect(await loadReportTeams(FEB)).toEqual([{ id: '101', name: 'ALPHA' }, { id: '103', name: 'CHARLIE' }])
+    expect(await loadWebMembers(FBCYL)).toBeNull()
   })
 
   it('the team list is sorted as MongoDB sorts it (by code unit), not by the locale: capitals first, accents last (issue #706)', async () => {
