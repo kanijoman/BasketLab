@@ -7,7 +7,7 @@ vi.mock('@/webdata/client', async importOriginal => ({ ...(await importOriginal<
 
 import RequirePublished from './RequirePublished'
 
-// Issue #780: the address of a hidden page goes back to the competition's summary; with the section published the page opens.
+// Issue #780: with the section published the page opens. #1100: the address of a page the competition cannot offer says so (the origin of the data does not bring it) instead of going away without a word.
 const at = (path: string) => render(
   <MemoryRouter initialEntries={[path]}>
     <Routes>
@@ -27,10 +27,12 @@ describe('RequirePublished', () => {
     expect(await screen.findByText('Página')).toBeInTheDocument()
   })
 
-  it('goes to the summary of the competition when it has not', async () => {
+  it('says the page is not available for the competition, with a way back to its summary, when it has not (#1100)', async () => {
     published.publishedSectionsOf.mockResolvedValue(new Set(['rows']))
     at('/LF2/conexiones')
-    expect(await screen.findByText('Resumen')).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: /no disponible para esta competición/i })).toBeInTheDocument()
+    expect(screen.getByText(/el origen de los datos no lo trae o todavía no está publicado/i)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /volver al resumen/i })).toHaveAttribute('href', '/LF2')
     expect(screen.queryByText('Página')).toBeNull()
   })
 
@@ -39,7 +41,7 @@ describe('RequirePublished', () => {
     at('/LF2/conexiones')
     await waitFor(() => expect(published.publishedSectionsOf).toHaveBeenCalled())
     expect(screen.queryByText('Página')).toBeNull()
-    expect(screen.queryByText('Resumen')).toBeNull()
+    expect(screen.queryByRole('heading', { name: /no disponible/i })).toBeNull()
   })
 
   it('with the API as the source the page opens at once', async () => {

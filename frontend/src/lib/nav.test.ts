@@ -23,6 +23,12 @@ describe('navigation of a collection (issue #191)', () => {
     expect(new Set(paths).size).toBe(paths.length)                      // a page is in ONE group
   })
 
+  it('every route of a collection page is behind the check of what the competition has published (#1100): a page without data is not offered, it says so', () => {
+    for (const path of routes) {
+      expect(app, path).toMatch(new RegExp(`<Route path="${path}"\\s+element=\\{guarded\\('${path}', `))
+    }
+  })
+
   it('the live package is made by the app, not by a page of the web: no live-prep route or entry (issue #667)', () => {
     expect(routes).not.toContain('live-prep')
     expect(NAV_ITEMS.map(i => i.subPath)).not.toContain('live-prep')
@@ -45,14 +51,14 @@ describe('navigation of a collection (issue #191)', () => {
     const group = NAV_GROUPS.find(g => g.label === 'Partido')!
     expect(group.items.map(i => i.subPath)).toEqual(['previa', 'matches'])
     expect(group.items[0].requires).toEqual({ section: 'calendar', dataset: 'forecast' })
-    expect(app).toMatch(/<Route path="previa"\s+element=\{<RequirePublished/)
+    expect(app).toMatch(/<Route path="previa"\s+element=\{guarded\('previa'/)
   })
 
   it('the simulation of the league has a group of its own, and like the preview it needs the calendar of the competition to be published', () => {
     const group = NAV_GROUPS.find(g => g.label === 'Competición')!
     expect(group.items.map(i => i.subPath)).toEqual(['simulacion'])
     expect(group.items[0].requires).toEqual({ section: 'calendar', dataset: 'forecast' })
-    expect(app).toMatch(/<Route path="simulacion"\s+element=\{<RequirePublished/)
+    expect(app).toMatch(/<Route path="simulacion"\s+element=\{guarded\('simulacion'/)
   })
 
   it('every entry says what it is for (the card of the hub)', () => {

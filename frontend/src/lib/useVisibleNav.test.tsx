@@ -8,11 +8,13 @@ import { useVisibleNavGroups } from './useVisibleNav'
 import { NAV_ITEMS } from './nav'
 
 // Issue #780: a page that depends on a section of web-data is hidden while the competition does not have it published (no «próximamente»).
+// everything a FEB competition has published but the sections of the pages added later (#780): Conexiones and the calendar
+const ALL_BUT_THE_NEW_ONES = ['rows', 'derived', 'shots', 'rotations', 'matches', 'possessions', 'lineups', 'inout', 'reports']
 const subPaths = (groups: ReturnType<typeof useVisibleNavGroups>) => groups.flatMap(g => g.items.map(i => i.subPath))
 
 beforeEach(() => {
   localStorage.clear()
-  published.publishedSectionsOf.mockReset().mockResolvedValue(new Set(['rows']))
+  published.publishedSectionsOf.mockReset().mockResolvedValue(new Set(ALL_BUT_THE_NEW_ONES))
 })
 
 describe('useVisibleNavGroups', () => {

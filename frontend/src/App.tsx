@@ -24,6 +24,7 @@
  *
  * AnimatePresence wraps routes for page transition animations.
  */
+import type { ReactElement } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AnimatePresence } from 'framer-motion'
 import { AuthProvider } from '@/context/AuthContext'
@@ -55,11 +56,8 @@ import SimulacionPage from '@/pages/SimulacionPage'
 import RequirePublished from '@/components/RequirePublished'
 import { NAV_ITEMS } from '@/lib/nav'
 
-/** What the Conexiones page needs from the publication: the menu says it (issue #780), the route asks the same. */
-const CONEXIONES_REQUIRES = NAV_ITEMS.find(item => item.subPath === 'conexiones')!.requires!
-/** The preview of the match and the simulation of the league need the calendar of the competition (#849, #850). */
-const PREVIA_REQUIRES = NAV_ITEMS.find(item => item.subPath === 'previa')!.requires!
-const SIMULACION_REQUIRES = NAV_ITEMS.find(item => item.subPath === 'simulacion')!.requires!
+/** A page of a competition opens only where the competition has the section it needs published (#780, #1100): the menu hides it and its address says it is not available. */
+const guarded = (subPath: string, page: ReactElement) => <RequirePublished requires={NAV_ITEMS.find(item => item.subPath === subPath)!.requires!}>{page}</RequirePublished>
 
 export default function App() {
   const location = useLocation()
@@ -78,27 +76,27 @@ export default function App() {
             {/* ── Collection workspace ── */}
             <Route path=":collection">
               <Route index element={<CollectionHub />} />
-              <Route path="teams"       element={<TeamStatsPage />} />
-              <Route path="comparativas" element={<ComparativasPage />} />
-              <Route path="players"     element={<PlayerStatsPage />} />
-              <Route path="evolution"   element={<EvolutionPage />} />
-              <Route path="shots"       element={<ShotChartPage />} />
-              <Route path="rankings"    element={<RankingsPage />} />
-              <Route path="report"      element={<ReportPage />} />
-              <Route path="team-report" element={<TeamReportPage />} />
-              <Route path="scouting-rival" element={<ScoutingRivalPage />} />
-              <Route path="possessions" element={<PossessionsPage />} />
-              <Route path="pbp"         element={<PbpAnalysisPage />} />
-              <Route path="inout"       element={<InOutPage />} />
-              <Route path="lineups"     element={<LineupsPage />} />
+              <Route path="teams"       element={guarded('teams', <TeamStatsPage />)} />
+              <Route path="comparativas" element={guarded('comparativas', <ComparativasPage />)} />
+              <Route path="players"     element={guarded('players', <PlayerStatsPage />)} />
+              <Route path="evolution"   element={guarded('evolution', <EvolutionPage />)} />
+              <Route path="shots"       element={guarded('shots', <ShotChartPage />)} />
+              <Route path="rankings"    element={guarded('rankings', <RankingsPage />)} />
+              <Route path="report"      element={guarded('report', <ReportPage />)} />
+              <Route path="team-report" element={guarded('team-report', <TeamReportPage />)} />
+              <Route path="scouting-rival" element={guarded('scouting-rival', <ScoutingRivalPage />)} />
+              <Route path="possessions" element={guarded('possessions', <PossessionsPage />)} />
+              <Route path="pbp"         element={guarded('pbp', <PbpAnalysisPage />)} />
+              <Route path="inout"       element={guarded('inout', <InOutPage />)} />
+              <Route path="lineups"     element={guarded('lineups', <LineupsPage />)} />
               {/* the old predictive analysis is gone (#852): its address goes to the preview of the match, which replaces it */}
               <Route path="predictive"  element={<Navigate to="../previa" replace />} />
-              <Route path="previa"     element={<RequirePublished requires={PREVIA_REQUIRES}><PreviaPage /></RequirePublished>} />
-              <Route path="simulacion" element={<RequirePublished requires={SIMULACION_REQUIRES}><SimulacionPage /></RequirePublished>} />
-              <Route path="matches"    element={<MatchAnalysisPage />} />
-              <Route path="multiphase"  element={<MultiPhaseStatsPage />} />
-              <Route path="rotaciones" element={<RotacionesPage />} />
-              <Route path="conexiones" element={<RequirePublished requires={CONEXIONES_REQUIRES}><ConexionesPage /></RequirePublished>} />
+              <Route path="previa"     element={guarded('previa', <PreviaPage />)} />
+              <Route path="simulacion" element={guarded('simulacion', <SimulacionPage />)} />
+              <Route path="matches"    element={guarded('matches', <MatchAnalysisPage />)} />
+              <Route path="multiphase"  element={guarded('multiphase', <MultiPhaseStatsPage />)} />
+              <Route path="rotaciones" element={guarded('rotaciones', <RotacionesPage />)} />
+              <Route path="conexiones" element={guarded('conexiones', <ConexionesPage />)} />
             </Route>
 
             {/* The Administration page is gone (#724: the data is loaded by the scheduled refresh of the archive); its old address goes to the home */}
