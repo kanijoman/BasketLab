@@ -278,3 +278,14 @@ def test_the_flip_alert_says_why_the_pace_is_advised():
     assert "bajar el ritmo" in text and "perjudicó" in text and "-9" in text
     text = _lever_text(paced_levers(8, 14, 20, 7)["pace"])
     assert "subir el ritmo" in text and "favoreció" in text
+
+
+def test_in_overtime_a_one_point_lead_with_almost_a_whole_period_left_is_not_certain_regression():
+    """Bug (#1122): after 2400 s the fraction of game left was 0, so any lead in the extra period gave p = 1.0 (4:59 left, +1)."""
+    from src.live_core.win_prob import WinProbabilityModel
+    from tests.builders import OWN, RIVAL, Match
+
+    snap = Match().score(RIVAL, 2, at=100).score(OWN, 2, at=2300).score(OWN, 1, at=2405).snapshot()
+    assert snap["period"] == 5 and snap["remaining"] > 290
+    p = WinProbabilityModel(OWN, RIVAL).evaluate(snap, None)["p"]
+    assert 0.5 < p < 0.9

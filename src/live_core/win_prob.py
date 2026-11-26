@@ -19,7 +19,7 @@ from .config import RuleConfig
 from .four_factors import WEIGHTS, points_per_unit, side_of
 from .summary_pace import window_pace
 from .windows import window_stats
-from .clock import GAME_SECONDS
+from .clock import GAME_SECONDS, REGULATION_PERIODS
 
 DEFAULT_PACE_PER_40 = 70.0   # possessions per 40 min when the package has no pace
 
@@ -46,7 +46,10 @@ class WinProbabilityModel:
         if self._own not in score or self._rival not in score:
             return None
         margin = score[self._own] - score[self._rival]
-        fraction = max(0, GAME_SECONDS - snap["elapsed"]) / GAME_SECONDS
+        # in an overtime (period > 4) what is left is what is left of THAT period, not the regulation time that is over (#1122)
+        in_overtime = int(snap.get("period") or 0) > REGULATION_PERIODS and snap.get("remaining") is not None
+        left = max(0, int(snap["remaining"])) if in_overtime else max(0, GAME_SECONDS - snap["elapsed"])
+        fraction = left / GAME_SECONDS
         ff = four_factors or {}
         played = float(ff.get("possessions", 0.0))
         weight = played / (played + self._cfg.wp_n0) if played + self._cfg.wp_n0 else 0.0
