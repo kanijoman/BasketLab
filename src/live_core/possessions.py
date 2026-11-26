@@ -64,6 +64,7 @@ class PossessionTracker:
         self._pending_ev: Optional[Event] = None        # that miss
         self._hold: Optional[_Hold] = None
         self._foul_type: Optional[str] = None
+        self._technical_owed = 0                         # free throws of technical fouls that came while a trip was waiting (#1118)
         self._fouls_since: Set[Optional[str]] = set()
         self._timeouts: List[Tuple[str, int]] = []
         self._after_oreb = False
@@ -87,8 +88,7 @@ class PossessionTracker:
         if kind == "timeout":
             self._timeout(ev)
         elif kind == "foul":
-            self._foul_type = ev.foul_type
-            self._fouls_since.add(ev.foul_type)
+            self._foul(ev)
         elif kind == "steal":
             self._steal(ev)
         elif kind in _ACTIONS and ev.team_id in self._opp:
@@ -126,7 +126,7 @@ class PossessionTracker:
 
     def _shot(self, out: List[Possession], ev: Event) -> None:
         self._own(out, ev)
-        self._foul_type = None
+        self._clear_foul()
         self._last_shot = "dunk" if "MATE" in ev.text.upper() else ev.kind
         if ev.made:
             self._score(ev)
@@ -134,8 +134,26 @@ class PossessionTracker:
         else:
             self._pending, self._pending_ev = ev.team_id, ev
 
+    def _foul(self, ev: Event) -> None:
+        self._fouls_since.add(ev.foul_type)
+        if ev.foul_type != "technical":
+            self._foul_type = ev.foul_type
+        elif self._foul_type in (None, "technical"):
+            self._foul_type = "technical"       # nothing is waiting: every free throw that follows is the technical's
+        else:
+            self._technical_owed += 1           # a trip is waiting (#1118): ONE of its free throws is the technical's (FIBA) and the trip keeps its own type
+
+    def _clear_foul(self) -> None:
+        self._foul_type, self._technical_owed = None, 0
+
+    def _technical_ft(self) -> bool:
+        """Whether the free throw that comes is a technical one (the state BEFORE it is consumed)."""
+        return self._foul_type == "technical" or self._technical_owed > 0
+
     def _free_throw(self, out: List[Possession], ev: Event) -> None:
-        if self._foul_type == "technical":     # no possession, the ball goes back to whoever had it
+        if self._technical_ft():     # no possession, the ball goes back to whoever had it
+            if self._foul_type != "technical":
+                self._technical_owed -= 1
             self._q.technical_ft += 1
             if ev.made:
                 self.technical_points[ev.team_id] += ev.points
@@ -151,7 +169,7 @@ class PossessionTracker:
 
     def _turnover(self, out: List[Possession], ev: Event) -> None:
         self._own(out, ev)
-        self._foul_type = None
+        self._clear_foul()
         steal = self._steal_seen is not None and self._steal_seen[1] == ev.elapsed and self._steal_seen[0] != ev.team_id
         closed = self._end(out, "turnover", ev)
         if steal:
@@ -189,7 +207,7 @@ class PossessionTracker:
     def _resolve_pending(self, out: List[Possession], ev: Event) -> bool:
         """Use ``ev`` to settle a missed shot waiting for its rebound; True when the event was consumed."""
         pending, kind, team = self._pending, ev.kind, ev.team_id
-        if pending is None or (kind == "ft" and self._foul_type == "technical"):
+        if pending is None or (kind == "ft" and self._technical_ft()):
             return False
         if kind == "rebound":
             self._pending = None
@@ -225,7 +243,7 @@ class PossessionTracker:
         elif hold.kind == "ft":
             if ev is not None and ev.kind == "ft" and ev.team_id == hold.team and ev.period == hold.ev.period:
                 return                                          # the trip goes on
-            self._foul_type = None
+            self._clear_foul()
             if hold.trip == "unsportsmanlike":
                 self._end(out, "trip", hold.ev, same_team=True)
             elif hold.ev.made:
@@ -233,7 +251,7 @@ class PossessionTracker:
             else:
                 self._pending, self._pending_ev = hold.team, hold.ev   # live ball after the last free throw
         elif (ev is not None and ev.team_id == hold.team and (ev.kind in ("fg2", "fg3", "turnover")
-                                                              or (ev.kind == "ft" and self._foul_type != "technical"))):
+                                                              or (ev.kind == "ft" and not self._technical_ft()))):
             self._cur.repaired_orebs += 1                       # the rebound was credited to the wrong team
             self._cur.repaired = True
             self._after_oreb = True

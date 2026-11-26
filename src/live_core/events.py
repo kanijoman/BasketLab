@@ -59,7 +59,7 @@ def _to_int(value: Any) -> Optional[int]:
 
 def _foul_type(text: str) -> str:
     upper = text.upper()
-    if "ANTIDEPORTIVA" in upper:
+    if "ANTIDEPORTIVA" in upper or "FLAGRANTE" in upper:  # a flagrant foul is an unsportsmanlike one: two free throws and the ball stays (real game 2524463)
         return "unsportsmanlike"
     if "PERSONAL" in upper:
         return "personal"
