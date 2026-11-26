@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { BASE_SECTIONS } from '@/test/sections'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 const published = vi.hoisted(() => ({ publishedSectionsOf: vi.fn() }))
@@ -12,18 +13,19 @@ const at = (path: string, ui: React.ReactNode) => render(
 
 beforeEach(() => {
   localStorage.clear()
-  published.publishedSectionsOf.mockReset().mockResolvedValue(new Set(['rows']))        // a publication without the section of Conexiones (#780)
+  published.publishedSectionsOf.mockReset().mockResolvedValue(new Set(BASE_SECTIONS))        // a publication without the section of Conexiones (#780)
 })
 
 // Issue #191 (U4): the navigation is grouped; on a phone it is a menu that opens over the page.
 describe('Sidebar (issue #191)', () => {
-  it('groups the pages under their heading and points every link at its page', () => {
+  it('groups the pages under their heading and points every link at its page', async () => {
     at('/LF2/teams', <Sidebar />)
+    await screen.findByRole('link', { name: 'Equipo' })                          // the pages are offered once the publication has been read (#1100)
     const nav = screen.getByRole('navigation', { name: 'Páginas de la competición' })
     for (const group of ['Equipos', 'Jugadores', 'Partido', 'Live', 'Informes']) {
       expect(within(nav).getByRole('heading', { name: group })).toBeInTheDocument()
     }
-    expect(within(nav).getAllByRole('link')).toHaveLength(NAV_ITEMS.filter(item => !item.requires).length)                  // the Administration page is gone: the data is loaded by the scheduled refresh
+    expect(within(nav).getAllByRole('link')).toHaveLength(NAV_ITEMS.filter(item => !item.requires || BASE_SECTIONS.includes(item.requires.section)).length)                  // the Administration page is gone: the data is loaded by the scheduled refresh
     expect(within(nav).queryByRole('link', { name: 'Administración' })).toBeNull()
     expect(within(nav).getByRole('link', { name: 'Equipo' })).toHaveAttribute('href', '/LF2/teams')
     expect(within(nav).getByRole('link', { name: 'Resumen' })).toHaveAttribute('href', '/LF2')
@@ -37,13 +39,14 @@ describe('Sidebar (issue #191)', () => {
   })
 
   it('and shows it as soon as the section is published (issue #780)', async () => {
-    published.publishedSectionsOf.mockResolvedValue(new Set(['rows', 'assist_connections']))
+    published.publishedSectionsOf.mockResolvedValue(new Set([...BASE_SECTIONS, 'assist_connections']))
     at('/LF2/teams', <Sidebar />)
     expect(await screen.findByRole('link', { name: 'Conexiones' })).toHaveAttribute('href', '/LF2/conexiones')
   })
 
-  it('collapsed it shows the icons only, with the names as titles, and remembers it', () => {
+  it('collapsed it shows the icons only, with the names as titles, and remembers it', async () => {
     at('/LF2', <Sidebar />)
+    await screen.findByRole('link', { name: 'Equipo' })
     fireEvent.click(screen.getByRole('button', { name: 'Colapsar menú' }))
     expect(screen.queryByRole('heading', { name: 'Equipos' })).toBeNull()
     expect(screen.getByRole('link', { name: 'Equipo' })).toHaveAttribute('title', 'Equipo')
@@ -56,8 +59,9 @@ describe('MobileNav (issue #191)', () => {
     return <MobileNav open={open} onClose={onClose} />
   }
 
-  it('is a modal dialog with the same grouped links', () => {
+  it('is a modal dialog with the same grouped links', async () => {
     at('/LF2/players', <Menu />)
+    await screen.findByRole('link', { name: 'Individual' })
     const dialog = screen.getByRole('dialog', { name: 'Menú de navegación' })
     expect(dialog).toHaveAttribute('aria-modal', 'true')
     expect(within(dialog).getByRole('heading', { name: 'Jugadores' })).toBeInTheDocument()
@@ -69,9 +73,10 @@ describe('MobileNav (issue #191)', () => {
     expect(screen.queryByRole('dialog')).toBeNull()
   })
 
-  it('closes with Escape, with the backdrop, with its button and when a page is chosen', () => {
+  it('closes with Escape, with the backdrop, with its button and when a page is chosen', async () => {
     const close = vi.fn()
     at('/LF2', <Menu onClose={close} />)
+    await screen.findByRole('link', { name: 'Rankings' })
     fireEvent.keyDown(document, { key: 'Escape' })
     fireEvent.click(screen.getByTestId('nav-backdrop'))
     fireEvent.click(screen.getByRole('button', { name: 'Cerrar menú' }))

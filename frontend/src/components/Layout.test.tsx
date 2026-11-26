@@ -5,12 +5,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import Layout from './Layout'
 import * as client from '@/api/client'
 import * as webdata from '@/webdata/client'
+import { BASE_SECTIONS } from '@/test/sections'
 
 const phone = (matches: boolean) => vi.stubGlobal('matchMedia', (query: string) => ({
   matches: matches && query.includes('max-width'), media: query, addEventListener: () => undefined, removeEventListener: () => undefined }))
 
 function shell(path: string) {
   vi.spyOn(client, 'getCollectionList').mockResolvedValue([])
+  vi.spyOn(webdata, 'publishedSectionsOf').mockResolvedValue(new Set(BASE_SECTIONS))          // the menu offers the pages whose section is published (#1100)
   render(
     <QueryClientProvider client={new QueryClient()}>
       <MemoryRouter initialEntries={[path]}>
@@ -34,13 +36,13 @@ describe('Layout shell (issue #191)', () => {
     expect(screen.queryByRole('button', { name: 'Abrir menú' })).toBeNull()
   })
 
-  it('on a phone the page has the whole width: a menu button opens the navigation and choosing a page closes it', () => {
+  it('on a phone the page has the whole width: a menu button opens the navigation and choosing a page closes it', async () => {
     phone(true)
     shell('/LF2/teams')
     expect(screen.queryByRole('navigation', { name: 'Páginas de la competición' })).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: 'Abrir menú' }))
     const dialog = screen.getByRole('dialog', { name: 'Menú de navegación' })
-    fireEvent.click(within(dialog).getByRole('link', { name: 'Rankings' }))
+    fireEvent.click(await within(dialog).findByRole('link', { name: 'Rankings' }))
     expect(screen.queryByRole('dialog')).toBeNull()
   })
 

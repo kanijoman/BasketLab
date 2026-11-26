@@ -1,4 +1,5 @@
 import { render, screen, within } from '@testing-library/react'
+import { BASE_SECTIONS } from '@/test/sections'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 const published = vi.hoisted(() => ({ publishedSectionsOf: vi.fn() }))
@@ -20,7 +21,7 @@ function hub() {
 
 beforeEach(() => {
   localStorage.setItem('basketlab.data', 'local')
-  published.publishedSectionsOf.mockReset().mockResolvedValue(new Set(['rows']))
+  published.publishedSectionsOf.mockReset().mockResolvedValue(new Set(BASE_SECTIONS))
 })
 afterEach(() => vi.restoreAllMocks())
 
@@ -29,8 +30,9 @@ describe('CollectionHub (issue #191)', () => {
   it('has a group per heading of the menu with a card for each of its pages, all of them links', async () => {
     hub()
     await screen.findByRole('heading', { level: 1 })
+    await screen.findByRole('region', { name: 'Equipos' })                              // the cards appear once the publication has been read (#1100)
     for (const group of NAV_GROUPS) {
-      const offered = group.items.filter(item => !item.requires)                       // the pages that need a published section are not offered here (#780, below)
+      const offered = group.items.filter(item => !item.requires || BASE_SECTIONS.includes(item.requires.section))      // the pages whose section is not published are not offered here (#780, below)
       if (!offered.length) {                                                           // a group whose pages all need one (Competición, #850) has no card until they are published
         expect(screen.queryByRole('region', { name: group.label })).toBeNull()
         continue
@@ -46,6 +48,7 @@ describe('CollectionHub (issue #191)', () => {
   it('the pages that had no card (pbp, multifase, partido, rotaciones) have it now', async () => {
     hub()
     await screen.findByRole('heading', { level: 1 })
+    await screen.findByRole('region', { name: 'Equipos' })
     for (const page of ['pbp', 'multiphase', 'matches', 'rotaciones']) {
       expect(document.querySelector(`a[href="/LF2_2025_A/${page}"]`), page).not.toBeNull()
     }
@@ -62,7 +65,7 @@ describe('CollectionHub: pages that need published data (issue #780)', () => {
   })
 
   it('has it once the publication has the section', async () => {
-    published.publishedSectionsOf.mockResolvedValue(new Set(['rows', 'assist_connections']))
+    published.publishedSectionsOf.mockResolvedValue(new Set([...BASE_SECTIONS, 'assist_connections']))
     hub()
     expect(await screen.findByRole('link', { name: /Conexiones de asistencia/ })).toHaveAttribute('href', '/LF2_2025_A/conexiones')
   })
