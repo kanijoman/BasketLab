@@ -113,7 +113,7 @@ class TestWhenThingsGoWrong:
     def test_if_no_game_could_be_read_because_of_its_format_the_run_fails_instead_of_a_quiet_empty_archive(self):
         s = EuroleagueSource(FakeClient(broken=EuroleaguePageError("the keys changed")))
         assert list(s.fetch(entry(), None, frozenset())) == []
-        with pytest.raises(EuroleaguePageError, match="E2025_\d+: the keys changed"):
+        with pytest.raises(EuroleaguePageError, match=r"E2025_\d+: the keys changed"):
             s.finish()
 
     def test_games_nobody_can_read_in_one_entry_do_not_stop_the_other_entries_regression(self):
