@@ -134,7 +134,9 @@ class LiveGame:
         self._enter_period(ev.period)
         self._tick(ev.elapsed)
         self._in_clutch = clutch_mod.in_window(ev.period, ev.elapsed, self._margin())   # the margin BEFORE the event
-        self.period, self.remaining, self.elapsed, self.last_num = ev.period, ev.remaining, ev.elapsed, ev.num
+        if ev.elapsed >= self.elapsed:      # a line logged late has an earlier clock: the game clock never goes back (#1119), or the next line would credit those seconds twice
+            self.period, self.remaining, self.elapsed = ev.period, ev.remaining, ev.elapsed
+        self.last_num = ev.num
         self.last_event = {"kind": ev.kind, "elapsed": ev.elapsed, "text": ev.text, "period": ev.period, "remaining": ev.remaining, "team_id": ev.team_id}
         self._move_ball(ev)
         player = self._player_for(ev)
@@ -147,7 +149,7 @@ class LiveGame:
         if handler:
             handler(ev, player, team)
         self._note_last_stat(ev, player, before)
-        self.lineups.refresh(self.players, ev.elapsed)
+        self.lineups.refresh(self.players, self.elapsed)
         self.possessions.feed(ev)
 
     @staticmethod

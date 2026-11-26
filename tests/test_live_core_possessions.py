@@ -333,3 +333,28 @@ def test_a_miss_at_the_buzzer_ends_at_the_time_of_the_miss():
     out, _ = _run(_Feed().miss("A", "00:20").period("Fin del Cuarto 1", "00:00"))
 
     assert out[0].end_elapsed == 580
+
+
+# ---------------------------------------------------------------- #1118: a technical foul inside the free-throw trip of another foul
+
+def test_a_technical_after_a_personal_foul_costs_one_free_throw_and_the_trip_keeps_its_own_regression():
+    """Bug (#1118): personal foul on B, technical foul, the technical free throw, then the two of the trip. Every free throw was taken as the technical's: 2 technical points instead
+    of 1 and the trip never closed its possession."""
+    feed = (_Feed().tov("A", "09:55").foul("A", "09:40", "Personal").foul("A", "09:40", "Técnica").ft("B", "09:40", True, "b")
+            .ft("B", "09:40", True, "b").ft("B", "09:40", True, "b").made("A", "09:30"))
+    out, tracker = _run(feed)
+
+    assert tracker.technical_points == {"B": 1}
+    assert tracker.quality().technical_ft == 1
+    assert ("B", "ft_made") in _counted(out) and out[1].points == 2 and out[1].team_id == "B"
+
+
+def test_a_technical_between_the_two_free_throws_of_a_trip_still_leaves_one_possession_regression():
+    """#1118: the technical free throw logged between the two of the trip: one technical free throw, the trip closes with its last one."""
+    feed = (_Feed().tov("A", "09:55").foul("A", "09:40", "Personal").ft("B", "09:40", True, "b").foul("A", "09:40", "Técnica")
+            .ft("B", "09:40", True, "b").ft("B", "09:40", True, "b").made("A", "09:30"))
+    out, tracker = _run(feed)
+
+    assert tracker.quality().technical_ft == 1
+    assert [o for _, o in _counted(out)].count("ft_made") == 1
+    assert tracker.quality().breaks_raw == 0
