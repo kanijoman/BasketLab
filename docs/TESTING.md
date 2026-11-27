@@ -26,6 +26,15 @@ cd tests/pyodide && npm ci && node run_vectors.mjs   # motor dentro de Pyodide
 **App live (`apps/live-android`)**: usa `npm run test:run`, no `npx vitest run` a pelo: el motor que prueban `bridge.test.ts` y los vectores es `public/engine/live_core.json`, **generado** (git-ignored) desde `src/live_core` por `npm run sync-engine`, que `test:run` lanza antes. Con un bundle viejo los vectores fallan con avisos «que faltan» que parecen un fallo del motor (#776); `engine/engineBundleFresh.test.ts` lo dice con su causa.
 Dependencias: `pip install -r requirements-dev.txt` (el servidor de la API usa solo `requirements.txt`). scikit-learn ya no está en `requirements.txt` (solo en `requirements-research.txt`, para los estudios de `scripts/`) y no hay marcadores de tests que dependan de él: el marcador `ml` y los tests de ML se retiraron con el predictivo antiguo (#853). Frontend en Windows: si vitest no arranca por el binding de rolldown, `rm -rf frontend/node_modules && npm ci`.
 
+## Antes del PR (`scripts/pre_pr.py`)
+`python scripts/pre_pr.py [--base origin/main]` reúne la checklist previa al PR (CLAUDE.md, Flujo git). **Bloquea** (exit 1): estar en `main`, no contener la punta de `origin/main` (rebase), `ruff check --no-cache` con errores y `tests/test_docs_consistency.py` en rojo. **Avisa**: cambios sin commit (la prueba de rojo compara commits) y la prueba de rojo sin rojo (`scripts/red_proof.py`). Tests: `tests/test_pre_pr.py`.
+
+Hook opcional, que activa el usuario (un agente no se concede a sí mismo permisos ni hooks): con `--hook` el script lee del stdin el JSON de la llamada, no hace nada salvo ante `gh pr create` y, si algo bloquea, sale con código 2 (el arnés lo trata como una parada y muestra stderr). En `.claude/settings.json`:
+```json
+{"hooks": {"PreToolUse": [{"matcher": "Bash|PowerShell", "hooks": [{"type": "command", "command": "python scripts/pre_pr.py --hook"}]}]}}
+```
+Para evitar avisos de permiso en lo habitual se puede añadir `permissions.allow` con los comandos de solo lectura y de test (`git status/diff/log/fetch`, `gh issue|pr|run list|view`, `gh pr checks`, `python -m pytest`, `ruff check`, `python scripts/pre_pr.py`, `python scripts/red_proof.py`), por ejemplo con la skill `fewer-permission-prompts`.
+
 ## Mapa de tests (≈ 254 archivos, 4.746 tests backend, cobertura 84 % medida el 23/10/2026; frontend 23 archivos / 146 tests)
 - API (`TestClient`, `dependency_overrides[get_db]`): `test_api*.py`, `test_*_router.py`, `test_integration_api_services.py`, `test_lineups_sse.py`, `test_scraper_endpoints.py`.
 - Servicios y BD con `mongomock` (sin red ni Mongo real): `test_services.py`, `test_rotation_service.py` (**#757**: las jugadoras significativas con umbrales relativos al número de partidos del equipo —al inicio de temporada un equipo con 4 partidos no se quedaba con 3 jugadoras de 12—, fronteras inclusivas, división por cero y el estado de un equipo tras 4 partidos), `test_rotaciones_router.py`, `test_repository_*`, `test_pipeline_builder.py`, `test_indexes.py`.
