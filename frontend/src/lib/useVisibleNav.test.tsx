@@ -60,13 +60,6 @@ describe('useVisibleNavGroups', () => {
     expect(subPaths(result.current)).not.toContain('conexiones')
   })
 
-  it('with the API as the source (?data=api, development) every page is offered: nothing to wait for', () => {
-    localStorage.setItem('basketlab.data', 'api')
-    const { result } = renderHook(() => useVisibleNavGroups('LF2'))
-    expect(subPaths(result.current)).toContain('conexiones')
-    expect(published.publishedSectionsOf).not.toHaveBeenCalled()
-  })
-
   it('a publication that cannot be read hides the page instead of breaking the menu', async () => {
     published.publishedSectionsOf.mockRejectedValue(new Error('down'))
     const { result } = renderHook(() => useVisibleNavGroups('LF2'))

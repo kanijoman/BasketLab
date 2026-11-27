@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ScopedAccessError } from '@live-package/crypto'
 import { getRivalAdjusted } from './client'
-import { DATA_FLAG_KEY, resetLocalData } from '@/localdata/source'
+import { resetLocalData } from '@/localdata/source'
 import { loadWebRivalAdjusted, WebDataUnavailable } from '@/webdata/client'
 import { DataUnavailable } from '@/datasource/resolve'
 
@@ -15,20 +15,14 @@ let calls: string[]
 const realFetch = globalThis.fetch
 
 beforeEach(() => {
-  localStorage.clear(); localStorage.setItem('basketlab.data', 'api'); resetLocalData(); calls = []
+  localStorage.clear(); resetLocalData(); calls = []
   vi.mocked(loadWebRivalAdjusted).mockReset().mockResolvedValue({ format: 1, collection: COLLECTION, league: 'feb', teams: MAP } as never)
   globalThis.fetch = vi.fn(async (url: string) => { calls.push(String(url)); return { ok: true, json: async () => ({ DE_LA_API: {} }) } }) as unknown as typeof fetch
 })
 afterEach(() => { globalThis.fetch = realFetch })
 
 describe('data source switch: the rival-adjusted figures', () => {
-  it('off: the API answers', async () => {
-    expect(await getRivalAdjusted(COLLECTION)).toEqual({ DE_LA_API: {} })
-    expect(loadWebRivalAdjusted).not.toHaveBeenCalled()
-  })
-
   it('on: the published answer, once per competition, with no call to the API', async () => {
-    localStorage.setItem(DATA_FLAG_KEY, 'local:rival-adjusted')
     expect(await getRivalAdjusted(COLLECTION)).toEqual(MAP)
     expect(await getRivalAdjusted(COLLECTION)).toEqual(MAP)
     expect(calls).toEqual([])
@@ -36,13 +30,11 @@ describe('data source switch: the rival-adjusted figures', () => {
   })
 
   it('on but not published: a clear error, not the API', async () => {
-    localStorage.setItem(DATA_FLAG_KEY, 'local:rival-adjusted')
     vi.mocked(loadWebRivalAdjusted).mockRejectedValue(new WebDataUnavailable('sin fichero'))
     await expect(getRivalAdjusted(COLLECTION)).rejects.toBeInstanceOf(DataUnavailable)
   })
 
   it('on without the key: the access error, never the API', async () => {
-    localStorage.setItem(DATA_FLAG_KEY, 'local:rival-adjusted')
     vi.mocked(loadWebRivalAdjusted).mockRejectedValue(new ScopedAccessError('sin clave'))
     await expect(getRivalAdjusted(COLLECTION)).rejects.toBeInstanceOf(ScopedAccessError)
     expect(calls).toEqual([])

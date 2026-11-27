@@ -1,5 +1,5 @@
-/** Rival scouting report (issue #299): start the report of any team (background job), poll it, read it and download the PDF. */
-import { API_BASE, getTeamStats } from './client'
+/** Rival scouting report (issue #299): the published report of any team, the matchup computed on the device and the PDF made in the browser. */
+import { getTeamStats } from './client'
 import { getPointsByOrigin } from './pbpExtended'
 import { DataUnavailable, fromSource } from '@/datasource/resolve'
 import { compareTeams, STAT_CATALOG, type ComparisonRow } from '@/lib/scoutingCompare'
@@ -79,38 +79,6 @@ export interface ScoutingReport {
   comparison: { key: string; label: string; group: string; own_text: string; rival_text: string; advantage: 'own' | 'rival' | 'even' | 'neutral' }[]
 }
 
-async function failure(res: Response): Promise<Error> {
-  const body = await res.json().catch(() => ({}))
-  const d = (body as { detail?: unknown }).detail
-  if (typeof d === 'string') return new Error(d)
-  if (Array.isArray(d)) return new Error(d.map(e => (e as { msg?: string }).msg ?? JSON.stringify(e)).join('; '))
-  return new Error(`HTTP ${res.status}`)
-}
-
-const job = (path: string, id: string) => `${API_BASE}/scouting-rival/${path}/${encodeURIComponent(id)}`
-
-export async function startScouting(req: ScoutingRequest): Promise<{ job_id: string }> {
-  const res = await fetch(`${API_BASE}/scouting-rival`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(req),
-  })
-  if (!res.ok) throw await failure(res)
-  return res.json() as Promise<{ job_id: string }>
-}
-
-export async function getScoutingProgress(jobId: string): Promise<ScoutingProgress> {
-  const res = await fetch(job('progress', jobId))
-  if (!res.ok) throw await failure(res)
-  return res.json() as Promise<ScoutingProgress>
-}
-
-export async function getScoutingReport(jobId: string): Promise<ScoutingReport> {
-  const res = await fetch(job('report', jobId))
-  if (!res.ok) throw await failure(res)
-  return res.json() as Promise<ScoutingReport>
-}
-
 /** The PDF of a report, made in the browser from the report itself (issue #715: no job and no server; jsPDF is loaded when the button is pressed). */
 export async function downloadScoutingPdf(report: ScoutingReport): Promise<Blob> {
   const { scoutingPdf } = await import('@/lib/scoutingPdf')
@@ -122,11 +90,11 @@ export async function downloadScoutingPdf(report: ScoutingReport): Promise<Blob>
  * off or the publication cannot say, so that the page keeps its job-based flow. An access error (no key) reaches the page.
  */
 export const getScoutingScopes = (collection: string, teamId: string): Promise<ScoutingScope[]> =>
-  fromSource<ScoutingScope[]>('scouting', () => loadScoutingScopes(collection, teamId), async () => [], () => [])
+  fromSource<ScoutingScope[]>('scouting', () => loadScoutingScopes(collection, teamId), () => [])
 
 /** The published scouting of a team for a scope, or `null` when it is off or cannot be had (with the API asked for on purpose, the page generates it as always). */
 export const getPublishedScouting = (collection: string, teamId: string, scope: ScoutingScope): Promise<ScoutingReport | null> =>
-  fromSource<ScoutingReport | null>('scouting', () => loadWebScouting(collection, teamId, scope), async () => null, () => null)
+  fromSource<ScoutingReport | null>('scouting', () => loadWebScouting(collection, teamId, scope), () => null)
 
 /** The stats of the play-by-play that complete the season rows (the group `Origen de los puntos` of the catalog, as `PBP_KEYS` of the server). */
 const PBP_KEYS = STAT_CATALOG.filter(stat => stat.group === 'Origen de los puntos').map(stat => stat.key)

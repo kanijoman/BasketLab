@@ -44,10 +44,4 @@ describe('RequirePublished', () => {
     expect(screen.queryByRole('heading', { name: /no disponible/i })).toBeNull()
   })
 
-  it('with the API as the source the page opens at once', async () => {
-    localStorage.setItem('basketlab.data', 'api')
-    at('/LF2/conexiones')
-    expect(await screen.findByText('Página')).toBeInTheDocument()
-    expect(published.publishedSectionsOf).not.toHaveBeenCalled()
-  })
 })

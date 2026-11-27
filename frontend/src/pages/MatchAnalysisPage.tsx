@@ -225,12 +225,10 @@ export default function MatchAnalysisPage() {
   const [teamFilter, setTeamFilter] = useState<string>('')
   const exportRef = useRef<HTMLDivElement>(null)
 
-  const isFbcyl = Boolean(collection?.isFbcyl)
-
   // Match list
   const { data: matches = [], isLoading: loadingList, isError: errorList } = useQuery({
     queryKey: ['match-list', collection?.name],
-    queryFn: () => getMatchList(collection!.name, isFbcyl),
+    queryFn: () => getMatchList(collection!.name),
     enabled: Boolean(collection),
     staleTime: 5 * 60_000,
   })
@@ -242,7 +240,7 @@ export default function MatchAnalysisPage() {
     isError: errorAnalysis,
   } = useQuery({
     queryKey: ['match-analysis', collection?.name, selectedId],
-    queryFn: () => getMatchAnalysis(collection!.name, selectedId!, isFbcyl),
+    queryFn: () => getMatchAnalysis(collection!.name, selectedId!),
     enabled: Boolean(collection && selectedId != null),
     staleTime: 10 * 60_000,
   })

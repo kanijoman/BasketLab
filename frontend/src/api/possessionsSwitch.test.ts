@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ScopedAccessError } from '@live-package/crypto'
 import { fetchPossessionQualityCsv, fetchPossessionsCsv, getPossessionStats, getTeamConsistency } from './client'
-import { DATA_FLAG_KEY, resetLocalData } from '@/localdata/source'
+import { resetLocalData } from '@/localdata/source'
 import { loadWebMembers, loadWebPossessionCsv, loadWebPossessions, WebDataUnavailable } from '@/webdata/client'
 import { DataUnavailable } from '@/datasource/resolve'
 
@@ -18,7 +18,7 @@ let calls: string[]
 const realFetch = globalThis.fetch
 
 beforeEach(() => {
-  localStorage.clear(); localStorage.setItem('basketlab.data', 'api'); resetLocalData(); calls = []
+  localStorage.clear(); resetLocalData(); calls = []
   vi.mocked(loadWebPossessions).mockReset().mockResolvedValue(POSSESSIONS as never)
   vi.mocked(loadWebPossessionCsv).mockReset().mockResolvedValue(CSV as never)
   vi.mocked(loadWebMembers).mockReset().mockResolvedValue(null)                     // the manifest says nothing of members (#1103): this test counts the calls
@@ -32,15 +32,7 @@ afterEach(() => { globalThis.fetch = realFetch })
 const text = async (blob: Blob) => new TextDecoder('utf-8', { ignoreBOM: true }).decode(await blob.arrayBuffer())       // keep the BOM: it is what is checked
 
 describe('data source switch: Posesiones', () => {
-  it('off: the API answers the table, the consistency and the downloads', async () => {
-    expect((await getPossessionStats(COLLECTION))[0].team_name).toBe('DE LA API')
-    expect(Object.keys((await getTeamConsistency(COLLECTION)).own)).toEqual(['API'])
-    expect(await text(await fetchPossessionsCsv(COLLECTION))).toBe('de la api')
-    expect(loadWebPossessions).not.toHaveBeenCalled()
-  })
-
   it('on: the table and the consistency are the published ones, from one file, with no call to the API', async () => {
-    localStorage.setItem(DATA_FLAG_KEY, 'local:possessions')
     expect(await getPossessionStats(COLLECTION)).toEqual(TABLE)
     expect((await getTeamConsistency(COLLECTION)).own).toEqual(CONSISTENCY.own)
     expect(calls).toEqual([])
@@ -48,7 +40,6 @@ describe('data source switch: Posesiones', () => {
   })
 
   it('on: the downloads are made here, with ONE BOM at the start and the text as it was published; the heavy CSV is read only when it is asked for', async () => {
-    localStorage.setItem(DATA_FLAG_KEY, 'local:possessions')
     expect(loadWebPossessionCsv).not.toHaveBeenCalled()
     const rows = await fetchPossessionsCsv(COLLECTION)
     expect(rows.type).toContain('text/csv')
@@ -60,7 +51,6 @@ describe('data source switch: Posesiones', () => {
   })
 
   it('on, but not published: a clear error, not the API (also for the downloads); with no key: the access error', async () => {
-    localStorage.setItem(DATA_FLAG_KEY, 'local:possessions')
     vi.mocked(loadWebPossessions).mockRejectedValue(new WebDataUnavailable('no publicado'))
     vi.mocked(loadWebPossessionCsv).mockRejectedValue(new WebDataUnavailable('no publicado'))
     await expect(getPossessionStats(COLLECTION)).rejects.toBeInstanceOf(DataUnavailable)

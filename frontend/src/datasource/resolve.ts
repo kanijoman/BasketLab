@@ -1,8 +1,8 @@
 // The ONE policy of the migration (issues #329, #334): a dataset that is local reads the published files and NOTHING asks a server in its place. If the files cannot answer
 // (`null`, `DataUnavailable`) the reader gets a clear error — `DataNotAvailable`, or the error of the files, which already says why — or, if the caller has one, a neutral value
 // (`whenUnavailable`: «nothing published» is an empty list, not a failure). An access problem (`ScopedAccessError`) is NOT «cannot answer»: the reader must unlock. The API is only read
-// when it is asked for on purpose (`?data=api`, see `switch.ts`: the mode of the development and of the e2e).
-import { dataSourceOf, type Dataset } from './switch'
+// (the API was retired, epic #1199).
+import type { Dataset } from './switch'
 
 /** The published data cannot answer this (down, unknown version, not published, damaged). */
 export class DataUnavailable extends Error {}
@@ -14,8 +14,7 @@ export class DataNotAvailable extends DataUnavailable {
   }
 }
 
-export async function fromSource<T>(dataset: Dataset, local: () => Promise<T | null>, api: () => Promise<T>, whenUnavailable?: () => T): Promise<T> {
-  if (dataSourceOf(dataset) !== 'local') return api()
+export async function fromSource<T>(dataset: Dataset, local: () => Promise<T | null>, whenUnavailable?: () => T): Promise<T> {
   let failure: DataUnavailable = new DataNotAvailable(dataset)
   try {
     const answer = await local()

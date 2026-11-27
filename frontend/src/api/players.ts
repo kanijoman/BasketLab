@@ -1,7 +1,6 @@
 /** Players: tables, quartiles, IN/OUT and the shared player types (issue #201). */
 import { fromSource } from '@/datasource/resolve'
 import { localPlayerQuartiles, localInOut, localPlayerStats } from '@/localdata/source'
-import { get } from './http'
 import type { TeamFilters } from './teams'
 
 // ── Players ───────────────────────────────────────────────────────────────────
@@ -10,29 +9,16 @@ export const getPlayerStats = (collection: string, params?: TeamFilters) =>
   fromSource(
     'player-stats',
     () => localPlayerStats(collection, params ?? {}),
-    () => {
-      const qs = new URLSearchParams()
-      if (params?.venue)  qs.set('venue', params.venue)
-      if (params?.result) qs.set('result', params.result)
-      if (params?.from)   qs.set('from_date', params.from)
-      if (params?.to)     qs.set('to_date', params.to)
-      if (params?.team)   qs.set('team', params.team)
-      const query = qs.toString() ? `?${qs}` : ''
-      return get<PlayerStat[]>(`/players/${encodeURIComponent(collection)}${query}`)
-    },
   )
 
 export const getPlayerQuartiles = (collection: string) =>
-  fromSource('player-stats', () => localPlayerQuartiles(collection), () => get<Record<string, Record<string, number>>>(
-    `/players/${encodeURIComponent(collection)}/quartiles`,
-  ))
+  fromSource('player-stats', () => localPlayerQuartiles(collection))
 
 // With the dataset `inout` on (`?data=local`, issue #678) the analysis was computed when the competition was published (FEB): there at once; FBCYL and unpublished ones, the API.
 export const getInOutAnalysis = (collection: string, playerId: string) =>
   fromSource(
     'inout',
     () => localInOut(collection, playerId),
-    () => get<InOutResult>(`/players/${encodeURIComponent(collection)}/inout/${encodeURIComponent(playerId)}`),
   )
 
 export interface PlayerStat {

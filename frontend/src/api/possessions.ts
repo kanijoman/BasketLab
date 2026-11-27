@@ -1,37 +1,34 @@
 /** Possessions: the table and its CSV downloads (issue #201). */
 import { fromSource } from '@/datasource/resolve'
 import { localPossessionCsv, localPossessionStats } from '@/localdata/source'
-import { BASE, downloadBlob, get } from './http'
 
 // ── Possessions ───────────────────────────────────────────────────────────────
 
 export const getPossessionStats = (collection: string) =>
   fromSource(
     'possessions',
-    () => localPossessionStats(collection),
-    () => get<PossessionStat[]>(`/possessions/${encodeURIComponent(collection)}`),            // the endpoint takes no filter
+    () => localPossessionStats(collection),            // the endpoint takes no filter
   )
 
 /** The BOM Excel needs to read a CSV as UTF-8: once, at the start of the file. */
 const BOM = '﻿'
 
 /** A CSV the page offers as a download: made here from the published text, or the API's file. */
-async function possessionCsv(collection: string, kind: 'possessions' | 'quality', api: string): Promise<Blob> {
+async function possessionCsv(collection: string, kind: 'possessions' | 'quality'): Promise<Blob> {
   return fromSource(
     'possessions',
     async () => {
       const text = await localPossessionCsv(collection, kind)
       return text === null ? null : new Blob([BOM, text], { type: 'text/csv;charset=utf-8' })
     },
-    async () => downloadBlob(await fetch(`${BASE}/possessions/${encodeURIComponent(collection)}/${api}`), 'No se pudo descargar el fichero'),
   )
 }
 
 /** One row per possession of every game of the competition (the file of «Exportar CSV»). */
-export const fetchPossessionsCsv = (collection: string): Promise<Blob> => possessionCsv(collection, 'possessions', 'export/csv')
+export const fetchPossessionsCsv = (collection: string): Promise<Blob> => possessionCsv(collection, 'possessions')
 
 /** PBP against box score per team and game (the file of «Calidad PBP CSV»). */
-export const fetchPossessionQualityCsv = (collection: string): Promise<Blob> => possessionCsv(collection, 'quality', 'quality/csv')
+export const fetchPossessionQualityCsv = (collection: string): Promise<Blob> => possessionCsv(collection, 'quality')
 
 export interface PossessionStat {
   team_name: string

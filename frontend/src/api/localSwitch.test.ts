@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { getCompetitionEvolution, getMultiPlayerStats, getMultiTeamStats, getPlayerStats, getSiblingCollections, getTeamComparison, getTeamStats } from './client'
-import { DATA_FLAG_KEY, resetLocalData } from '@/localdata/source'
+import { resetLocalData } from '@/localdata/source'
 import teams from '../../../tests/local_vectors/team_stats_feb.json'
 import players from '../../../tests/local_vectors/players_feb.json'
 import { DataUnavailable } from '@/datasource/resolve'
@@ -17,7 +17,7 @@ let calls: string[]
 const realFetch = globalThis.fetch
 
 beforeEach(() => {
-  localStorage.clear(); localStorage.setItem('basketlab.data', 'api'); resetLocalData(); calls = []
+  localStorage.clear(); resetLocalData(); calls = []
   globalThis.fetch = vi.fn(async (url: string) => {
     calls.push(String(url))
     const file = String(url).split('/local-data/')[1]
@@ -32,14 +32,7 @@ beforeEach(() => {
 afterEach(() => { globalThis.fetch = realFetch })
 
 describe('data source switch in the API client', () => {
-  it('off: the API answers and no local file is read', async () => {
-    expect((await getTeamStats(FEB)).team_stats[0].team_name).toBe('DE LA API')
-    expect((await getPlayerStats(FEB))[0].player_name).toBe('DE LA API')
-    expect(calls.some(c => c.includes('local-data'))).toBe(false)
-  })
-
   it('on: both tables are computed from the files and the API is not asked', async () => {
-    localStorage.setItem(DATA_FLAG_KEY, 'local')
     const teamTable = await getTeamStats(FEB, { venue: 'home' })
     expect(teamTable.team_stats.reduce((n, t) => n + t.total_games, 0)).toBe(12)
     expect((await getPlayerStats(FEB, { team: 'BRAVO' })).every(p => p.team_name === 'BRAVO')).toBe(true)
@@ -47,19 +40,13 @@ describe('data source switch in the API client', () => {
   })
 
   it('on but the competition is not exported: a clear error, not the API', async () => {
-    localStorage.setItem(DATA_FLAG_KEY, 'local')
     await expect(getTeamStats('L_F_-2_2025_2026_Otra')).rejects.toBeInstanceOf(DataUnavailable)
   })
 })
 
 // Issue #670: Comparativas is its own dataset (`team-comparison`): on, the comparison is computed from the rows; off, the API answers.
 describe('data source switch: Comparativas', () => {
-  it('off: the API answers', async () => {
-    expect((await getTeamComparison(FEB, 'venue')).label_a).toBe('DE LA API')
-  })
-
   it('on: computed from the files, and the API is not asked', async () => {
-    localStorage.setItem(DATA_FLAG_KEY, 'local:team-comparison')
     const comparison = await getTeamComparison(FEB, 'venue')
     expect([comparison.label_a, comparison.label_b]).toEqual(['Local', 'Visitante'])
     expect(comparison.team.map(r => r.team_name)).toEqual(['ALPHA', 'BRAVO', 'CHARLIE', 'DELTA'])
@@ -67,26 +54,14 @@ describe('data source switch: Comparativas', () => {
   })
 
   it('on, but a stretch with no date: the device does not guess and says it cannot answer', async () => {
-    localStorage.setItem(DATA_FLAG_KEY, 'local:team-comparison')
     await expect(getTeamComparison(FEB, 'period')).rejects.toBeInstanceOf(DataUnavailable)
   })
 
-  it('only the dataset turned on reads the files: the tables stay on the API', async () => {
-    localStorage.setItem(DATA_FLAG_KEY, 'local:team-comparison')
-    expect((await getTeamStats(FEB)).team_stats[0].team_name).toBe('DE LA API')
-  })
 })
 
 // Issue #671: Multifase is its own dataset (`multi-phase`): the phases of a competition from the names of the published ones, and their tables merged on the device.
 describe('data source switch: Multifase', () => {
-  it('off: the API answers (phases and both tables)', async () => {
-    expect(await getSiblingCollections(FEB)).toEqual(['DE LA API'])
-    expect((await getMultiTeamStats([FEB]))[0].team_name).toBe('DE LA API')
-    expect((await getMultiPlayerStats([FEB]))[0].player_name).toBe('DE LA API')
-  })
-
   it('on: the phases come from the published names and the tables are merged from the rows, with no call to the API', async () => {
-    localStorage.setItem(DATA_FLAG_KEY, 'local:multi-phase')
     expect(await getSiblingCollections(FEB)).toEqual([FEB])
     const teams = await getMultiTeamStats([FEB])
     expect(new Set(teams.map(t => t.team_name))).toEqual(new Set(['ALPHA', 'BRAVO', 'CHARLIE', 'DELTA']))
@@ -96,24 +71,14 @@ describe('data source switch: Multifase', () => {
   })
 
   it('on, but one of the collections is not published: no answer (a half merge would be wrong)', async () => {
-    localStorage.setItem(DATA_FLAG_KEY, 'local:multi-phase')
     await expect(getMultiTeamStats([FEB, 'L_F_-2_2025_2026_Otra'])).rejects.toBeInstanceOf(DataUnavailable)
   })
 
-  it('only that dataset reads the files', async () => {
-    localStorage.setItem(DATA_FLAG_KEY, 'local:multi-phase')
-    expect((await getTeamStats(FEB)).team_stats[0].team_name).toBe('DE LA API')
-  })
 })
 
 // Issue #672: Evolución is its own dataset (`evolution`): the competition-wide averages by game number are computed from the rows.
 describe('data source switch: Evolución', () => {
-  it('off: the API answers', async () => {
-    expect((await getCompetitionEvolution(FEB, 'points', 3))[0].competition_rolling).toBe(-1)
-  })
-
   it('on: computed from the files, and the API is not asked', async () => {
-    localStorage.setItem(DATA_FLAG_KEY, 'local:evolution')
     const points = await getCompetitionEvolution(FEB, 'points', 3)
     expect(points).toHaveLength(6)
     expect(points[0].game_number).toBe(1)
@@ -122,18 +87,15 @@ describe('data source switch: Evolución', () => {
   })
 
   it('on: a stat the API does not know is read as points, as the router does', async () => {
-    localStorage.setItem(DATA_FLAG_KEY, 'local:evolution')
     expect(await getCompetitionEvolution(FEB, 'nonsense', 3)).toEqual(await getCompetitionEvolution(FEB, 'points', 3))
   })
 
   it('on: a window the API refuses (2 to 15 games) is not answered either: a clear error', async () => {
-    localStorage.setItem(DATA_FLAG_KEY, 'local:evolution')
     await expect(getCompetitionEvolution(FEB, 'points', 1)).rejects.toBeInstanceOf(DataUnavailable)
     await expect(getCompetitionEvolution(FEB, 'points', 16)).rejects.toBeInstanceOf(DataUnavailable)
   })
 
   it('on, but the competition is not published: a clear error, not the API', async () => {
-    localStorage.setItem(DATA_FLAG_KEY, 'local:evolution')
     await expect(getCompetitionEvolution('L_F_-2_2025_2026_Otra', 'points', 3)).rejects.toBeInstanceOf(DataUnavailable)
   })
 })

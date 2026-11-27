@@ -1,5 +1,5 @@
 // The local data source (issue #327, step 2): the tables of the web computed from the files `run_local_export.py` writes, instead of the API.
-// Which datasets read it is the switch of `datasource/switch` (`?data=local`, `?data=local:team-stats,…`, `?data=api`). Every function answers `null` when it cannot (switch off,
+// The web reads it and nothing else (the API was retired, epic #1199). Every function answers `null` when it cannot (switch off,
 // competition not exported, no player rows, file missing or of another format) so that `fromSource` says there is no answer (it never asks the API in its place, #334).
 import type { AssistConnections } from '@/api/assistConnections'
 import type { InOutResult, LineupRow, PlayerStat } from '@/api/client'
@@ -11,7 +11,6 @@ import { lastMatchOf, type LastMatch } from './lastMatch'
 import type { Competition } from './competition'
 import { competitionEvolution, EVOLUTION_STATS, teamEvolution } from './evolution'
 import type { CVMap, CollectionInfo, RivalAdjustedResult, ComparisonKind, EvolutionPoint, CompetitionEvolutionPoint, TeamComparison, TeamStat } from '@/api/client'
-import { dataSourceOf } from '@/datasource/switch'
 import { lineupAnalysis, type LineupQuery, type Lineups } from './lineups'
 import { playerQuartiles, type PlayerQuartiles } from './playerQuartiles'
 import { mergeByKey, siblingCollections } from './multiPhase'
@@ -22,8 +21,6 @@ import type { MatchAnalysis, MatchSummary, PossessionStat, RotationResult, TeamC
 import { collectionList } from './collections'
 import { loadWebCollectionInfos, loadWebAssistConnections, loadWebCollections, loadWebConsistency, loadWebDerived, loadWebInOut, loadWebMembers, loadWebLineups, loadWebMatches, loadWebPossessionCsv, loadWebPossessions, loadWebRivalAdjusted, loadWebRotations, loadWebRows, loadWebShots, WebDataUnavailable, type PublishedAssistConnections, type PublishedConsistency, type PublishedInOut, type PublishedMatches, type PublishedRivalAdjusted, type PublishedPossessionCsv, type PublishedPossessions, type Rotations } from '@/webdata/client'
 
-// the switch lives in `datasource/switch` (issue #329); these two are what this module's callers and tests have always imported from here
-export { DATA_FLAG_KEY, localDataEnabled } from '@/datasource/switch'
 const FORMAT = 1
 
 interface IndexEntry { name: string; file: string; league: 'feb' | 'fbcyl'; games: number; bytes: number }
@@ -125,7 +122,6 @@ export function loadCompetition(name: string): Promise<Competition | null> {
 
 /** `{team_stats, opponent_stats}` of the competition with the filters, or `null` to use the API. */
 export async function localTeamStats(collection: string, filters: TeamTableFilter): Promise<TeamTables | null> {
-  if (dataSourceOf('team-stats') !== 'local') return null
   const data = await loadCompetition(collection)
   if (!data) return null
   const tables = aggregateTeams(data.team_rows, filters)
@@ -140,7 +136,6 @@ export async function localLastMatch(collection: string, teamName: string): Prom
 
 /** The player table of the competition with the filters (each league has its own table), or `null` to use the API (a competition exported without player rows). */
 export async function localPlayerStats(collection: string, filters: PlayerTableFilter): Promise<PlayerStat[] | null> {
-  if (dataSourceOf('player-stats') !== 'local') return null
   const data = await loadCompetition(collection)
   const table = data ? playerTable(data, filters) : null
   return table ? listed(collection, table, p => p.team_id) : null
@@ -155,7 +150,6 @@ export async function localPlayerQuartiles(collection: string): Promise<PlayerQu
 /** One team's game-by-game series (issue #708), as `GET /teams/{collection}/evolution/{team}`; `null` to use the API (the dataset is off, the competition is not published, or the window
  *  is one the API refuses: 2 to 15 games). */
 export async function localTeamEvolution(collection: string, teamId: string, stat: string, window: number): Promise<EvolutionPoint[] | null> {
-  if (dataSourceOf('evolution') !== 'local') return null
   if (!Number.isInteger(window) || window < 2 || window > 15) return null
   const data = await loadCompetition(collection)
   return data ? teamEvolution(data.team_rows, teamId, stat, window) : null
@@ -172,7 +166,6 @@ function playerTable(data: Competition, filters: PlayerTableFilter): PlayerStat[
 /** The comparison of the teams (home vs away, won vs lost, a stretch vs the rest, issue #670), or `null` to use the API (the dataset is off, the competition is not
  *  published, or the comparison cannot be answered here: a stretch with no date). */
 export async function localTeamComparison(collection: string, by: ComparisonKind, range?: { from?: string; to?: string }): Promise<TeamComparison | null> {
-  if (dataSourceOf('team-comparison') !== 'local') return null
   const data = await loadCompetition(collection)
   return data ? compareTeams(data.team_rows, by, range) : null
 }
@@ -185,7 +178,6 @@ async function allCompetitions(collections: string[]): Promise<Competition[] | n
 
 /** Multifase (issue #671): one merged row per team over the phases, as `GET /multi/team-stats`, or `null` to use the API. */
 export async function localMultiTeamStats(collections: string[]): Promise<TeamStat[] | null> {
-  if (dataSourceOf('multi-phase') !== 'local') return null
   const all = await allCompetitions(collections)
   if (!all) return null
   const tables = Object.fromEntries(all.map((data, i) => [collections[i], aggregateTeams(data.team_rows, {}).team_stats as unknown as Array<Record<string, unknown>>]))
@@ -194,7 +186,6 @@ export async function localMultiTeamStats(collections: string[]): Promise<TeamSt
 
 /** One merged row per player over the phases, as `GET /multi/player-stats`, or `null` to use the API. */
 export async function localMultiPlayerStats(collections: string[]): Promise<PlayerStat[] | null> {
-  if (dataSourceOf('multi-phase') !== 'local') return null
   const all = await allCompetitions(collections)
   const tables = all?.map(data => playerTable(data, {}))
   if (!all || !tables || tables.some(t => t === null)) return null
@@ -203,7 +194,6 @@ export async function localMultiPlayerStats(collections: string[]): Promise<Play
 
 /** The competitions of the publication, as `GET /collections/list` lists them (issue #705); `null` to use the API (the dataset is off or nothing is published). */
 export async function localCollectionList(): Promise<CollectionInfo[] | null> {
-  if (dataSourceOf('collections') !== 'local') return null
   try {
     return collectionList(await loadWebCollectionInfos())
   } catch (error) {
@@ -214,7 +204,6 @@ export async function localCollectionList(): Promise<CollectionInfo[] | null> {
 
 /** The team names of a competition, as `GET /collections/?collection=` lists them (`distinct`, sorted: by code unit); `null` to use the API (the dataset is off or the competition is not published). */
 export async function localTeamNames(collection: string): Promise<string[] | null> {
-  if (dataSourceOf('team-stats') !== 'local') return null
   const data = await loadCompetition(collection)
   if (!data) return null
   return [...new Set((await listed(collection, data.team_rows, row => row.team_id)).map(row => row.team_name))].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
@@ -222,7 +211,6 @@ export async function localTeamNames(collection: string): Promise<string[] | nul
 
 /** The phases of a competition among the published ones (the names of the manifest; the manual export in development), or `null` to use the API. */
 export async function localSiblingCollections(collection: string): Promise<string[] | null> {
-  if (dataSourceOf('multi-phase') !== 'local') return null
   let names: string[] | null = null
   try {
     names = await loadWebCollections()
@@ -236,7 +224,6 @@ export async function localSiblingCollections(collection: string): Promise<strin
 /** Evolución (issue #672): the competition-wide rolling and cumulative averages by game number, as `GET /teams/{collection}/competition-evolution`, or `null` to use the
  *  API (the dataset is off, the competition is not published, or the window is one the API refuses: 2 to 15 games). */
 export async function localCompetitionEvolution(collection: string, stat: string, window: number): Promise<CompetitionEvolutionPoint[] | null> {
-  if (dataSourceOf('evolution') !== 'local') return null
   if (!Number.isInteger(window) || window < 2 || window > 15) return null
   const data = await loadCompetition(collection)
   const known = (EVOLUTION_STATS as readonly string[]).includes(stat)
@@ -259,7 +246,6 @@ function loadDerived(name: string): Promise<Derived | null> {
 
 /** One of the pbp tables of the competition (issue #676), or `null` to use the API (the dataset is off or the competition has no published `DERIVED`). */
 async function pbpTable<T>(collection: string, table: (derived: Derived) => T): Promise<T | null> {
-  if (dataSourceOf('pbp') !== 'local') return null
   const derived = await loadDerived(collection)
   return derived ? table(derived) : null
 }
@@ -286,14 +272,12 @@ function loadOnce<T extends { format: number }>(cache: Map<string, Promise<T | n
 
 /** Tiros (issue #685): the zones of a team, a player or the league, with their rating against the league, as `GET /shots/{collection}`; `null` to use the API. */
 export async function localShotZones(collection: string, params: ShotFilter & { compare?: 'league' }): Promise<ShotZoneData[] | null> {
-  if (dataSourceOf('shots') !== 'local') return null
   const shots = await loadOnce(shotLoads, collection, loadWebShots)
   return shots ? shotZones(shots, params) : null
 }
 
 /** The raw shots, as `GET /shots/{collection}/raw`; `null` to use the API. */
 export async function localShotRaw(collection: string, params: ShotFilter & { limit?: number }): Promise<ShotRawData[] | null> {
-  if (dataSourceOf('shots') !== 'local') return null
   const shots = await loadOnce(shotLoads, collection, loadWebShots)
   return shots ? shotRaw(shots, params) : null
 }
@@ -301,7 +285,6 @@ export async function localShotRaw(collection: string, params: ShotFilter & { li
 /** Rotaciones (issue #684): the analysis of a team as the endpoint answers it, computed when the competition was published; `null` to use the API (it is not published, or the
  *  team is not in it). */
 export async function localRotation(collection: string, teamId: string): Promise<RotationResult | null> {
-  if (dataSourceOf('rotations') !== 'local') return null
   const rotations = await loadOnce(rotationLoads, collection, loadWebRotations)
   return rotations?.teams.find(team => team.team_id === String(teamId))?.analysis ?? null
 }
@@ -309,7 +292,6 @@ export async function localRotation(collection: string, teamId: string): Promise
 /** Conexiones (issue #773): the assist connections of a team as `GET /assist-connections/{collection}/{team_id}` answers them, computed when the competition was published; `null` to
  *  use the API (it is not published, or the team is not in it). */
 export async function localAssistConnections(collection: string, teamId: string): Promise<AssistConnections | null> {
-  if (dataSourceOf('assist-connections') !== 'local') return null
   const published = await loadOnce(assistLoads, collection, loadWebAssistConnections)
   return published?.teams.find(team => team.team_id === String(teamId))?.analysis ?? null
 }
@@ -317,7 +299,6 @@ export async function localAssistConnections(collection: string, teamId: string)
 /** Combinaciones (issue #686): the table of a team as `GET /lineups/{collection}/{team_id}` answers it, merged on the device from the per-game counters of the publication; `null`
  *  to use the API (it is not published, or the team is not in it). */
 export async function localLineups(collection: string, teamId: string, query: LineupQuery): Promise<LineupRow[] | null> {
-  if (dataSourceOf('lineups') !== 'local') return null
   const published = await loadOnce(lineupLoads, collection, loadWebLineups)
   return published ? lineupAnalysis(published, teamId, query) : null
 }
@@ -325,56 +306,48 @@ export async function localLineups(collection: string, teamId: string, query: Li
 /** IN/OUT (issue #678): the analysis of a player as `GET /players/{collection}/inout/{player_id}` answers it, computed when the competition was published; `null` to use the API (it is
  *  not published, FBCYL, or the player is not in it). */
 export async function localInOut(collection: string, playerId: string): Promise<InOutResult | null> {
-  if (dataSourceOf('inout') !== 'local') return null
   const published = await loadOnce(inOutLoads, collection, loadWebInOut)
   return (published?.players.find(p => p.player_id === String(playerId))?.analysis as InOutResult | undefined) ?? null
 }
 
 /** The consistency of the players (issue #709), as `GET /players/{collection}/consistency` answers it, computed when the competition was published; `null` to use the API. */
 export async function localPlayerConsistency(collection: string): Promise<CVMap | null> {
-  if (dataSourceOf('player-consistency') !== 'local') return null
   const published = await loadOnce(consistencyLoads, collection, loadWebConsistency)
   return published ? (published.players as CVMap) : null
 }
 
 /** The rival-adjusted figures of the teams (issue #710), as `GET /teams/{collection}/rival-adjusted` answers them, computed when the competition was published; `null` to use the API. */
 export async function localRivalAdjusted(collection: string): Promise<RivalAdjustedResult | null> {
-  if (dataSourceOf('rival-adjusted') !== 'local') return null
   const published = await loadOnce(rivalAdjustedLoads, collection, loadWebRivalAdjusted)
   return published ? (published.teams as unknown as RivalAdjustedResult) : null
 }
 
 /** Partidos (issue #677): the list of the matches of a competition, as `GET /matches/{collection}`; `null` to use the API. */
 export async function localMatchList(collection: string): Promise<MatchSummary[] | null> {
-  if (dataSourceOf('matches') !== 'local') return null
   const published = await loadOnce(matchLoads, collection, loadWebMatches)
   return published ? published.matches.map(({ analysis: _analysis, ...summary }) => summary) : null
 }
 
 /** The analysis of a match, as `GET /matches/{collection}/{id}`; `null` to use the API (it is not published, or the match is not in the publication). */
 export async function localMatchAnalysis(collection: string, matchId: string | number): Promise<MatchAnalysis | null> {
-  if (dataSourceOf('matches') !== 'local') return null
   const published = await loadOnce(matchLoads, collection, loadWebMatches)
   return published?.matches.find(match => String(match.match_id) === String(matchId))?.analysis ?? null
 }
 
 /** Posesiones (issue #679): the table of the page, as `GET /possessions/{collection}`; `null` to use the API. */
 export async function localPossessionStats(collection: string): Promise<PossessionStat[] | null> {
-  if (dataSourceOf('possessions') !== 'local') return null
   const table = (await loadOnce(possessionLoads, collection, loadWebPossessions))?.table
   return table ? listed(collection, table, t => t.team_id ?? t.team_name) : null
 }
 
 /** The consistency of the teams, as `GET /teams/{collection}/consistency`, from the same published file as the table; `null` to use the API. */
 export async function localTeamConsistency(collection: string): Promise<TeamConsistencyResponse | null> {
-  if (dataSourceOf('possessions') !== 'local') return null
   return (await loadOnce(possessionLoads, collection, loadWebPossessions))?.consistency ?? null
 }
 
 /** The text of the CSV the page offers (`possessions`: one row per possession; `quality`: PBP against the box score), or `null` to use the API. The per-possession file is the
  *  heavy one and is read only here, when its button is pressed. */
 export async function localPossessionCsv(collection: string, kind: 'possessions' | 'quality'): Promise<string | null> {
-  if (dataSourceOf('possessions') !== 'local') return null
   if (kind === 'quality') return (await loadOnce(possessionLoads, collection, loadWebPossessions))?.quality_csv ?? null
   return (await loadOnce(possessionCsvLoads, collection, loadWebPossessionCsv))?.csv ?? null
 }

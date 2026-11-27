@@ -20,7 +20,6 @@ function hub() {
 }
 
 beforeEach(() => {
-  localStorage.setItem('basketlab.data', 'local')
   published.publishedSectionsOf.mockReset().mockResolvedValue(new Set(BASE_SECTIONS))
 })
 afterEach(() => vi.restoreAllMocks())

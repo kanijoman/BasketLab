@@ -2,7 +2,6 @@
 import { fromSource } from '@/datasource/resolve'
 import { localCollectionList, localTeamNames } from '@/localdata/source'
 import { loadReportTeams } from '@/webdata/client'
-import { get } from './http'
 
 // ── Collections ──────────────────────────────────────────────────────────────
 
@@ -13,11 +12,11 @@ export interface TeamEntry {
 }
 
 export const getTeamsInCollection = (collection: string) =>
-  fromSource('team-stats', () => localTeamNames(collection), () => get<string[]>(`/collections/?collection=${encodeURIComponent(collection)}`))
+  fromSource('team-stats', () => localTeamNames(collection))
 
-/** The {id, name} of the teams of a competition: from the index of its reports in the publication, or from the API in development (`?data=api`). */
+/** The {id, name} of the teams of a competition: from the index of its reports in the publication. */
 export const getLiveTeamNames = (collection: string) =>
-  fromSource('report-teams', () => loadReportTeams(collection), () => get<TeamEntry[]>(`/teams/${encodeURIComponent(collection)}/teams`))
+  fromSource('report-teams', () => loadReportTeams(collection))
 
 // ── Collections management ────────────────────────────────────────────────────
 
@@ -38,4 +37,4 @@ export interface CollectionInfo {
 }
 
 export const getCollectionList = () =>
-  fromSource('collections', () => localCollectionList(), () => get<CollectionInfo[]>('/collections/list'))
+  fromSource('collections', () => localCollectionList())

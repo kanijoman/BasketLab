@@ -1,7 +1,6 @@
 /** Teams: tables, comparison, consistency and evolution (issue #201). */
 import { fromSource } from '@/datasource/resolve'
 import { localPlayerConsistency, localRivalAdjusted, localTeamEvolution, localCompetitionEvolution, localTeamConsistency, localTeamComparison, localTeamStats } from '@/localdata/source'
-import { get } from './http'
 
 // ── Teams ─────────────────────────────────────────────────────────────────────
 
@@ -13,21 +12,11 @@ export interface TeamFilters {
   team?: string
 }
 
-function buildTeamQs(params?: TeamFilters): string {
-  const qs = new URLSearchParams()
-  if (params?.venue)  qs.set('venue', params.venue)
-  if (params?.result) qs.set('result', params.result)
-  if (params?.from)   qs.set('from_date', params.from)
-  if (params?.to)     qs.set('to_date', params.to)
-  return qs.toString() ? `?${qs}` : ''
-}
-
 // With the dataset `team-stats` on (`?data=local`, issues #327, #329) the tables are computed from the exported files; if they cannot answer, a clear error (`DataNotAvailable`, #334), never the API.
 export const getTeamStats = (collection: string, params?: TeamFilters) =>
   fromSource(
     'team-stats',
     () => localTeamStats(collection, params ?? {}),
-    () => get<{ team_stats: TeamStat[]; opponent_stats: TeamStat[] }>(`/teams/${encodeURIComponent(collection)}${buildTeamQs(params)}`),
   )
 
 /** Comparative reports of the teams (issue #607): home vs away, won vs lost, a stretch of dates vs the rest of the season. */
@@ -56,12 +45,6 @@ export const getTeamComparison = (collection: string, by: ComparisonKind, range?
   fromSource(
     'team-comparison',
     () => localTeamComparison(collection, by, range),
-    () => {
-      const qs = new URLSearchParams({ by })
-      if (range?.from) qs.set('from_date', range.from)
-      if (range?.to)   qs.set('to_date', range.to)
-      return get<TeamComparison>(`/teams/${encodeURIComponent(collection)}/compare?${qs}`)
-    },
   )
 
 /** Per-team intra-game consistency: {team_name: {stat_key: {mean, std, cv, n}}} */
@@ -75,15 +58,12 @@ export const getTeamConsistency = (collection: string) =>
   fromSource(
     'possessions',
     () => localTeamConsistency(collection),
-    () => get<TeamConsistencyResponse>(`/teams/${encodeURIComponent(collection)}/consistency`),
   )
 
 /** Per-player intra-game consistency: {player_id: {stat_key: CVEntry}} */
 export type ConsistencyMap = CVMap   // alias kept for player stats page
 export const getPlayerConsistency = (collection: string) =>
-  fromSource('player-consistency', () => localPlayerConsistency(collection), () => get<ConsistencyMap>(
-    `/players/${encodeURIComponent(collection)}/consistency`,
-  ))
+  fromSource('player-consistency', () => localPlayerConsistency(collection))
 
 export const getTeamEvolution = (
   collection: string,
@@ -91,9 +71,7 @@ export const getTeamEvolution = (
   stat: string,
   window = 5,
 ) =>
-  fromSource('evolution', () => localTeamEvolution(collection, teamId, stat, window), () => get<EvolutionPoint[]>(
-    `/teams/${encodeURIComponent(collection)}/evolution/${encodeURIComponent(teamId)}?stat=${encodeURIComponent(stat)}&window=${window}`,
-  ))
+  fromSource('evolution', () => localTeamEvolution(collection, teamId, stat, window))
 
 export const getCompetitionEvolution = (
   collection: string,
@@ -103,9 +81,6 @@ export const getCompetitionEvolution = (
   fromSource(
     'evolution',
     () => localCompetitionEvolution(collection, stat, window),
-    () => get<CompetitionEvolutionPoint[]>(
-      `/teams/${encodeURIComponent(collection)}/competition-evolution?stat=${encodeURIComponent(stat)}&window=${window}`,
-    ),
   )
 
 export interface TeamStat {
@@ -182,6 +157,4 @@ export interface RivalAdjEntry {
 export type RivalAdjustedResult = Record<string, Record<string, RivalAdjEntry>>
 
 export const getRivalAdjusted = (collection: string) =>
-  fromSource('rival-adjusted', () => localRivalAdjusted(collection), () => get<RivalAdjustedResult>(
-    `/teams/${encodeURIComponent(collection)}/rival-adjusted`,
-  ))
+  fromSource('rival-adjusted', () => localRivalAdjusted(collection))

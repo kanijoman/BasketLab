@@ -46,7 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const login = async (_email: string, _password: string): Promise<void> => {
-    // TODO: implement real auth — POST /api/v1/auth/login → JWT → httpOnly cookie
+    // TODO: implement real auth (the model of accounts is #591/#153)
     console.warn('[AuthContext] login() stub called — no-op in local mode')
   }
 

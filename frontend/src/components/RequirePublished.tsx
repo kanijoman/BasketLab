@@ -5,12 +5,11 @@ import { Link, useParams } from 'react-router-dom'
 import PageHeader from '@/components/ui/PageHeader'
 import type { PageRequirement } from '@/lib/nav'
 import { isOffered, usePublishedSections } from '@/lib/useVisibleNav'
-import { dataSourceOf } from '@/datasource/switch'
 
 export default function RequirePublished({ requires, children }: { requires: PageRequirement; children: ReactNode }) {
   const { collection } = useParams<{ collection?: string }>()
-  const sections = usePublishedSections(collection, dataSourceOf(requires.dataset) === 'local')
-  if (dataSourceOf(requires.dataset) === 'local' && sections === null) return null          // still finding out: neither the page nor the notice
+  const sections = usePublishedSections(collection, true)
+  if (sections === null) return null          // still finding out: neither the page nor the notice
   if (isOffered(requires, sections)) return <>{children}</>
   return (
     <div className="space-y-3">

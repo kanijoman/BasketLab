@@ -142,7 +142,6 @@ export default function RotacionesPage() {
     streamRotacionesAnalysis(
       collection.name,
       team.id,
-      team.name,
       (pct) => { if (!handle.cancelled) setProgress(pct) },
     )
       .then(data => {

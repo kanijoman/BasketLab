@@ -1,13 +1,10 @@
 /**
- * BasketLab API client — v1
+ * BasketLab data layer: what the pages read, by the published files
  *
- * All requests target /api/v1/ (versioned for future auth middleware).
- * In development the Vite proxy forwards /api/* → localhost:8000.
- * In production set VITE_API_BASE to the FastAPI server URL.
+ * The web reads the published files (`localdata`, `webdata`) and nothing else: the API was retired (epic #1199).
  *
  * Split by domain (issue #201): every name that pages import is still exported from here, so no page changes.
  */
-export { API_BASE } from './http'
 export * from './collections'
 export * from './teams'
 export * from './players'

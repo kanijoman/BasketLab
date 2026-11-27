@@ -3,18 +3,14 @@
  * Genera el informe de scouting (PDF) de CUALQUIER equipo de la competición a partir de sus partidos, evaluados con el motor
  * del directo, y lo muestra en pantalla antes de descargarlo. Trabajo previo semanal, solo en la web y solo FEB por ahora.
  */
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Download, FileSearch } from 'lucide-react'
 
 import { useCollection } from '@/context/CollectionContext'
 import { getLiveTeamNames, type TeamEntry } from '@/api/client'
-import {
-  downloadScoutingPdf, getOwnComparison, getPublishedScouting, getScoutingProgress, getScoutingReport, getScoutingScopes, startScouting,
-  type ScoutingProgress, type ScoutingReport, type ScoutingScope,
-} from '@/api/scoutingRival'
+import { downloadScoutingPdf, getOwnComparison, getPublishedScouting, getScoutingScopes, type ScoutingProgress, type ScoutingReport, type ScoutingScope } from '@/api/scoutingRival'
 import { ScopedAccessError } from '@live-package/crypto'
-import { dataSourceOf } from '@/datasource/switch'
 import AccessPanel from '@/components/AccessPanel'
 import PageTransition from '@/components/ui/PageTransition'
 import { saveBlob } from '@/lib/download'
@@ -162,7 +158,6 @@ export default function ScoutingRivalPage() {
   const [scope, setScope] = useState<ScoutingScope>('liga')
   const [scopesOf, setScopesOf] = useState('')                          // the rival the scopes above belong to: until it is the chosen one, nothing is known yet
   const [downloading, setDownloading] = useState(false)
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const { data: teams = [] } = useQuery<TeamEntry[]>({
     queryKey: ['team-list', col],
@@ -170,8 +165,6 @@ export default function ScoutingRivalPage() {
     enabled: Boolean(col),
     staleTime: 10 * 60_000,
   })
-
-  useEffect(() => () => { if (timer.current) clearTimeout(timer.current) }, [])
 
   // What is published for the rival (issue #638): Liga, Copa or both. Without it (dataset off, nothing published, no cup games) the page works as always.
   useEffect(() => {
@@ -186,24 +179,6 @@ export default function ScoutingRivalPage() {
   const sameTeam = rival !== '' && rival === own
   const ready = Boolean(rival) && !sameTeam && scopesOf === rival                // it waits to know whether the scouting is published (instant when it is off)
   const running = phase.kind === 'running'
-
-  async function poll(jobId: string) {
-    try {
-      const progress = await getScoutingProgress(jobId)
-      if (progress.status === 'error') {
-        setPhase({ kind: 'error', message: progress.error ?? 'Error desconocido' })
-        return
-      }
-      if (progress.status === 'done') {
-        setPhase({ kind: 'done', jobId, report: await getScoutingReport(jobId) })
-        return
-      }
-      setPhase({ kind: 'running', progress })
-      timer.current = setTimeout(() => void poll(jobId), 1000)
-    } catch (e) {
-      setPhase({ kind: 'error', message: e instanceof Error ? e.message : String(e) })
-    }
-  }
 
   // The published scouting is the rival's; the matchup (it depends on a pair of teams) is computed on the device from the season rows of the two teams (issue #751) and added to it.
   const published = scopes.length > 0
@@ -220,12 +195,7 @@ export default function ScoutingRivalPage() {
           return
         }
       }
-      if (dataSourceOf('scouting') === 'local') {                    // the files are the source: nothing is generated on a server (#334)
-        setPhase({ kind: 'error', message: 'El scouting de este equipo todavía no está publicado. Prueba con otro equipo o vuelve más tarde.' })
-        return
-      }
-      const { job_id } = await startScouting({ collection: col, team_id: rival, ...(own ? { own_team_id: own } : {}) })
-      void poll(job_id)
+      setPhase({ kind: 'error', message: 'El scouting de este equipo todavía no está publicado. Prueba con otro equipo o vuelve más tarde.' })        // the files are the source: nothing is generated on a server
     } catch (e) {
       if (e instanceof ScopedAccessError) setPhase({ kind: 'locked' })
       else setPhase({ kind: 'error', message: e instanceof Error ? e.message : String(e) })

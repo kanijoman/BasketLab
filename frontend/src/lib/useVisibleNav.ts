@@ -1,7 +1,6 @@
 /** The pages a competition offers (issue #780): the ones that need a section of `web-data` only appear once the publication has it for that competition.
  *  A page is deployed with the web, its data a while later (the publication takes up to an hour): until then it is hidden, not «coming soon». */
 import { useEffect, useState } from 'react'
-import { dataSourceOf } from '@/datasource/switch'
 import { publishedSectionsOf } from '@/webdata/client'
 import { NAV_GROUPS, type NavGroup, type PageRequirement } from './nav'
 
@@ -17,15 +16,15 @@ export function usePublishedSections(collection: string | undefined, needed: boo
   return found && found.collection === collection ? found.sections : null
 }
 
-/** Whether a page with this requirement is offered: always with the API as its source (development), else only when the sections read so far include it. */
+/** Whether a page with this requirement is offered: only when the sections read so far include it. */
 export function isOffered(requires: PageRequirement | undefined, sections: Set<string> | null): boolean {
-  if (!requires || dataSourceOf(requires.dataset) !== 'local') return true
+  if (!requires) return true
   return sections !== null && sections.has(requires.section)
 }
 
 const NEEDS_PUBLICATION = NAV_GROUPS.some(g => g.items.some(i => i.requires))
 
 export function useVisibleNavGroups(collection: string | undefined): NavGroup[] {
-  const sections = usePublishedSections(collection, NEEDS_PUBLICATION && NAV_GROUPS.some(g => g.items.some(i => i.requires && dataSourceOf(i.requires.dataset) === 'local')))
+  const sections = usePublishedSections(collection, NEEDS_PUBLICATION)
   return NAV_GROUPS.map(group => ({ ...group, items: group.items.filter(item => isOffered(item.requires, sections)) })).filter(group => group.items.length > 0)      // a group whose pages are all hidden has no heading alone (#850)
 }

@@ -4,7 +4,6 @@ import { strFromU8, unzipSync } from 'fflate'
 import { downloadWeeklyReport } from './weeklyReport'
 import * as client from './client'
 import * as source from '@/localdata/source'
-import { DATA_FLAG_KEY } from '@/datasource/switch'
 import vectors from '../../../tests/local_vectors/weekly_rows.json'
 
 const raster = vi.hoisted(() => ({ svgToPng: vi.fn() }))
@@ -18,13 +17,12 @@ const [A, B] = [String((TEAMS[0] as { team_name: string }).team_name), String((T
 const PLAYERS = (vectors.leagues[0].players as Record<string, unknown>[]).map((p, i) => ({ ...p, player_id: `p${i}`, team_name: i < 2 ? A : B })) as never[]
 
 beforeEach(() => {
-  localStorage.clear(); localStorage.setItem('basketlab.data', 'api')
+  localStorage.clear()
   raster.svgToPng.mockReset().mockImplementation(async (svg: string) => new TextEncoder().encode(svg))
 })
 afterEach(() => { vi.restoreAllMocks(); vi.useRealTimers() })
 
 function browserData() {
-  localStorage.setItem(DATA_FLAG_KEY, 'local')
   vi.spyOn(client, 'getLiveTeamNames').mockResolvedValue([{ id: '101', name: A }, { id: '102', name: B }])
   vi.spyOn(client, 'getTeamStats').mockResolvedValue({ team_stats: TEAMS, opponent_stats: TEAMS } as never)
   vi.spyOn(client, 'getPlayerStats').mockResolvedValue(PLAYERS)
@@ -67,29 +65,4 @@ describe('the weekly report', () => {
     await expect(downloadWeeklyReport(COLLECTION, '101', '999')).rejects.toThrow(/equipo/i)
   })
 
-  it('off: the server makes it as a job, the progress is told as it goes and the zip is downloaded when it is done', async () => {
-    vi.useFakeTimers()
-    const progress = [{ status: 'running', step: 2, total: 5, message: 'Último partido', error: null }, { status: 'done', step: 5, total: 5, message: 'Listo', error: null }]
-    const answers: Array<() => Response> = [
-      () => Response.json({ job_id: 'j1' }), () => Response.json(progress[0]), () => Response.json(progress[1]), () => new Response('zip'),
-    ]
-    const fetched = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => answers.shift()!())
-    const seen: number[] = []
-    const done = downloadWeeklyReport(COLLECTION, '1', '2', p => seen.push(p.step))
-    await vi.advanceTimersByTimeAsync(5000)
-    expect(await (await done).text()).toBe('zip')
-    expect(seen).toEqual([2, 5])
-    expect(String(fetched.mock.calls[0][0])).toContain(`/reports/${COLLECTION}/weekly-report`)
-    expect(String(fetched.mock.calls[3][0])).toContain('/weekly-report-download/j1')
-  })
-
-  it('off: a job that fails says why', async () => {
-    vi.useFakeTimers()
-    const answers: Array<() => Response> = [() => Response.json({ job_id: 'j2' }), () => Response.json({ status: 'error', step: 1, total: 5, message: '', error: 'Sin datos' })]
-    vi.spyOn(globalThis, 'fetch').mockImplementation(async () => answers.shift()!())
-    const done = downloadWeeklyReport(COLLECTION, '1', '2')
-    const failed = expect(done).rejects.toThrow('Sin datos')
-    await vi.advanceTimersByTimeAsync(5000)
-    await failed
-  })
 })

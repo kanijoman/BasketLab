@@ -20,7 +20,6 @@ import SourceFreshnessNotice from '@/components/SourceFreshnessNotice'
 import { IconButton } from '@/components/ui/Button'
 import { useMediaQuery } from '@/lib/useMediaQuery'
 import ThemeControl from '@/components/ThemeControl'
-import { apiDatasets } from '@/datasource/switch'
 import BrandLogo from '@/components/BrandLogo'
 import { useCollection, CollectionProvider } from '@/context/CollectionContext'
 
@@ -74,10 +73,6 @@ function Header({ onOpenMenu }: { onOpenMenu?: () => void }) {
       {/* Right side — future: user avatar / auth */}
       <div className="ml-auto flex items-center gap-2">
 
-        {apiDatasets().length > 0 && (
-          <span className="px-1.5 py-0.5 rounded border border-warn/40 bg-warn/10 text-ink text-xs"
-                title={`Se leen de la API, no de los ficheros publicados: ${apiDatasets().join(', ')} (?data=local para volver a los ficheros)`}>Datos de la API</span>
-        )}
         <ThemeControl />
         <a
           href="/docs"

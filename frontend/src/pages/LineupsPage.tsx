@@ -180,7 +180,6 @@ export default function LineupsPage() {
     streamLineupAnalysis(
       collection.name,
       analysisParams.teamId,
-      analysisParams.teamName,
       analysisParams.size,
       analysisParams.stat,
       analysisParams.period,

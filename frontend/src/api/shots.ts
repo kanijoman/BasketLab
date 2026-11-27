@@ -2,7 +2,6 @@
 import type { ZoneRating } from '@/lib/zoneRating'
 import { fromSource } from '@/datasource/resolve'
 import { localShotRaw, localShotZones } from '@/localdata/source'
-import { get } from './http'
 
 // ── Shot charts ───────────────────────────────────────────────────────────────
 
@@ -14,7 +13,7 @@ export const getShotZones = (
   if (params.compare) qs.set('compare', params.compare)
   if (params.team_id) qs.set('team_id', params.team_id)
   if (params.player)  qs.set('player', params.player)
-  return fromSource('shots', () => localShotZones(collection, params), () => get<ShotZoneData[]>(`/shots/${encodeURIComponent(collection)}?${qs}`))
+  return fromSource('shots', () => localShotZones(collection, params))
 }
 
 export const getShotRaw = (
@@ -25,7 +24,7 @@ export const getShotRaw = (
   if (params.team_id) qs.set('team_id', params.team_id)
   if (params.player)  qs.set('player', params.player)
   if (params.limit)   qs.set('limit', String(params.limit))
-  return fromSource('shots', () => localShotRaw(collection, params), () => get<ShotRawData[]>(`/shots/${encodeURIComponent(collection)}/raw?${qs}`))
+  return fromSource('shots', () => localShotRaw(collection, params))
 }
 
 export interface ShotZoneData {

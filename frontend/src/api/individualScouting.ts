@@ -1,6 +1,6 @@
 /** The DOCX of the individual scouting of a team (one page per player, blank notes section): made in the browser with the dataset `scouting` on (issue #717), by the server otherwise. */
 import { ScopedAccessError } from '@live-package/crypto'
-import { API_BASE, getLiveTeamNames, getPlayerStats, getShotRaw, getShotZones, type PlayerStat } from './client'
+import { getLiveTeamNames, getPlayerStats, getShotRaw, getShotZones, type PlayerStat } from './client'
 import { fromSource, DataUnavailable } from '@/datasource/resolve'
 import { loadWebImages, type TeamImages } from '@/webdata/client'
 import type { PlayerCharts } from '@/lib/scoutingDocx'
@@ -78,15 +78,6 @@ async function inBrowser(collection: string, teamId: string, onProgress?: (p: Do
   })
 }
 
-async function onServer(collection: string, teamId: string): Promise<Blob> {
-  const res = await fetch(`${API_BASE}/reports/individual-scouting/docx?${new URLSearchParams({ collection, team_id: teamId })}`)
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ detail: res.statusText }))
-    throw new Error(err.detail ?? 'Error descargando DOCX')
-  }
-  return res.blob()
-}
-
 /** The server gives no progress: only the browser reports it (`onProgress`). */
 export const downloadIndividualScoutingDocx = (collection: string, teamId: string, onProgress?: (p: DocxProgress) => void): Promise<Blob> =>
-  fromSource('scouting', () => inBrowser(collection, teamId, onProgress), () => onServer(collection, teamId))
+  fromSource('scouting', () => inBrowser(collection, teamId, onProgress))

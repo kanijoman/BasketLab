@@ -18,10 +18,7 @@ afterEach(() => {
   try { localStorage.clear() } catch { /* not ours */ }
 })
 
-// Since #334 the default is the published files (see datasource/switch.ts). Most tests describe the API client or a page with its API mocked: they start on the API, and the
-// ones about the local data (or about the default itself) say so with `?data=local` or by clearing this key.
-// A test that calls `vi.unstubAllGlobals()` drops the in-memory storage above, so it is made again (and pinned) before every test.
+// A test that calls `vi.unstubAllGlobals()` drops the in-memory storage above, so it is made again before every test.
 beforeEach(() => {
   vi.stubGlobal('localStorage', new MemoryStorage())
-  try { localStorage.setItem('basketlab.data', 'api') } catch { /* not ours */ }
 })

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ScopedAccessError } from '@live-package/crypto'
-import { DATA_FLAG_KEY, localDataEnabled, localPlayerStats, localTeamNames, localTeamStats, resetLocalData } from './source'
+import { localPlayerStats, localTeamNames, localTeamStats, resetLocalData } from './source'
 import { loadWebMembers, loadWebRows, WebDataUnavailable } from '@/webdata/client'
 import teams from '../../../tests/local_vectors/team_stats_feb.json'
 import players from '../../../tests/local_vectors/players_feb.json'
@@ -30,7 +30,6 @@ function serve(files: Record<string, unknown> = FILES) {
     return name in files ? { ok: true, json: async () => files[name] } : { ok: false, status: 404, json: async () => ({}) }
   }) as unknown as typeof fetch
 }
-const turnOn = () => localStorage.setItem(DATA_FLAG_KEY, 'local')
 
 beforeEach(() => {
   localStorage.clear(); resetLocalData(); window.history.replaceState(null, '', '/')
@@ -40,30 +39,9 @@ beforeEach(() => {
 const realFetch = globalThis.fetch
 afterEach(() => { globalThis.fetch = realFetch })          // not unstubAllGlobals: it would drop the in-memory localStorage of the setup
 
-describe('the switch', () => {
-  it('is on by default (#334), and an API choice fetches nothing', async () => {
-    serve()
-    expect(localDataEnabled()).toBe(true)
-    localStorage.setItem(DATA_FLAG_KEY, 'api')
-    expect(localDataEnabled()).toBe(false)
-    expect(await localTeamStats(FEB, {})).toBeNull()
-    expect(fetched).toEqual([])
-  })
-
-  it('?data=api turns it off and the choice is remembered; ?data=local goes back to the default', () => {
-    window.history.replaceState(null, '', '/x?data=api')
-    expect(localDataEnabled()).toBe(false)
-    window.history.replaceState(null, '', '/y')
-    expect(localDataEnabled()).toBe(false)
-    expect(localStorage.getItem(DATA_FLAG_KEY)).toBe('api')
-    window.history.replaceState(null, '', '/y?data=local')
-    expect(localDataEnabled()).toBe(true)
-  })
-})
-
 describe('local tables', () => {
   it('team tables are the aggregation of the exported rows with the filters', async () => {
-    serve(); turnOn()
+    serve();
     const all = await localTeamStats(FEB, {})
     expect(all?.team_stats.reduce((n, t) => n + t.total_games, 0)).toBe(24)
     const home = await localTeamStats(FEB, { venue: 'home' })
@@ -71,25 +49,25 @@ describe('local tables', () => {
   })
 
   it('player tables come from the player rows, with the team filter', async () => {
-    serve(); turnOn()
+    serve();
     const one = await localPlayerStats(FEB, { team: 'BRAVO' })
     expect(new Set(one?.map(p => p.team_name))).toEqual(new Set(['BRAVO']))
   })
 
   it('the files are fetched once per competition however many tables are asked', async () => {
-    serve(); turnOn()
+    serve();
     await Promise.all([localTeamStats(FEB, {}), localTeamStats(FEB, { venue: 'away' }), localPlayerStats(FEB, {})])
     expect(fetched.filter(n => n === 'feb.json')).toHaveLength(1)
     expect(fetched.filter(n => n === 'index.json')).toHaveLength(1)
   })
 
   it('answers null (use the API) for a competition that is not exported', async () => {
-    serve(); turnOn()
+    serve();
     expect(await localTeamStats('L_F_-2_2025_2026_Nope', {})).toBeNull()
   })
 
   it('the players of FBCYL are summed with the FBCYL table, not the FEB one (#644)', async () => {
-    serve(); turnOn()
+    serve();
     const table = (await localPlayerStats(FBCYL, {})) as unknown as Array<Record<string, number | string>>
     expect(table.length).toBeGreaterThan(0)
     expect(table.every(p => p.player_uuid && p.total_minutes === Number(p.minutes_per_game) * Number(p.games_played))).toBe(true)   // whole minutes, not seconds / 60
@@ -99,20 +77,20 @@ describe('local tables', () => {
   })
 
   it('an FBCYL competition exported before the player rows existed (null) still falls back to the API for its players', async () => {
-    serve({ ...FILES, 'fb.json': { format: 1, collection: FBCYL, league: 'fbcyl', games: 0, team_rows: [], player_rows: null } }); turnOn()
+    serve({ ...FILES, 'fb.json': { format: 1, collection: FBCYL, league: 'fbcyl', games: 0, team_rows: [], player_rows: null } });
     expect(await localPlayerStats(FBCYL, {})).toBeNull()
     expect(await localTeamStats(FBCYL, {})).toEqual({ team_stats: [], opponent_stats: [] })
   })
 
   it('answers null when the files cannot be fetched, and tries again next time (a failed load is not cached)', async () => {
-    serve({}); turnOn()
+    serve({});
     expect(await localTeamStats(FEB, {})).toBeNull()
     serve()
     expect(await localTeamStats(FEB, {})).not.toBeNull()
   })
 
   it('answers null for a file of another format version', async () => {
-    serve({ ...FILES, 'index.json': { ...INDEX, format: 99 } }); turnOn()
+    serve({ ...FILES, 'index.json': { ...INDEX, format: 99 } });
     expect(await localTeamStats(FEB, {})).toBeNull()
   })
 })
@@ -120,7 +98,7 @@ describe('local tables', () => {
 // Issue #673 (P4): the rows of the publication (`rows/` of web-data) are what the tables are computed from; the manual export is the fallback of development.
 describe('the rows of the publication', () => {
   it('are used first: the tables are computed from them and the manual export is not even asked for', async () => {
-    serve(); turnOn()
+    serve();
     vi.mocked(loadWebRows).mockResolvedValue({ format: 1, collection: FEB, league: 'feb', games: 12, team_rows: teams.rows, player_rows: players.rows } as never)
     const all = await localTeamStats(FEB, {})
     expect(all?.team_stats.reduce((n, t) => n + t.total_games, 0)).toBe(24)
@@ -130,7 +108,7 @@ describe('the rows of the publication', () => {
   })
 
   it('a competition that is not published falls back to the manual export, and then to the API (null)', async () => {
-    serve(); turnOn()
+    serve();
     expect((await localTeamStats(FEB, {}))?.team_stats.length).toBeGreaterThan(0)
     resetLocalData()
     serve({})
@@ -138,13 +116,13 @@ describe('the rows of the publication', () => {
   })
 
   it('a reader without the key is told so (the access error goes through), not sent to the API', async () => {
-    serve(); turnOn()
+    serve();
     vi.mocked(loadWebRows).mockRejectedValue(new ScopedAccessError('sin clave'))
     await expect(localTeamStats(FEB, {})).rejects.toBeInstanceOf(ScopedAccessError)
   })
 
   it('rows of another format are not used', async () => {
-    serve({}); turnOn()
+    serve({});
     vi.mocked(loadWebRows).mockResolvedValue({ format: 99, collection: FEB, league: 'feb', games: 1, team_rows: [], player_rows: null } as never)
     expect(await localTeamStats(FEB, {})).toBeNull()
   })
@@ -154,7 +132,7 @@ describe('the rows of the publication', () => {
 // are the conference's (`members`) and the lists show only those; the rows stay, so what a member did against them counts as it did.
 describe('the teams a conference lists (issue #1103)', () => {
   const ROWS = { format: 1, collection: FEB, league: 'feb', games: 12, team_rows: teams.rows, player_rows: players.rows }
-  beforeEach(() => { serve(); turnOn(); vi.mocked(loadWebRows).mockResolvedValue(ROWS as never) })
+  beforeEach(() => { serve(); vi.mocked(loadWebRows).mockResolvedValue(ROWS as never) })
 
   it('the team table lists only the members, with the figures they have with all their games', async () => {
     const all = await localTeamStats(FEB, {})
