@@ -10,14 +10,14 @@ type Row = Record<string, unknown>
 /** Fields that are simple totals (added across phases). */
 const SUM_FIELDS = [
   'games_played', 'games_won', 'games_lost', 'points_scored', 'points_received', 'fg2_made', 'fg2_attempts', 'fg3_made', 'fg3_attempts', 'ft_made', 'ft_attempts',
-  'rebounds_off', 'rebounds_def', 'total_rebounds', 'assists', 'steals', 'turnovers', 'blocks', 'personal_fouls', 'total_possessions', 'total_minutes',
+  'rebounds_off', 'rebounds_def', 'total_rebounds', 'assists', 'steals', 'turnovers', 'blocks', 'personal_fouls', 'total_possessions', 'pace_possessions', 'total_minutes',
   'total_points', 'valoracion',
 ] as const
 
 /** Per-game fields and the (total, games) pair they come from. */
 const PER_GAME: Record<string, [string, string]> = {
   points_per_game: ['points_scored', 'games_played'], points_against_per_game: ['points_received', 'games_played'],
-  possessions_per_game: ['total_possessions', 'games_played'], rebounds_per_game: ['total_rebounds', 'games_played'],
+  possessions_per_game: ['pace_possessions', 'games_played'], rebounds_per_game: ['total_rebounds', 'games_played'],
   assists_per_game: ['assists', 'games_played'], steals_per_game: ['steals', 'games_played'], turnovers_per_game: ['turnovers', 'games_played'],
   blocks_per_game: ['blocks', 'games_played'],
   total_points_per_game: ['total_points', 'games_played'], minutes_per_game: ['total_minutes', 'games_played'], valoracion_per_game: ['valoracion', 'games_played'],

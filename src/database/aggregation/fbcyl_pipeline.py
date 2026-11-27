@@ -275,6 +275,7 @@ class FBCYLPipelineBuilder:
 
                 # Possessions: the exact count stored in DERIVED, else the box estimate (#432)
                 "total_possessions": {"$sum": team_possessions("$teamIndex", "$teams")},
+                "pace_possessions": {"$sum": team_possessions("$teamIndex", "$teams")},          # FBCYL rows are not scaled (#1155): the pace is still per game
                 "opponent_possessions": {"$sum": team_possessions({"$subtract": [1, "$teamIndex"]}, "$opponent_score")},
             }
         })

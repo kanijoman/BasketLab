@@ -4,23 +4,23 @@
    "expected": [
     {
      "advantage": "own",
-     "diff_pct": 99.10756458092624,
+     "diff_pct": 92.46890474902384,
      "group": "Eficiencia",
      "key": "net_rating",
      "label": "Net Rating",
-     "own": 11.488020636928454,
-     "own_text": "11,5",
+     "own": 11.10498616352227,
+     "own_text": "11,1",
      "rival": 5.7697559914953445,
      "rival_text": "5,8"
     },
     {
      "advantage": "rival",
-     "diff_pct": -40.13096982844467,
+     "diff_pct": -41.19632223905445,
      "group": "Juego colectivo",
      "key": "steal_rate",
      "label": "Ratio de robos",
-     "own": 7.380869255516322,
-     "own_text": "7,4 %",
+     "own": 7.24952878062926,
+     "own_text": "7,2 %",
      "rival": 12.328359477957742,
      "rival_text": "12,3 %"
     },
@@ -69,17 +69,6 @@
      "rival_text": "11,5"
     },
     {
-     "advantage": "rival",
-     "diff_pct": 15.027867493174634,
-     "group": "Four Factors",
-     "key": "turnover_rate",
-     "label": "TOV%",
-     "own": 16.870558298323022,
-     "own_text": "16,9 %",
-     "rival": 14.666496620329038,
-     "rival_text": "14,7 %"
-    },
-    {
      "advantage": "own",
      "diff_pct": 14.048696401637573,
      "group": "Four Factors",
@@ -89,6 +78,17 @@
      "own_text": "34,4 %",
      "rival": 30.126582278481013,
      "rival_text": "30,1 %"
+    },
+    {
+     "advantage": "rival",
+     "diff_pct": 12.980979217717323,
+     "group": "Four Factors",
+     "key": "turnover_rate",
+     "label": "TOV%",
+     "own": 16.570351498581164,
+     "own_text": "16,6 %",
+     "rival": 14.666496620329038,
+     "rival_text": "14,7 %"
     },
     {
      "advantage": "own",
@@ -113,15 +113,15 @@
      "rival_text": "14,3"
     },
     {
-     "advantage": "own",
-     "diff_pct": 7.286893270886847,
+     "advantage": "rival",
+     "diff_pct": -7.682647244470451,
      "group": "Juego colectivo",
-     "key": "assist_rate",
-     "label": "Ratio de asistencias",
-     "own": 19.61202402180051,
-     "own_text": "19,6 %",
-     "rival": 18.27998129490286,
-     "rival_text": "18,3 %"
+     "key": "block_rate",
+     "label": "Ratio de tapones",
+     "own": 3.728329087180762,
+     "own_text": "3,7 %",
+     "rival": 4.03860051864133,
+     "rival_text": "4,0 %"
     },
     {
      "advantage": "own",
@@ -135,15 +135,15 @@
      "rival_text": "33,5"
     },
     {
-     "advantage": "rival",
-     "diff_pct": -6.010124061498107,
+     "advantage": "own",
+     "diff_pct": 5.377753436059886,
      "group": "Juego colectivo",
-     "key": "block_rate",
-     "label": "Ratio de tapones",
-     "own": 3.7958756171226797,
-     "own_text": "3,8 %",
-     "rival": 4.03860051864133,
-     "rival_text": "4,0 %"
+     "key": "assist_rate",
+     "label": "Ratio de asistencias",
+     "own": 19.263033617100604,
+     "own_text": "19,3 %",
+     "rival": 18.27998129490286,
+     "rival_text": "18,3 %"
     },
     {
      "advantage": "rival",
@@ -191,14 +191,14 @@
     },
     {
      "advantage": "even",
-     "diff_pct": 4.0182961640677215,
+     "diff_pct": -2.8468022142547755,
      "group": "Eficiencia",
-     "key": "offensive_rating",
-     "label": "Rating ofensivo (ORtg)",
-     "own": 114.08715049240942,
-     "own_text": "114,1",
-     "rival": 109.67988776941715,
-     "rival_text": "109,7"
+     "key": "defensive_rating",
+     "label": "Rating defensivo (DRtg)",
+     "own": 100.95201584563287,
+     "own_text": "101,0",
+     "rival": 103.9101317779218,
+     "rival_text": "103,9"
     },
     {
      "advantage": "even",
@@ -221,6 +221,17 @@
      "own_text": "45,6 %",
      "rival": 44.559585492227974,
      "rival_text": "44,6 %"
+    },
+    {
+     "advantage": "even",
+     "diff_pct": 2.167320087649488,
+     "group": "Eficiencia",
+     "key": "offensive_rating",
+     "label": "Rating ofensivo (ORtg)",
+     "own": 112.05700200915514,
+     "own_text": "112,1",
+     "rival": 109.67988776941715,
+     "rival_text": "109,7"
     },
     {
      "advantage": "even",
@@ -254,17 +265,6 @@
      "own_text": "79,0",
      "rival": 80.16666666666667,
      "rival_text": "80,2"
-    },
-    {
-     "advantage": "even",
-     "diff_pct": -1.2616690018666605,
-     "group": "Eficiencia",
-     "key": "defensive_rating",
-     "label": "Rating defensivo (DRtg)",
-     "own": 102.59912985548097,
-     "own_text": "102,6",
-     "rival": 103.9101317779218,
-     "rival_text": "103,9"
     },
     {
      "advantage": "even",
@@ -304,13 +304,13 @@
    "own": {
     "_id": "101",
     "assist_fg_rate": 45.588235294117645,
-    "assist_rate": 19.61202402180051,
+    "assist_rate": 19.263033617100604,
     "assists": 93,
     "assists_per_game": 15.5,
-    "block_rate": 3.7958756171226797,
+    "block_rate": 3.728329087180762,
     "blocks": 18,
     "blocks_per_game": 3.0,
-    "defensive_rating": 102.59912985548097,
+    "defensive_rating": 100.95201584563287,
     "defensive_rebound_rate": 71.62162162162163,
     "defensive_rebounds_per_game": 26.5,
     "efg_percentage": 58.20512820512821,
@@ -334,13 +334,14 @@
      9007,
      9010
     ],
-    "net_rating": 11.488020636928454,
-    "offensive_rating": 114.08715049240942,
+    "net_rating": 11.10498616352227,
+    "offensive_rating": 112.05700200915514,
     "offensive_rebound_rate": 26.168224299065418,
     "offensive_rebounds_per_game": 9.333333333333334,
-    "opponent_possessions": 461.99222222222227,
+    "opponent_possessions": 469.53,
     "opponent_rebounds_def": 158,
     "opponent_rebounds_off": 63,
+    "pace_possessions": 474.19888888888886,
     "points_against_per_game": 79.0,
     "points_allowed_per_game": 79.0,
     "points_per_game": 90.16666666666667,
@@ -350,17 +351,17 @@
     "rebounds_def": 159,
     "rebounds_off": 56,
     "rebounds_per_game": 35.833333333333336,
-    "steal_rate": 7.380869255516322,
+    "steal_rate": 7.24952878062926,
     "steals": 35,
     "steals_per_game": 5.833333333333333,
     "team_id": "101",
     "team_name": "ALPHA",
     "three_point_rate": 40.51282051282051,
     "total_games": 6,
-    "total_possessions": 474.19888888888886,
+    "total_possessions": 482.78999999999996,
     "total_rebounds": 215,
     "true_shooting": 60.25035637918745,
-    "turnover_rate": 16.870558298323022,
+    "turnover_rate": 16.570351498581164,
     "turnovers": 80,
     "turnovers_per_game": 13.333333333333334
    },
@@ -404,6 +405,7 @@
     "opponent_possessions": 462.9,
     "opponent_rebounds_def": 150,
     "opponent_rebounds_off": 57,
+    "pace_possessions": 470.46000000000004,
     "points_against_per_game": 80.16666666666667,
     "points_allowed_per_game": 80.16666666666667,
     "points_per_game": 86.0,
@@ -432,14 +434,14 @@
    "expected": [
     {
      "advantage": "own",
-     "diff_pct": 67.03126760772466,
+     "diff_pct": 70.05739063894907,
      "group": "Juego colectivo",
      "key": "steal_rate",
      "label": "Ratio de robos",
      "own": 12.328359477957742,
      "own_text": "12,3 %",
-     "rival": 7.380869255516322,
-     "rival_text": "7,4 %"
+     "rival": 7.24952878062926,
+     "rival_text": "7,2 %"
     },
     {
      "advantage": "own",
@@ -454,14 +456,14 @@
     },
     {
      "advantage": "rival",
-     "diff_pct": -49.77589113177289,
+     "diff_pct": -48.04355533149716,
      "group": "Eficiencia",
      "key": "net_rating",
      "label": "Net Rating",
      "own": 5.7697559914953445,
      "own_text": "5,8",
-     "rival": 11.488020636928454,
-     "rival_text": "11,5"
+     "rival": 11.10498616352227,
+     "rival_text": "11,1"
     },
     {
      "advantage": "own",
@@ -497,17 +499,6 @@
      "rival_text": "13,3"
     },
     {
-     "advantage": "own",
-     "diff_pct": -13.06454498434159,
-     "group": "Four Factors",
-     "key": "turnover_rate",
-     "label": "TOV%",
-     "own": 14.666496620329038,
-     "own_text": "14,7 %",
-     "rival": 16.870558298323022,
-     "rival_text": "16,9 %"
-    },
-    {
      "advantage": "rival",
      "diff_pct": -12.318156055167197,
      "group": "Four Factors",
@@ -517,6 +508,28 @@
      "own_text": "30,1 %",
      "rival": 34.35897435897436,
      "rival_text": "34,4 %"
+    },
+    {
+     "advantage": "own",
+     "diff_pct": -11.489526208391798,
+     "group": "Four Factors",
+     "key": "turnover_rate",
+     "label": "TOV%",
+     "own": 14.666496620329038,
+     "own_text": "14,7 %",
+     "rival": 16.570351498581164,
+     "rival_text": "16,6 %"
+    },
+    {
+     "advantage": "own",
+     "diff_pct": 8.321996910824852,
+     "group": "Juego colectivo",
+     "key": "block_rate",
+     "label": "Ratio de tapones",
+     "own": 4.03860051864133,
+     "own_text": "4,0 %",
+     "rival": 3.728329087180762,
+     "rival_text": "3,7 %"
     },
     {
      "advantage": "rival",
@@ -542,17 +555,6 @@
     },
     {
      "advantage": "rival",
-     "diff_pct": -6.791969688681632,
-     "group": "Juego colectivo",
-     "key": "assist_rate",
-     "label": "Ratio de asistencias",
-     "own": 18.27998129490286,
-     "own_text": "18,3 %",
-     "rival": 19.61202402180051,
-     "rival_text": "19,6 %"
-    },
-    {
-     "advantage": "rival",
      "diff_pct": -6.511627906976751,
      "group": "Básicas",
      "key": "rebounds_per_game",
@@ -564,17 +566,6 @@
     },
     {
      "advantage": "own",
-     "diff_pct": 6.394437700322708,
-     "group": "Juego colectivo",
-     "key": "block_rate",
-     "label": "Ratio de tapones",
-     "own": 4.03860051864133,
-     "own_text": "4,0 %",
-     "rival": 3.7958756171226797,
-     "rival_text": "3,8 %"
-    },
-    {
-     "advantage": "own",
      "diff_pct": 5.55555555555555,
      "group": "Básicas",
      "key": "blocks_per_game",
@@ -583,6 +574,17 @@
      "own_text": "3,2",
      "rival": 3.0,
      "rival_text": "3,0"
+    },
+    {
+     "advantage": "rival",
+     "diff_pct": -5.103310006815573,
+     "group": "Juego colectivo",
+     "key": "assist_rate",
+     "label": "Ratio de asistencias",
+     "own": 18.27998129490286,
+     "own_text": "18,3 %",
+     "rival": 19.263033617100604,
+     "rival_text": "19,3 %"
     },
     {
      "advantage": "even",
@@ -619,14 +621,14 @@
     },
     {
      "advantage": "even",
-     "diff_pct": -3.863066702928566,
+     "diff_pct": 2.9302197757122848,
      "group": "Eficiencia",
-     "key": "offensive_rating",
-     "label": "Rating ofensivo (ORtg)",
-     "own": 109.67988776941715,
-     "own_text": "109,7",
-     "rival": 114.08715049240942,
-     "rival_text": "114,1"
+     "key": "defensive_rating",
+     "label": "Rating defensivo (DRtg)",
+     "own": 103.9101317779218,
+     "own_text": "103,9",
+     "rival": 100.95201584563287,
+     "rival_text": "101,0"
     },
     {
      "advantage": "even",
@@ -649,6 +651,17 @@
      "own_text": "44,6 %",
      "rival": 45.588235294117645,
      "rival_text": "45,6 %"
+    },
+    {
+     "advantage": "even",
+     "diff_pct": -2.121343777824593,
+     "group": "Eficiencia",
+     "key": "offensive_rating",
+     "label": "Rating ofensivo (ORtg)",
+     "own": 109.67988776941715,
+     "own_text": "109,7",
+     "rival": 112.05700200915514,
+     "rival_text": "112,1"
     },
     {
      "advantage": "even",
@@ -682,17 +695,6 @@
      "own_text": "80,2",
      "rival": 79.0,
      "rival_text": "79,0"
-    },
-    {
-     "advantage": "even",
-     "diff_pct": 1.27779048836719,
-     "group": "Eficiencia",
-     "key": "defensive_rating",
-     "label": "Rating defensivo (DRtg)",
-     "own": 103.9101317779218,
-     "own_text": "103,9",
-     "rival": 102.59912985548097,
-     "rival_text": "102,6"
     },
     {
      "advantage": "even",
@@ -769,6 +771,7 @@
     "opponent_possessions": 462.9,
     "opponent_rebounds_def": 150,
     "opponent_rebounds_off": 57,
+    "pace_possessions": 470.46000000000004,
     "points_against_per_game": 80.16666666666667,
     "points_allowed_per_game": 80.16666666666667,
     "points_per_game": 86.0,
@@ -795,13 +798,13 @@
    "rival": {
     "_id": "101",
     "assist_fg_rate": 45.588235294117645,
-    "assist_rate": 19.61202402180051,
+    "assist_rate": 19.263033617100604,
     "assists": 93,
     "assists_per_game": 15.5,
-    "block_rate": 3.7958756171226797,
+    "block_rate": 3.728329087180762,
     "blocks": 18,
     "blocks_per_game": 3.0,
-    "defensive_rating": 102.59912985548097,
+    "defensive_rating": 100.95201584563287,
     "defensive_rebound_rate": 71.62162162162163,
     "defensive_rebounds_per_game": 26.5,
     "efg_percentage": 58.20512820512821,
@@ -825,13 +828,14 @@
      9007,
      9010
     ],
-    "net_rating": 11.488020636928454,
-    "offensive_rating": 114.08715049240942,
+    "net_rating": 11.10498616352227,
+    "offensive_rating": 112.05700200915514,
     "offensive_rebound_rate": 26.168224299065418,
     "offensive_rebounds_per_game": 9.333333333333334,
-    "opponent_possessions": 461.99222222222227,
+    "opponent_possessions": 469.53,
     "opponent_rebounds_def": 158,
     "opponent_rebounds_off": 63,
+    "pace_possessions": 474.19888888888886,
     "points_against_per_game": 79.0,
     "points_allowed_per_game": 79.0,
     "points_per_game": 90.16666666666667,
@@ -841,17 +845,17 @@
     "rebounds_def": 159,
     "rebounds_off": 56,
     "rebounds_per_game": 35.833333333333336,
-    "steal_rate": 7.380869255516322,
+    "steal_rate": 7.24952878062926,
     "steals": 35,
     "steals_per_game": 5.833333333333333,
     "team_id": "101",
     "team_name": "ALPHA",
     "three_point_rate": 40.51282051282051,
     "total_games": 6,
-    "total_possessions": 474.19888888888886,
+    "total_possessions": 482.78999999999996,
     "total_rebounds": 215,
     "true_shooting": 60.25035637918745,
-    "turnover_rate": 16.870558298323022,
+    "turnover_rate": 16.570351498581164,
     "turnovers": 80,
     "turnovers_per_game": 13.333333333333334
    }
@@ -860,14 +864,14 @@
    "expected": [
     {
      "advantage": "rival",
-     "diff_pct": -125.94860423480385,
+     "diff_pct": -125.67827834892518,
      "group": "Eficiencia",
      "key": "net_rating",
      "label": "Net Rating",
-     "own": -2.980981009489156,
-     "own_text": "-3,0",
-     "rival": 11.488020636928454,
-     "rival_text": "11,5"
+     "own": -2.851569257678875,
+     "own_text": "-2,9",
+     "rival": 11.10498616352227,
+     "rival_text": "11,1"
     },
     {
      "advantage": "rival",
@@ -882,14 +886,14 @@
     },
     {
      "advantage": "own",
-     "diff_pct": 37.510414693814695,
+     "diff_pct": 37.43718104495746,
      "group": "Juego colectivo",
      "key": "steal_rate",
      "label": "Ratio de robos",
-     "own": 10.149463921268767,
-     "own_text": "10,1 %",
-     "rival": 7.380869255516322,
-     "rival_text": "7,4 %"
+     "own": 9.963547995139733,
+     "own_text": "10,0 %",
+     "rival": 7.24952878062926,
+     "rival_text": "7,2 %"
     },
     {
      "advantage": "own",
@@ -926,14 +930,14 @@
     },
     {
      "advantage": "rival",
-     "diff_pct": -28.263537049974722,
+     "diff_pct": -28.30174159578777,
      "group": "Juego colectivo",
      "key": "block_rate",
      "label": "Ratio de tapones",
-     "own": 2.7230269057062544,
+     "own": 2.67314702308627,
      "own_text": "2,7 %",
-     "rival": 3.7958756171226797,
-     "rival_text": "3,8 %"
+     "rival": 3.728329087180762,
+     "rival_text": "3,7 %"
     },
     {
      "advantage": "rival",
@@ -1003,14 +1007,14 @@
     },
     {
      "advantage": "rival",
-     "diff_pct": 17.38693937276863,
+     "diff_pct": 17.324422843256382,
      "group": "Four Factors",
      "key": "turnover_rate",
      "label": "TOV%",
-     "own": 19.803832041500034,
-     "own_text": "19,8 %",
-     "rival": 16.870558298323022,
-     "rival_text": "16,9 %"
+     "own": 19.441069258809236,
+     "own_text": "19,4 %",
+     "rival": 16.570351498581164,
+     "rival_text": "16,6 %"
     },
     {
      "advantage": "own",
@@ -1025,25 +1029,25 @@
     },
     {
      "advantage": "own",
-     "diff_pct": 13.600263909130932,
+     "diff_pct": 13.539764041861007,
      "group": "Juego colectivo",
      "key": "assist_rate",
      "label": "Ratio de asistencias",
-     "own": 22.279311046687535,
-     "own_text": "22,3 %",
-     "rival": 19.61202402180051,
-     "rival_text": "19,6 %"
+     "own": 21.87120291616039,
+     "own_text": "21,9 %",
+     "rival": 19.263033617100604,
+     "rival_text": "19,3 %"
     },
     {
      "advantage": "rival",
-     "diff_pct": -10.386680293986227,
+     "diff_pct": -10.434405481950312,
      "group": "Eficiencia",
      "key": "offensive_rating",
      "label": "Rating ofensivo (ORtg)",
-     "own": 102.23728291424392,
-     "own_text": "102,2",
-     "rival": 114.08715049240942,
-     "rival_text": "114,1"
+     "own": 100.36452004860269,
+     "own_text": "100,4",
+     "rival": 112.05700200915514,
+     "rival_text": "112,1"
     },
     {
      "advantage": "own",
@@ -1102,14 +1106,14 @@
     },
     {
      "advantage": "even",
-     "diff_pct": 2.5527838997673444,
+     "diff_pct": 2.2427223881400398,
      "group": "Eficiencia",
      "key": "defensive_rating",
      "label": "Rating defensivo (DRtg)",
-     "own": 105.21826392373308,
-     "own_text": "105,2",
-     "rival": 102.59912985548097,
-     "rival_text": "102,6"
+     "own": 103.21608930628156,
+     "own_text": "103,2",
+     "rival": 100.95201584563287,
+     "rival_text": "101,0"
     },
     {
      "advantage": "even",
@@ -1160,13 +1164,13 @@
    "own": {
     "_id": "102",
     "assist_fg_rate": 55.90062111801242,
-    "assist_rate": 22.279311046687535,
+    "assist_rate": 21.87120291616039,
     "assists": 90,
     "assists_per_game": 15.0,
-    "block_rate": 2.7230269057062544,
+    "block_rate": 2.67314702308627,
     "blocks": 11,
     "blocks_per_game": 1.8333333333333333,
-    "defensive_rating": 105.21826392373308,
+    "defensive_rating": 103.21608930628156,
     "defensive_rebound_rate": 67.5925925925926,
     "defensive_rebounds_per_game": 24.333333333333332,
     "efg_percentage": 47.66839378238342,
@@ -1190,13 +1194,14 @@
      9008,
      9011
     ],
-    "net_rating": -2.980981009489156,
-    "offensive_rating": 102.23728291424392,
+    "net_rating": -2.851569257678875,
+    "offensive_rating": 100.36452004860269,
     "offensive_rebound_rate": 35.18518518518518,
     "offensive_rebounds_per_game": 12.666666666666666,
-    "opponent_possessions": 442.88888888888886,
+    "opponent_possessions": 451.47999999999996,
     "opponent_rebounds_def": 140,
     "opponent_rebounds_off": 70,
+    "pace_possessions": 403.9622222222222,
     "points_against_per_game": 77.66666666666667,
     "points_allowed_per_game": 77.66666666666667,
     "points_per_game": 68.83333333333333,
@@ -1206,30 +1211,30 @@
     "rebounds_def": 146,
     "rebounds_off": 76,
     "rebounds_per_game": 37.0,
-    "steal_rate": 10.149463921268767,
+    "steal_rate": 9.963547995139733,
     "steals": 41,
     "steals_per_game": 6.833333333333333,
     "team_id": "102",
     "team_name": "BRAVO",
     "three_point_rate": 37.56476683937824,
     "total_games": 6,
-    "total_possessions": 403.9622222222222,
+    "total_possessions": 411.5,
     "total_rebounds": 222,
     "true_shooting": 48.1217375093214,
-    "turnover_rate": 19.803832041500034,
+    "turnover_rate": 19.441069258809236,
     "turnovers": 80,
     "turnovers_per_game": 13.333333333333334
    },
    "rival": {
     "_id": "101",
     "assist_fg_rate": 45.588235294117645,
-    "assist_rate": 19.61202402180051,
+    "assist_rate": 19.263033617100604,
     "assists": 93,
     "assists_per_game": 15.5,
-    "block_rate": 3.7958756171226797,
+    "block_rate": 3.728329087180762,
     "blocks": 18,
     "blocks_per_game": 3.0,
-    "defensive_rating": 102.59912985548097,
+    "defensive_rating": 100.95201584563287,
     "defensive_rebound_rate": 71.62162162162163,
     "defensive_rebounds_per_game": 26.5,
     "efg_percentage": 58.20512820512821,
@@ -1253,13 +1258,14 @@
      9007,
      9010
     ],
-    "net_rating": 11.488020636928454,
-    "offensive_rating": 114.08715049240942,
+    "net_rating": 11.10498616352227,
+    "offensive_rating": 112.05700200915514,
     "offensive_rebound_rate": 26.168224299065418,
     "offensive_rebounds_per_game": 9.333333333333334,
-    "opponent_possessions": 461.99222222222227,
+    "opponent_possessions": 469.53,
     "opponent_rebounds_def": 158,
     "opponent_rebounds_off": 63,
+    "pace_possessions": 474.19888888888886,
     "points_against_per_game": 79.0,
     "points_allowed_per_game": 79.0,
     "points_per_game": 90.16666666666667,
@@ -1269,17 +1275,17 @@
     "rebounds_def": 159,
     "rebounds_off": 56,
     "rebounds_per_game": 35.833333333333336,
-    "steal_rate": 7.380869255516322,
+    "steal_rate": 7.24952878062926,
     "steals": 35,
     "steals_per_game": 5.833333333333333,
     "team_id": "101",
     "team_name": "ALPHA",
     "three_point_rate": 40.51282051282051,
     "total_games": 6,
-    "total_possessions": 474.19888888888886,
+    "total_possessions": 482.78999999999996,
     "total_rebounds": 215,
     "true_shooting": 60.25035637918745,
-    "turnover_rate": 16.870558298323022,
+    "turnover_rate": 16.570351498581164,
     "turnovers": 80,
     "turnovers_per_game": 13.333333333333334
    }
@@ -1446,10 +1452,10 @@
      "group": "Four Factors",
      "key": "turnover_rate",
      "label": "TOV%",
-     "own": 16.870558298323022,
-     "own_text": "16,9 %",
-     "rival": 16.870558298323022,
-     "rival_text": "16,9 %"
+     "own": 16.570351498581164,
+     "own_text": "16,6 %",
+     "rival": 16.570351498581164,
+     "rival_text": "16,6 %"
     },
     {
      "advantage": "even",
@@ -1479,10 +1485,10 @@
      "group": "Juego colectivo",
      "key": "assist_rate",
      "label": "Ratio de asistencias",
-     "own": 19.61202402180051,
-     "own_text": "19,6 %",
-     "rival": 19.61202402180051,
-     "rival_text": "19,6 %"
+     "own": 19.263033617100604,
+     "own_text": "19,3 %",
+     "rival": 19.263033617100604,
+     "rival_text": "19,3 %"
     },
     {
      "advantage": "even",
@@ -1501,10 +1507,10 @@
      "group": "Juego colectivo",
      "key": "steal_rate",
      "label": "Ratio de robos",
-     "own": 7.380869255516322,
-     "own_text": "7,4 %",
-     "rival": 7.380869255516322,
-     "rival_text": "7,4 %"
+     "own": 7.24952878062926,
+     "own_text": "7,2 %",
+     "rival": 7.24952878062926,
+     "rival_text": "7,2 %"
     },
     {
      "advantage": "even",
@@ -1512,10 +1518,10 @@
      "group": "Juego colectivo",
      "key": "block_rate",
      "label": "Ratio de tapones",
-     "own": 3.7958756171226797,
-     "own_text": "3,8 %",
-     "rival": 3.7958756171226797,
-     "rival_text": "3,8 %"
+     "own": 3.728329087180762,
+     "own_text": "3,7 %",
+     "rival": 3.728329087180762,
+     "rival_text": "3,7 %"
     },
     {
      "advantage": "even",
@@ -1534,10 +1540,10 @@
      "group": "Eficiencia",
      "key": "offensive_rating",
      "label": "Rating ofensivo (ORtg)",
-     "own": 114.08715049240942,
-     "own_text": "114,1",
-     "rival": 114.08715049240942,
-     "rival_text": "114,1"
+     "own": 112.05700200915514,
+     "own_text": "112,1",
+     "rival": 112.05700200915514,
+     "rival_text": "112,1"
     },
     {
      "advantage": "even",
@@ -1545,10 +1551,10 @@
      "group": "Eficiencia",
      "key": "defensive_rating",
      "label": "Rating defensivo (DRtg)",
-     "own": 102.59912985548097,
-     "own_text": "102,6",
-     "rival": 102.59912985548097,
-     "rival_text": "102,6"
+     "own": 100.95201584563287,
+     "own_text": "101,0",
+     "rival": 100.95201584563287,
+     "rival_text": "101,0"
     },
     {
      "advantage": "even",
@@ -1556,10 +1562,10 @@
      "group": "Eficiencia",
      "key": "net_rating",
      "label": "Net Rating",
-     "own": 11.488020636928454,
-     "own_text": "11,5",
-     "rival": 11.488020636928454,
-     "rival_text": "11,5"
+     "own": 11.10498616352227,
+     "own_text": "11,1",
+     "rival": 11.10498616352227,
+     "rival_text": "11,1"
     },
     {
      "advantage": "neutral",
@@ -1588,13 +1594,13 @@
    "own": {
     "_id": "101",
     "assist_fg_rate": 45.588235294117645,
-    "assist_rate": 19.61202402180051,
+    "assist_rate": 19.263033617100604,
     "assists": 93,
     "assists_per_game": 15.5,
-    "block_rate": 3.7958756171226797,
+    "block_rate": 3.728329087180762,
     "blocks": 18,
     "blocks_per_game": 3.0,
-    "defensive_rating": 102.59912985548097,
+    "defensive_rating": 100.95201584563287,
     "defensive_rebound_rate": 71.62162162162163,
     "defensive_rebounds_per_game": 26.5,
     "efg_percentage": 58.20512820512821,
@@ -1618,13 +1624,14 @@
      9007,
      9010
     ],
-    "net_rating": 11.488020636928454,
-    "offensive_rating": 114.08715049240942,
+    "net_rating": 11.10498616352227,
+    "offensive_rating": 112.05700200915514,
     "offensive_rebound_rate": 26.168224299065418,
     "offensive_rebounds_per_game": 9.333333333333334,
-    "opponent_possessions": 461.99222222222227,
+    "opponent_possessions": 469.53,
     "opponent_rebounds_def": 158,
     "opponent_rebounds_off": 63,
+    "pace_possessions": 474.19888888888886,
     "points_against_per_game": 79.0,
     "points_allowed_per_game": 79.0,
     "points_per_game": 90.16666666666667,
@@ -1634,30 +1641,30 @@
     "rebounds_def": 159,
     "rebounds_off": 56,
     "rebounds_per_game": 35.833333333333336,
-    "steal_rate": 7.380869255516322,
+    "steal_rate": 7.24952878062926,
     "steals": 35,
     "steals_per_game": 5.833333333333333,
     "team_id": "101",
     "team_name": "ALPHA",
     "three_point_rate": 40.51282051282051,
     "total_games": 6,
-    "total_possessions": 474.19888888888886,
+    "total_possessions": 482.78999999999996,
     "total_rebounds": 215,
     "true_shooting": 60.25035637918745,
-    "turnover_rate": 16.870558298323022,
+    "turnover_rate": 16.570351498581164,
     "turnovers": 80,
     "turnovers_per_game": 13.333333333333334
    },
    "rival": {
     "_id": "101",
     "assist_fg_rate": 45.588235294117645,
-    "assist_rate": 19.61202402180051,
+    "assist_rate": 19.263033617100604,
     "assists": 93,
     "assists_per_game": 15.5,
-    "block_rate": 3.7958756171226797,
+    "block_rate": 3.728329087180762,
     "blocks": 18,
     "blocks_per_game": 3.0,
-    "defensive_rating": 102.59912985548097,
+    "defensive_rating": 100.95201584563287,
     "defensive_rebound_rate": 71.62162162162163,
     "defensive_rebounds_per_game": 26.5,
     "efg_percentage": 58.20512820512821,
@@ -1681,13 +1688,14 @@
      9007,
      9010
     ],
-    "net_rating": 11.488020636928454,
-    "offensive_rating": 114.08715049240942,
+    "net_rating": 11.10498616352227,
+    "offensive_rating": 112.05700200915514,
     "offensive_rebound_rate": 26.168224299065418,
     "offensive_rebounds_per_game": 9.333333333333334,
-    "opponent_possessions": 461.99222222222227,
+    "opponent_possessions": 469.53,
     "opponent_rebounds_def": 158,
     "opponent_rebounds_off": 63,
+    "pace_possessions": 474.19888888888886,
     "points_against_per_game": 79.0,
     "points_allowed_per_game": 79.0,
     "points_per_game": 90.16666666666667,
@@ -1697,17 +1705,17 @@
     "rebounds_def": 159,
     "rebounds_off": 56,
     "rebounds_per_game": 35.833333333333336,
-    "steal_rate": 7.380869255516322,
+    "steal_rate": 7.24952878062926,
     "steals": 35,
     "steals_per_game": 5.833333333333333,
     "team_id": "101",
     "team_name": "ALPHA",
     "three_point_rate": 40.51282051282051,
     "total_games": 6,
-    "total_possessions": 474.19888888888886,
+    "total_possessions": 482.78999999999996,
     "total_rebounds": 215,
     "true_shooting": 60.25035637918745,
-    "turnover_rate": 16.870558298323022,
+    "turnover_rate": 16.570351498581164,
     "turnovers": 80,
     "turnovers_per_game": 13.333333333333334
    }
@@ -1716,23 +1724,23 @@
    "expected": [
     {
      "advantage": "own",
-     "diff_pct": 99.10756458092624,
+     "diff_pct": 92.46890474902384,
      "group": "Eficiencia",
      "key": "net_rating",
      "label": "Net Rating",
-     "own": 11.488020636928454,
-     "own_text": "11,5",
+     "own": 11.10498616352227,
+     "own_text": "11,1",
      "rival": 5.7697559914953445,
      "rival_text": "5,8"
     },
     {
      "advantage": "rival",
-     "diff_pct": -40.13096982844467,
+     "diff_pct": -41.19632223905445,
      "group": "Juego colectivo",
      "key": "steal_rate",
      "label": "Ratio de robos",
-     "own": 7.380869255516322,
-     "own_text": "7,4 %",
+     "own": 7.24952878062926,
+     "own_text": "7,2 %",
      "rival": 12.328359477957742,
      "rival_text": "12,3 %"
     },
@@ -1847,17 +1855,6 @@
      "rival_text": "11,5"
     },
     {
-     "advantage": "rival",
-     "diff_pct": 15.027867493174634,
-     "group": "Four Factors",
-     "key": "turnover_rate",
-     "label": "TOV%",
-     "own": 16.870558298323022,
-     "own_text": "16,9 %",
-     "rival": 14.666496620329038,
-     "rival_text": "14,7 %"
-    },
-    {
      "advantage": "own",
      "diff_pct": 14.048696401637573,
      "group": "Four Factors",
@@ -1867,6 +1864,17 @@
      "own_text": "34,4 %",
      "rival": 30.126582278481013,
      "rival_text": "30,1 %"
+    },
+    {
+     "advantage": "rival",
+     "diff_pct": 12.980979217717323,
+     "group": "Four Factors",
+     "key": "turnover_rate",
+     "label": "TOV%",
+     "own": 16.570351498581164,
+     "own_text": "16,6 %",
+     "rival": 14.666496620329038,
+     "rival_text": "14,7 %"
     },
     {
      "advantage": "own",
@@ -1891,15 +1899,15 @@
      "rival_text": "14,3"
     },
     {
-     "advantage": "own",
-     "diff_pct": 7.286893270886847,
+     "advantage": "rival",
+     "diff_pct": -7.682647244470451,
      "group": "Juego colectivo",
-     "key": "assist_rate",
-     "label": "Ratio de asistencias",
-     "own": 19.61202402180051,
-     "own_text": "19,6 %",
-     "rival": 18.27998129490286,
-     "rival_text": "18,3 %"
+     "key": "block_rate",
+     "label": "Ratio de tapones",
+     "own": 3.728329087180762,
+     "own_text": "3,7 %",
+     "rival": 4.03860051864133,
+     "rival_text": "4,0 %"
     },
     {
      "advantage": "own",
@@ -1913,15 +1921,15 @@
      "rival_text": "33,5"
     },
     {
-     "advantage": "rival",
-     "diff_pct": -6.010124061498107,
+     "advantage": "own",
+     "diff_pct": 5.377753436059886,
      "group": "Juego colectivo",
-     "key": "block_rate",
-     "label": "Ratio de tapones",
-     "own": 3.7958756171226797,
-     "own_text": "3,8 %",
-     "rival": 4.03860051864133,
-     "rival_text": "4,0 %"
+     "key": "assist_rate",
+     "label": "Ratio de asistencias",
+     "own": 19.263033617100604,
+     "own_text": "19,3 %",
+     "rival": 18.27998129490286,
+     "rival_text": "18,3 %"
     },
     {
      "advantage": "rival",
@@ -1969,14 +1977,14 @@
     },
     {
      "advantage": "even",
-     "diff_pct": 4.0182961640677215,
+     "diff_pct": -2.8468022142547755,
      "group": "Eficiencia",
-     "key": "offensive_rating",
-     "label": "Rating ofensivo (ORtg)",
-     "own": 114.08715049240942,
-     "own_text": "114,1",
-     "rival": 109.67988776941715,
-     "rival_text": "109,7"
+     "key": "defensive_rating",
+     "label": "Rating defensivo (DRtg)",
+     "own": 100.95201584563287,
+     "own_text": "101,0",
+     "rival": 103.9101317779218,
+     "rival_text": "103,9"
     },
     {
      "advantage": "even",
@@ -1999,6 +2007,17 @@
      "own_text": "45,6 %",
      "rival": 44.559585492227974,
      "rival_text": "44,6 %"
+    },
+    {
+     "advantage": "even",
+     "diff_pct": 2.167320087649488,
+     "group": "Eficiencia",
+     "key": "offensive_rating",
+     "label": "Rating ofensivo (ORtg)",
+     "own": 112.05700200915514,
+     "own_text": "112,1",
+     "rival": 109.67988776941715,
+     "rival_text": "109,7"
     },
     {
      "advantage": "even",
@@ -2032,17 +2051,6 @@
      "own_text": "79,0",
      "rival": 80.16666666666667,
      "rival_text": "80,2"
-    },
-    {
-     "advantage": "even",
-     "diff_pct": -1.2616690018666605,
-     "group": "Eficiencia",
-     "key": "defensive_rating",
-     "label": "Rating defensivo (DRtg)",
-     "own": 102.59912985548097,
-     "own_text": "102,6",
-     "rival": 103.9101317779218,
-     "rival_text": "103,9"
     },
     {
      "advantage": "even",
@@ -2093,14 +2101,14 @@
    "own": {
     "_id": "101",
     "assist_fg_rate": 45.588235294117645,
-    "assist_rate": 19.61202402180051,
+    "assist_rate": 19.263033617100604,
     "assists": 93,
     "assists_per_game": 15.5,
     "bench_pct": 27.4,
-    "block_rate": 3.7958756171226797,
+    "block_rate": 3.728329087180762,
     "blocks": 18,
     "blocks_per_game": 3.0,
-    "defensive_rating": 102.59912985548097,
+    "defensive_rating": 100.95201584563287,
     "defensive_rebound_rate": 71.62162162162163,
     "defensive_rebounds_per_game": 26.5,
     "efg_percentage": 58.20512820512821,
@@ -2124,16 +2132,17 @@
      9007,
      9010
     ],
-    "net_rating": 11.488020636928454,
-    "offensive_rating": 114.08715049240942,
+    "net_rating": 11.10498616352227,
+    "offensive_rating": 112.05700200915514,
     "offensive_rebound_rate": 26.168224299065418,
     "offensive_rebounds_per_game": 9.333333333333334,
     "opp_pts_off_tov_per_game": 12.8,
     "opp_pts_paint_per_game": 31.5,
     "opp_pts_second_chance_per_game": 13.1,
-    "opponent_possessions": 461.99222222222227,
+    "opponent_possessions": 469.53,
     "opponent_rebounds_def": 158,
     "opponent_rebounds_off": 63,
+    "pace_possessions": 474.19888888888886,
     "points_against_per_game": 79.0,
     "points_allowed_per_game": 79.0,
     "points_per_game": 90.16666666666667,
@@ -2146,17 +2155,17 @@
     "rebounds_def": 159,
     "rebounds_off": 56,
     "rebounds_per_game": 35.833333333333336,
-    "steal_rate": 7.380869255516322,
+    "steal_rate": 7.24952878062926,
     "steals": 35,
     "steals_per_game": 5.833333333333333,
     "team_id": "101",
     "team_name": "ALPHA",
     "three_point_rate": 40.51282051282051,
     "total_games": 6,
-    "total_possessions": 474.19888888888886,
+    "total_possessions": 482.78999999999996,
     "total_rebounds": 215,
     "true_shooting": 60.25035637918745,
-    "turnover_rate": 16.870558298323022,
+    "turnover_rate": 16.570351498581164,
     "turnovers": 80,
     "turnovers_per_game": 13.333333333333334
    },
@@ -2204,6 +2213,7 @@
     "opponent_possessions": 462.9,
     "opponent_rebounds_def": 150,
     "opponent_rebounds_off": 57,
+    "pace_possessions": 470.46000000000004,
     "points_against_per_game": 80.16666666666667,
     "points_allowed_per_game": 80.16666666666667,
     "points_per_game": 86.0,
@@ -2235,12 +2245,12 @@
    "expected": [
     {
      "advantage": "rival",
-     "diff_pct": -40.13096982844467,
+     "diff_pct": -41.19632223905445,
      "group": "Juego colectivo",
      "key": "steal_rate",
      "label": "Ratio de robos",
-     "own": 7.380869255516322,
-     "own_text": "7,4 %",
+     "own": 7.24952878062926,
+     "own_text": "7,2 %",
      "rival": 12.328359477957742,
      "rival_text": "12,3 %"
     },
@@ -2289,17 +2299,6 @@
      "rival_text": "11,5"
     },
     {
-     "advantage": "rival",
-     "diff_pct": 15.027867493174634,
-     "group": "Four Factors",
-     "key": "turnover_rate",
-     "label": "TOV%",
-     "own": 16.870558298323022,
-     "own_text": "16,9 %",
-     "rival": 14.666496620329038,
-     "rival_text": "14,7 %"
-    },
-    {
      "advantage": "own",
      "diff_pct": 14.048696401637573,
      "group": "Four Factors",
@@ -2309,6 +2308,17 @@
      "own_text": "34,4 %",
      "rival": 30.126582278481013,
      "rival_text": "30,1 %"
+    },
+    {
+     "advantage": "rival",
+     "diff_pct": 12.980979217717323,
+     "group": "Four Factors",
+     "key": "turnover_rate",
+     "label": "TOV%",
+     "own": 16.570351498581164,
+     "own_text": "16,6 %",
+     "rival": 14.666496620329038,
+     "rival_text": "14,7 %"
     },
     {
      "advantage": "own",
@@ -2333,15 +2343,15 @@
      "rival_text": "14,3"
     },
     {
-     "advantage": "own",
-     "diff_pct": 7.286893270886847,
+     "advantage": "rival",
+     "diff_pct": -7.682647244470451,
      "group": "Juego colectivo",
-     "key": "assist_rate",
-     "label": "Ratio de asistencias",
-     "own": 19.61202402180051,
-     "own_text": "19,6 %",
-     "rival": 18.27998129490286,
-     "rival_text": "18,3 %"
+     "key": "block_rate",
+     "label": "Ratio de tapones",
+     "own": 3.728329087180762,
+     "own_text": "3,7 %",
+     "rival": 4.03860051864133,
+     "rival_text": "4,0 %"
     },
     {
      "advantage": "own",
@@ -2355,15 +2365,15 @@
      "rival_text": "33,5"
     },
     {
-     "advantage": "rival",
-     "diff_pct": -6.010124061498107,
+     "advantage": "own",
+     "diff_pct": 5.377753436059886,
      "group": "Juego colectivo",
-     "key": "block_rate",
-     "label": "Ratio de tapones",
-     "own": 3.7958756171226797,
-     "own_text": "3,8 %",
-     "rival": 4.03860051864133,
-     "rival_text": "4,0 %"
+     "key": "assist_rate",
+     "label": "Ratio de asistencias",
+     "own": 19.263033617100604,
+     "own_text": "19,3 %",
+     "rival": 18.27998129490286,
+     "rival_text": "18,3 %"
     },
     {
      "advantage": "rival",
@@ -2400,14 +2410,14 @@
     },
     {
      "advantage": "even",
-     "diff_pct": 4.0182961640677215,
+     "diff_pct": -2.8468022142547755,
      "group": "Eficiencia",
-     "key": "offensive_rating",
-     "label": "Rating ofensivo (ORtg)",
-     "own": 114.08715049240942,
-     "own_text": "114,1",
-     "rival": 109.67988776941715,
-     "rival_text": "109,7"
+     "key": "defensive_rating",
+     "label": "Rating defensivo (DRtg)",
+     "own": 100.95201584563287,
+     "own_text": "101,0",
+     "rival": 103.9101317779218,
+     "rival_text": "103,9"
     },
     {
      "advantage": "even",
@@ -2430,6 +2440,17 @@
      "own_text": "45,6 %",
      "rival": 44.559585492227974,
      "rival_text": "44,6 %"
+    },
+    {
+     "advantage": "even",
+     "diff_pct": 2.167320087649488,
+     "group": "Eficiencia",
+     "key": "offensive_rating",
+     "label": "Rating ofensivo (ORtg)",
+     "own": 112.05700200915514,
+     "own_text": "112,1",
+     "rival": 109.67988776941715,
+     "rival_text": "109,7"
     },
     {
      "advantage": "even",
@@ -2463,17 +2484,6 @@
      "own_text": "79,0",
      "rival": 80.16666666666667,
      "rival_text": "80,2"
-    },
-    {
-     "advantage": "even",
-     "diff_pct": -1.2616690018666605,
-     "group": "Eficiencia",
-     "key": "defensive_rating",
-     "label": "Rating defensivo (DRtg)",
-     "own": 102.59912985548097,
-     "own_text": "102,6",
-     "rival": 103.9101317779218,
-     "rival_text": "103,9"
     },
     {
      "advantage": "even",
@@ -2513,13 +2523,13 @@
    "own": {
     "_id": "101",
     "assist_fg_rate": 45.588235294117645,
-    "assist_rate": 19.61202402180051,
+    "assist_rate": 19.263033617100604,
     "assists": 93,
     "assists_per_game": 15.5,
-    "block_rate": 3.7958756171226797,
+    "block_rate": 3.728329087180762,
     "blocks": 18,
     "blocks_per_game": 3.0,
-    "defensive_rating": 102.59912985548097,
+    "defensive_rating": 100.95201584563287,
     "defensive_rebound_rate": 71.62162162162163,
     "defensive_rebounds_per_game": 26.5,
     "efg_percentage": 58.20512820512821,
@@ -2543,13 +2553,14 @@
      9007,
      9010
     ],
-    "net_rating": 11.488020636928454,
-    "offensive_rating": 114.08715049240942,
+    "net_rating": 11.10498616352227,
+    "offensive_rating": 112.05700200915514,
     "offensive_rebound_rate": 26.168224299065418,
     "offensive_rebounds_per_game": 9.333333333333334,
-    "opponent_possessions": 461.99222222222227,
+    "opponent_possessions": 469.53,
     "opponent_rebounds_def": 158,
     "opponent_rebounds_off": 63,
+    "pace_possessions": 474.19888888888886,
     "points_against_per_game": 79.0,
     "points_allowed_per_game": 79.0,
     "points_per_game": 90.16666666666667,
@@ -2559,17 +2570,17 @@
     "rebounds_def": 159,
     "rebounds_off": 56,
     "rebounds_per_game": 35.833333333333336,
-    "steal_rate": 7.380869255516322,
+    "steal_rate": 7.24952878062926,
     "steals": 35,
     "steals_per_game": 5.833333333333333,
     "team_id": "101",
     "team_name": "ALPHA",
     "three_point_rate": 40.51282051282051,
     "total_games": 6,
-    "total_possessions": 474.19888888888886,
+    "total_possessions": 482.78999999999996,
     "total_rebounds": 215,
     "true_shooting": 60.25035637918745,
-    "turnover_rate": 16.870558298323022,
+    "turnover_rate": 16.570351498581164,
     "turnovers": 80,
     "turnovers_per_game": 13.333333333333334
    },
@@ -2611,6 +2622,7 @@
     "opponent_possessions": 462.9,
     "opponent_rebounds_def": 150,
     "opponent_rebounds_off": 57,
+    "pace_possessions": 470.46000000000004,
     "points_against_per_game": 80.16666666666667,
     "points_allowed_per_game": 80.16666666666667,
     "points_per_game": 86.0,
@@ -2679,6 +2691,7 @@
     "opponent_possessions": 462.9,
     "opponent_rebounds_def": 150,
     "opponent_rebounds_off": 57,
+    "pace_possessions": 470.46000000000004,
     "points_against_per_game": 80.16666666666667,
     "points_allowed_per_game": 80.16666666666667,
     "points_per_game": 86.0,
@@ -2707,23 +2720,23 @@
    "expected": [
     {
      "advantage": "own",
-     "diff_pct": 99.10756458092624,
+     "diff_pct": 92.46890474902384,
      "group": "Eficiencia",
      "key": "net_rating",
      "label": "Net Rating",
-     "own": 11.488020636928454,
-     "own_text": "11,5",
+     "own": 11.10498616352227,
+     "own_text": "11,1",
      "rival": 5.7697559914953445,
      "rival_text": "5,8"
     },
     {
      "advantage": "rival",
-     "diff_pct": -40.13096982844467,
+     "diff_pct": -41.19632223905445,
      "group": "Juego colectivo",
      "key": "steal_rate",
      "label": "Ratio de robos",
-     "own": 7.380869255516322,
-     "own_text": "7,4 %",
+     "own": 7.24952878062926,
+     "own_text": "7,2 %",
      "rival": 12.328359477957742,
      "rival_text": "12,3 %"
     },
@@ -2772,17 +2785,6 @@
      "rival_text": "11,5"
     },
     {
-     "advantage": "rival",
-     "diff_pct": 15.027867493174634,
-     "group": "Four Factors",
-     "key": "turnover_rate",
-     "label": "TOV%",
-     "own": 16.870558298323022,
-     "own_text": "16,9 %",
-     "rival": 14.666496620329038,
-     "rival_text": "14,7 %"
-    },
-    {
      "advantage": "even",
      "diff_pct": 14.048696401637573,
      "group": "Four Factors",
@@ -2792,6 +2794,17 @@
      "own_text": "34,4 %",
      "rival": 30.126582278481013,
      "rival_text": "30,1 %"
+    },
+    {
+     "advantage": "even",
+     "diff_pct": 12.980979217717323,
+     "group": "Four Factors",
+     "key": "turnover_rate",
+     "label": "TOV%",
+     "own": 16.570351498581164,
+     "own_text": "16,6 %",
+     "rival": 14.666496620329038,
+     "rival_text": "14,7 %"
     },
     {
      "advantage": "even",
@@ -2817,14 +2830,14 @@
     },
     {
      "advantage": "even",
-     "diff_pct": 7.286893270886847,
+     "diff_pct": -7.682647244470451,
      "group": "Juego colectivo",
-     "key": "assist_rate",
-     "label": "Ratio de asistencias",
-     "own": 19.61202402180051,
-     "own_text": "19,6 %",
-     "rival": 18.27998129490286,
-     "rival_text": "18,3 %"
+     "key": "block_rate",
+     "label": "Ratio de tapones",
+     "own": 3.728329087180762,
+     "own_text": "3,7 %",
+     "rival": 4.03860051864133,
+     "rival_text": "4,0 %"
     },
     {
      "advantage": "even",
@@ -2839,14 +2852,14 @@
     },
     {
      "advantage": "even",
-     "diff_pct": -6.010124061498107,
+     "diff_pct": 5.377753436059886,
      "group": "Juego colectivo",
-     "key": "block_rate",
-     "label": "Ratio de tapones",
-     "own": 3.7958756171226797,
-     "own_text": "3,8 %",
-     "rival": 4.03860051864133,
-     "rival_text": "4,0 %"
+     "key": "assist_rate",
+     "label": "Ratio de asistencias",
+     "own": 19.263033617100604,
+     "own_text": "19,3 %",
+     "rival": 18.27998129490286,
+     "rival_text": "18,3 %"
     },
     {
      "advantage": "even",
@@ -2894,14 +2907,14 @@
     },
     {
      "advantage": "even",
-     "diff_pct": 4.0182961640677215,
+     "diff_pct": -2.8468022142547755,
      "group": "Eficiencia",
-     "key": "offensive_rating",
-     "label": "Rating ofensivo (ORtg)",
-     "own": 114.08715049240942,
-     "own_text": "114,1",
-     "rival": 109.67988776941715,
-     "rival_text": "109,7"
+     "key": "defensive_rating",
+     "label": "Rating defensivo (DRtg)",
+     "own": 100.95201584563287,
+     "own_text": "101,0",
+     "rival": 103.9101317779218,
+     "rival_text": "103,9"
     },
     {
      "advantage": "even",
@@ -2924,6 +2937,17 @@
      "own_text": "45,6 %",
      "rival": 44.559585492227974,
      "rival_text": "44,6 %"
+    },
+    {
+     "advantage": "even",
+     "diff_pct": 2.167320087649488,
+     "group": "Eficiencia",
+     "key": "offensive_rating",
+     "label": "Rating ofensivo (ORtg)",
+     "own": 112.05700200915514,
+     "own_text": "112,1",
+     "rival": 109.67988776941715,
+     "rival_text": "109,7"
     },
     {
      "advantage": "even",
@@ -2957,17 +2981,6 @@
      "own_text": "79,0",
      "rival": 80.16666666666667,
      "rival_text": "80,2"
-    },
-    {
-     "advantage": "even",
-     "diff_pct": -1.2616690018666605,
-     "group": "Eficiencia",
-     "key": "defensive_rating",
-     "label": "Rating defensivo (DRtg)",
-     "own": 102.59912985548097,
-     "own_text": "102,6",
-     "rival": 103.9101317779218,
-     "rival_text": "103,9"
     },
     {
      "advantage": "even",
@@ -3007,13 +3020,13 @@
    "own": {
     "_id": "101",
     "assist_fg_rate": 45.588235294117645,
-    "assist_rate": 19.61202402180051,
+    "assist_rate": 19.263033617100604,
     "assists": 93,
     "assists_per_game": 15.5,
-    "block_rate": 3.7958756171226797,
+    "block_rate": 3.728329087180762,
     "blocks": 18,
     "blocks_per_game": 3.0,
-    "defensive_rating": 102.59912985548097,
+    "defensive_rating": 100.95201584563287,
     "defensive_rebound_rate": 71.62162162162163,
     "defensive_rebounds_per_game": 26.5,
     "efg_percentage": 58.20512820512821,
@@ -3037,13 +3050,14 @@
      9007,
      9010
     ],
-    "net_rating": 11.488020636928454,
-    "offensive_rating": 114.08715049240942,
+    "net_rating": 11.10498616352227,
+    "offensive_rating": 112.05700200915514,
     "offensive_rebound_rate": 26.168224299065418,
     "offensive_rebounds_per_game": 9.333333333333334,
-    "opponent_possessions": 461.99222222222227,
+    "opponent_possessions": 469.53,
     "opponent_rebounds_def": 158,
     "opponent_rebounds_off": 63,
+    "pace_possessions": 474.19888888888886,
     "points_against_per_game": 79.0,
     "points_allowed_per_game": 79.0,
     "points_per_game": 90.16666666666667,
@@ -3053,17 +3067,17 @@
     "rebounds_def": 159,
     "rebounds_off": 56,
     "rebounds_per_game": 35.833333333333336,
-    "steal_rate": 7.380869255516322,
+    "steal_rate": 7.24952878062926,
     "steals": 35,
     "steals_per_game": 5.833333333333333,
     "team_id": "101",
     "team_name": "ALPHA",
     "three_point_rate": 40.51282051282051,
     "total_games": 6,
-    "total_possessions": 474.19888888888886,
+    "total_possessions": 482.78999999999996,
     "total_rebounds": 215,
     "true_shooting": 60.25035637918745,
-    "turnover_rate": 16.870558298323022,
+    "turnover_rate": 16.570351498581164,
     "turnovers": 80,
     "turnovers_per_game": 13.333333333333334
    },
@@ -3107,6 +3121,7 @@
     "opponent_possessions": 462.9,
     "opponent_rebounds_def": 150,
     "opponent_rebounds_off": 57,
+    "pace_possessions": 470.46000000000004,
     "points_against_per_game": 80.16666666666667,
     "points_allowed_per_game": 80.16666666666667,
     "points_per_game": 86.0,
@@ -3136,23 +3151,23 @@
    "expected": [
     {
      "advantage": "own",
-     "diff_pct": 99.10756458092624,
+     "diff_pct": 92.46890474902384,
      "group": "Eficiencia",
      "key": "net_rating",
      "label": "Net Rating",
-     "own": 11.488020636928454,
-     "own_text": "11,5",
+     "own": 11.10498616352227,
+     "own_text": "11,1",
      "rival": 5.7697559914953445,
      "rival_text": "5,8"
     },
     {
      "advantage": "rival",
-     "diff_pct": -40.13096982844467,
+     "diff_pct": -41.19632223905445,
      "group": "Juego colectivo",
      "key": "steal_rate",
      "label": "Ratio de robos",
-     "own": 7.380869255516322,
-     "own_text": "7,4 %",
+     "own": 7.24952878062926,
+     "own_text": "7,2 %",
      "rival": 12.328359477957742,
      "rival_text": "12,3 %"
     },
@@ -3201,17 +3216,6 @@
      "rival_text": "11,5"
     },
     {
-     "advantage": "rival",
-     "diff_pct": 15.027867493174634,
-     "group": "Four Factors",
-     "key": "turnover_rate",
-     "label": "TOV%",
-     "own": 16.870558298323022,
-     "own_text": "16,9 %",
-     "rival": 14.666496620329038,
-     "rival_text": "14,7 %"
-    },
-    {
      "advantage": "own",
      "diff_pct": 14.048696401637573,
      "group": "Four Factors",
@@ -3221,6 +3225,17 @@
      "own_text": "34,4 %",
      "rival": 30.126582278481013,
      "rival_text": "30,1 %"
+    },
+    {
+     "advantage": "rival",
+     "diff_pct": 12.980979217717323,
+     "group": "Four Factors",
+     "key": "turnover_rate",
+     "label": "TOV%",
+     "own": 16.570351498581164,
+     "own_text": "16,6 %",
+     "rival": 14.666496620329038,
+     "rival_text": "14,7 %"
     },
     {
      "advantage": "own",
@@ -3245,15 +3260,15 @@
      "rival_text": "14,3"
     },
     {
-     "advantage": "own",
-     "diff_pct": 7.286893270886847,
+     "advantage": "rival",
+     "diff_pct": -7.682647244470451,
      "group": "Juego colectivo",
-     "key": "assist_rate",
-     "label": "Ratio de asistencias",
-     "own": 19.61202402180051,
-     "own_text": "19,6 %",
-     "rival": 18.27998129490286,
-     "rival_text": "18,3 %"
+     "key": "block_rate",
+     "label": "Ratio de tapones",
+     "own": 3.728329087180762,
+     "own_text": "3,7 %",
+     "rival": 4.03860051864133,
+     "rival_text": "4,0 %"
     },
     {
      "advantage": "own",
@@ -3267,15 +3282,15 @@
      "rival_text": "33,5"
     },
     {
-     "advantage": "rival",
-     "diff_pct": -6.010124061498107,
+     "advantage": "own",
+     "diff_pct": 5.377753436059886,
      "group": "Juego colectivo",
-     "key": "block_rate",
-     "label": "Ratio de tapones",
-     "own": 3.7958756171226797,
-     "own_text": "3,8 %",
-     "rival": 4.03860051864133,
-     "rival_text": "4,0 %"
+     "key": "assist_rate",
+     "label": "Ratio de asistencias",
+     "own": 19.263033617100604,
+     "own_text": "19,3 %",
+     "rival": 18.27998129490286,
+     "rival_text": "18,3 %"
     },
     {
      "advantage": "rival",
@@ -3323,14 +3338,14 @@
     },
     {
      "advantage": "own",
-     "diff_pct": 4.0182961640677215,
+     "diff_pct": -2.8468022142547755,
      "group": "Eficiencia",
-     "key": "offensive_rating",
-     "label": "Rating ofensivo (ORtg)",
-     "own": 114.08715049240942,
-     "own_text": "114,1",
-     "rival": 109.67988776941715,
-     "rival_text": "109,7"
+     "key": "defensive_rating",
+     "label": "Rating defensivo (DRtg)",
+     "own": 100.95201584563287,
+     "own_text": "101,0",
+     "rival": 103.9101317779218,
+     "rival_text": "103,9"
     },
     {
      "advantage": "rival",
@@ -3353,6 +3368,17 @@
      "own_text": "45,6 %",
      "rival": 44.559585492227974,
      "rival_text": "44,6 %"
+    },
+    {
+     "advantage": "own",
+     "diff_pct": 2.167320087649488,
+     "group": "Eficiencia",
+     "key": "offensive_rating",
+     "label": "Rating ofensivo (ORtg)",
+     "own": 112.05700200915514,
+     "own_text": "112,1",
+     "rival": 109.67988776941715,
+     "rival_text": "109,7"
     },
     {
      "advantage": "rival",
@@ -3386,17 +3412,6 @@
      "own_text": "79,0",
      "rival": 80.16666666666667,
      "rival_text": "80,2"
-    },
-    {
-     "advantage": "own",
-     "diff_pct": -1.2616690018666605,
-     "group": "Eficiencia",
-     "key": "defensive_rating",
-     "label": "Rating defensivo (DRtg)",
-     "own": 102.59912985548097,
-     "own_text": "102,6",
-     "rival": 103.9101317779218,
-     "rival_text": "103,9"
     },
     {
      "advantage": "even",
@@ -3436,13 +3451,13 @@
    "own": {
     "_id": "101",
     "assist_fg_rate": 45.588235294117645,
-    "assist_rate": 19.61202402180051,
+    "assist_rate": 19.263033617100604,
     "assists": 93,
     "assists_per_game": 15.5,
-    "block_rate": 3.7958756171226797,
+    "block_rate": 3.728329087180762,
     "blocks": 18,
     "blocks_per_game": 3.0,
-    "defensive_rating": 102.59912985548097,
+    "defensive_rating": 100.95201584563287,
     "defensive_rebound_rate": 71.62162162162163,
     "defensive_rebounds_per_game": 26.5,
     "efg_percentage": 58.20512820512821,
@@ -3466,13 +3481,14 @@
      9007,
      9010
     ],
-    "net_rating": 11.488020636928454,
-    "offensive_rating": 114.08715049240942,
+    "net_rating": 11.10498616352227,
+    "offensive_rating": 112.05700200915514,
     "offensive_rebound_rate": 26.168224299065418,
     "offensive_rebounds_per_game": 9.333333333333334,
-    "opponent_possessions": 461.99222222222227,
+    "opponent_possessions": 469.53,
     "opponent_rebounds_def": 158,
     "opponent_rebounds_off": 63,
+    "pace_possessions": 474.19888888888886,
     "points_against_per_game": 79.0,
     "points_allowed_per_game": 79.0,
     "points_per_game": 90.16666666666667,
@@ -3482,17 +3498,17 @@
     "rebounds_def": 159,
     "rebounds_off": 56,
     "rebounds_per_game": 35.833333333333336,
-    "steal_rate": 7.380869255516322,
+    "steal_rate": 7.24952878062926,
     "steals": 35,
     "steals_per_game": 5.833333333333333,
     "team_id": "101",
     "team_name": "ALPHA",
     "three_point_rate": 40.51282051282051,
     "total_games": 6,
-    "total_possessions": 474.19888888888886,
+    "total_possessions": 482.78999999999996,
     "total_rebounds": 215,
     "true_shooting": 60.25035637918745,
-    "turnover_rate": 16.870558298323022,
+    "turnover_rate": 16.570351498581164,
     "turnovers": 80,
     "turnovers_per_game": 13.333333333333334
    },
@@ -3536,6 +3552,7 @@
     "opponent_possessions": 462.9,
     "opponent_rebounds_def": 150,
     "opponent_rebounds_off": 57,
+    "pace_possessions": 470.46000000000004,
     "points_against_per_game": 80.16666666666667,
     "points_allowed_per_game": 80.16666666666667,
     "points_per_game": 86.0,

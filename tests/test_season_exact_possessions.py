@@ -60,10 +60,13 @@ def test_a_season_can_mix_games_with_and_without_derived_fields():
     assert out["Local"]["total_possessions"] == pytest.approx(75.0 + 55 - 8 + 10 + 0.44 * 20)
 
 
-def test_overtime_possessions_are_scaled_to_40_minutes():
+def test_overtime_possessions_are_real_for_the_ratings_and_scaled_to_40_minutes_for_the_pace():
+    """#1154: the total the ratings divide by is the real count; only the pace (``pace_possessions``, ``possessions_per_game``) is per 40 minutes."""
     out = _run([_game(1, _derived(90.0, 90.0), quarters=5)], Builder.build_team_stats_pipeline())
 
-    assert out["Local"]["total_possessions"] == pytest.approx(90.0 * 40 / 45)
+    assert out["Local"]["total_possessions"] == pytest.approx(90.0)
+    assert out["Local"]["pace_possessions"] == pytest.approx(90.0 * 40 / 45)
+    assert out["Local"]["possessions_per_game"] == pytest.approx(90.0 * 40 / 45)
 
 
 def test_per_game_rows_use_the_derived_possessions_for_both_teams():

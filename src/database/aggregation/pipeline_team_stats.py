@@ -4,7 +4,7 @@ from .feb_date_expr import feb_start_date
 from typing import List, Dict, Optional
 from .basic_stats import get_shooting_percentages, get_per_game_stats
 from .advanced_stats import get_all_advanced_stats
-from .possession_expr import DERIVED_OR_BOX, derived_or_box, possessions_per_40
+from .possession_expr import DERIVED_OR_BOX, derived_or_box, game_minutes, possessions_per_40, real_possessions
 
 
 class TeamStatsPipelineMixin:
@@ -239,6 +239,7 @@ class TeamStatsPipelineMixin:
                 "assists": {"$toInt": "$BOXSCORE.TEAM.TOTAL.assist"},
                 "possessions": builder._conditional_field("team_0_poss", "team_1_poss"),
                 "opponent_possessions": builder._opponent_conditional_field("team_0_poss", "team_1_poss"),
+                "game_minutes": game_minutes(),                                  # the row's possessions are per 40 minutes: this brings them back (#1154)
                 "steals": {"$toInt": "$BOXSCORE.TEAM.TOTAL.st"},
                 "turnovers": builder._conditional_field("team_0_turnovers", "team_1_turnovers"),
                 "blocks": {"$toInt": "$BOXSCORE.TEAM.TOTAL.bs"},
@@ -279,8 +280,10 @@ class TeamStatsPipelineMixin:
                 "steals": {"$sum": "$steals"},
                 "turnovers": {"$sum": "$turnovers"},
                 "blocks": {"$sum": "$blocks"},
-                "total_possessions": {"$sum": "$possessions"},
-                "opponent_possessions": {"$sum": "$opponent_possessions"},
+                # the real count of possessions (the rows hold them per 40 minutes): ratings and rates divide by it; only the pace is per 40 (#1154)
+                "total_possessions": {"$sum": real_possessions("$possessions")},
+                "opponent_possessions": {"$sum": real_possessions("$opponent_possessions")},
+                "pace_possessions": {"$sum": "$possessions"},
                 "match_list": {"$push": "$match_id"}
             }
         }

@@ -55,15 +55,20 @@ interface Side {
   def: number; off: number; oppDef: number; oppOff: number
   assists: number; steals: number; turnovers: number; blocks: number
   possessions: number; oppPossessions: number
+  /** the possessions per 40 minutes as the rows hold them: only the pace is summed from these (#1154) */
+  pace: number
   reb: number; fouls: number
 }
+
+/** The real possessions of a game from the per-40 figure of its row (FEB: 40 plus 5 per overtime; FBCYL rows are already real). Python multiplies in this order. */
+const real = (r: GameRow, per40: number) => per40 * ((r.game_minutes ?? 40) / 40)
 
 const own = (r: GameRow): Side => ({
   points: r.points, received: r.opponent_points,
   fg2m: r.fg2_made, fg2a: r.fg2_attempts, fg3m: r.fg3_made, fg3a: r.fg3_attempts, ftm: r.ft_made, fta: r.ft_attempts,
   def: r.def_rebounds, off: r.off_rebounds, oppDef: r.opponent_def_rebounds, oppOff: r.opponent_off_rebounds,
   assists: r.assists, steals: r.steals, turnovers: r.turnovers, blocks: r.blocks,
-  possessions: r.possessions, oppPossessions: r.opponent_possessions,
+  possessions: real(r, r.possessions), oppPossessions: real(r, r.opponent_possessions), pace: r.possessions,
   reb: r.total_rebounds ?? 0, fouls: r.fouls ?? 0,
 })
 
@@ -74,12 +79,12 @@ const rival = (r: GameRow): Side => ({
   ftm: r.opponent_ft_made, fta: r.opponent_ft_attempts,
   def: r.opponent_def_rebounds, off: r.opponent_off_rebounds, oppDef: r.def_rebounds, oppOff: r.off_rebounds,
   assists: r.opponent_assists, steals: r.opponent_steals, turnovers: r.opponent_turnovers, blocks: r.opponent_blocks,
-  possessions: r.opponent_possessions, oppPossessions: r.possessions,
+  possessions: real(r, r.opponent_possessions), oppPossessions: real(r, r.possessions), pace: r.opponent_possessions,
   reb: r.opponent_total_rebounds ?? 0, fouls: r.opponent_fouls ?? 0,
 })
 
 const SUMMED = ['points', 'received', 'fg2m', 'fg2a', 'fg3m', 'fg3a', 'ftm', 'fta', 'def', 'off', 'oppDef', 'oppOff',
-  'assists', 'steals', 'turnovers', 'blocks', 'possessions', 'oppPossessions', 'reb', 'fouls'] as const
+  'assists', 'steals', 'turnovers', 'blocks', 'possessions', 'oppPossessions', 'pace', 'reb', 'fouls'] as const
 
 /** `safe_divide`: a zero denominator gives 0, never NaN or Infinity. */
 const div = (n: number, d: number) => (d === 0 ? 0 : n / d)
@@ -138,10 +143,10 @@ function derive(id: string, name: string, games: number, home: number, matches: 
     fg2_made: s.fg2m, fg2_attempted: s.fg2a, fg3_made: s.fg3m, fg3_attempted: s.fg3a, ft_made: s.ftm, ft_attempted: s.fta,
     rebounds_def: s.def, rebounds_off: s.off, opponent_rebounds_def: s.oppDef, opponent_rebounds_off: s.oppOff,
     assists: s.assists, steals: s.steals, turnovers: s.turnovers, blocks: s.blocks,
-    total_possessions: s.possessions, opponent_possessions: s.oppPossessions, match_list: matches,
+    total_possessions: s.possessions, opponent_possessions: s.oppPossessions, pace_possessions: s.pace, match_list: matches,
     total_rebounds: reb,
     points_per_game: s.points / games, points_against_per_game: s.received / games, points_allowed_per_game: s.received / games,
-    possessions_per_game: s.possessions / games, rebounds_per_game: reb / games,
+    possessions_per_game: s.pace / games, rebounds_per_game: reb / games,
     offensive_rebounds_per_game: s.off / games, defensive_rebounds_per_game: s.def / games,
     assists_per_game: s.assists / games, steals_per_game: s.steals / games, turnovers_per_game: s.turnovers / games, blocks_per_game: s.blocks / games,
     fg2_percentage: pct(s.fg2m, s.fg2a), fg3_percentage: pct(s.fg3m, s.fg3a), ft_percentage: pct(s.ftm, s.fta),

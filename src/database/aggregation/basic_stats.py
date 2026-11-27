@@ -48,7 +48,7 @@ def get_per_game_stats() -> dict:
         "points_per_game": {"$divide": ["$points_scored", "$total_games"]},
         "points_against_per_game": {"$divide": ["$points_received", "$total_games"]},
         "points_allowed_per_game": {"$divide": ["$points_received", "$total_games"]},  # Alias for compatibility
-        "possessions_per_game": {"$divide": ["$total_possessions", "$total_games"]},
+        "possessions_per_game": {"$divide": ["$pace_possessions", "$total_games"]},          # per 40 minutes: the pace
         "rebounds_per_game": {"$divide": [_reb_total, "$total_games"]},
         "offensive_rebounds_per_game": {"$divide": ["$rebounds_off", "$total_games"]},
         "defensive_rebounds_per_game": {"$divide": ["$rebounds_def", "$total_games"]},

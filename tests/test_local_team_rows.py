@@ -54,8 +54,8 @@ def test_summing_the_rows_gives_the_season_pipeline_totals(collection):
         assert team["total_games"] == len(mine)
         assert team["points_scored"] == sum(r["points"] for r in mine)
         assert team["fg3_attempted"] == sum(r["fg3_attempts"] for r in mine)
-        assert team["total_possessions"] == pytest.approx(sum(r["possessions"] for r in mine))
-        assert team["opponent_possessions"] == pytest.approx(sum(r["opponent_possessions"] for r in mine))
+        assert team["total_possessions"] == pytest.approx(sum(r["possessions"] * r["game_minutes"] / 40 for r in mine))          # the real count, #1154
+        assert team["opponent_possessions"] == pytest.approx(sum(r["opponent_possessions"] * r["game_minutes"] / 40 for r in mine))
 
 
 def test_each_row_carries_the_minutes_of_its_game_so_the_client_can_undo_the_per_40_scaling_of_the_possessions(collection):
@@ -67,3 +67,18 @@ def test_each_row_carries_the_minutes_of_its_game_so_the_client_can_undo_the_per
     assert overtime and overtime != {d["_id"] for d in docs}                         # the fixture has both kinds of game
     for row in rows:
         assert row["game_minutes"] == (45 if row["match_id"] in overtime else 40), row["match_id"]
+
+
+def test_ratings_divide_the_points_by_the_real_possessions_and_only_the_pace_is_scaled_regression(collection):
+    """#1154: ORtg/DRtg divided the real points by possessions scaled to 40 minutes, so a game with one overtime came out 12.5 % inflated. The rating is points / real
+    possessions x 100; the pace (possessions per game) is the only figure that is per 40 minutes."""
+    rows = list(collection.aggregate(AggregationPipelineBuilder.build_season_rows_pipeline()))
+    teams = list(collection.aggregate(AggregationPipelineBuilder.build_team_stats_pipeline()))
+    assert any(any(r["game_minutes"] > 40 for r in rows if r["team_id"] == t["_id"]) for t in teams)             # a team played an overtime
+    for team in teams:
+        mine = [r for r in rows if r["team_id"] == team["_id"]]
+        real = sum(r["possessions"] * r["game_minutes"] / 40 for r in mine)
+        real_opp = sum(r["opponent_possessions"] * r["game_minutes"] / 40 for r in mine)
+        assert team["offensive_rating"] == pytest.approx(team["points_scored"] / real * 100)
+        assert team["defensive_rating"] == pytest.approx(team["points_received"] / real_opp * 100)
+        assert team["possessions_per_game"] == pytest.approx(sum(r["possessions"] for r in mine) / len(mine))

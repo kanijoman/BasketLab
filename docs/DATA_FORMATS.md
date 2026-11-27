@@ -268,6 +268,7 @@ Claves: `uuid, moves[], stats` (+ `_league, _gender, _territory, _category, _com
 ### Filas del contrato de la web (`run_local_export.py`, #327)
 - **Filas del contrato de la web (`run_local_export.py`, #327)**: una por equipo y partido con lo que lee el `$group` de temporada.
   - En FEB, `possessions` va **reescalada a 40 minutos** (`possessions_per_40`: un partido con prórroga cuenta menos por fila) y la fila lleva `game_minutes` (40 + 5 por prórroga, #672) para que quien necesite la cuenta cruda —Evolución— la recupere (`possessions × game_minutes / 40`); las filas publicadas antes de #672 no la traen y se leen como 40.
+  - **Ratings con posesiones reales (#1154)**: ORtg/DRtg y las tasas por posesión (AST%, ROB%, TAP%, TOV%) dividen entre la cuenta **real** (`possessions × game_minutes / 40`: `total_possessions` en la temporada); solo el **ritmo** va por 40 min (`pace_possessions` = suma de `possessions` por fila, y `possessions_per_game` = `pace_possessions / partidos`). Antes dividían los puntos reales entre posesiones reescaladas y un partido con una prórroga inflaba ORtg/DRtg un 12,5 %. En FBCYL las filas no se reescalan: `pace_possessions = total_possessions` (#1155 lo unifica).
   - FBCYL no reescala.
 
 ### Fecha de un partido FBCYL (#681)

@@ -3,7 +3,7 @@
 The exact figures are stored in ``DERIVED.TEAM`` (same order as ``BOXSCORE.TEAM``, see ``src.pbp.game_derived``); a game
 without them falls back to the box score, with the same free-throw cost as ``estimate_possessions``.
 """
-from typing import Dict
+from typing import Any, Dict
 
 from src.live_core.four_factors import FT_POSSESSION_COST
 
@@ -32,6 +32,11 @@ def possessions_per_40(index: int, fga: Dict, fta: Dict, orb: Dict, tov: Dict) -
     estimate = {"$add": [fga, {"$multiply": [FT_POSSESSION_COST, fta]}, tov, {"$multiply": [-1, orb]}]}
     raw = {"$ifNull": [{"$arrayElemAt": ["$DERIVED.TEAM.possessions", index]}, estimate]}
     return {"$multiply": [raw, {"$divide": [40, game_minutes()]}]}
+
+
+def real_possessions(per_40: Any) -> Dict:
+    """The possessions a game really had, from the per-40 figure of its row and its ``game_minutes`` (ratings and rates divide by these; #1154)."""
+    return {"$multiply": [per_40, {"$divide": ["$game_minutes", 40]}]}
 
 
 # Who a ``DERIVED.TEAM`` entry is and how it is called (#432). FEB: the team id and the header name. FBCYL: the ``id`` is the ``teamIdIntern`` of
