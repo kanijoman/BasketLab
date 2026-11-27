@@ -77,3 +77,13 @@ def test_the_lineup_duration_and_the_inout_minutes_follow_the_scheme():
     analyzer = PlayByPlayAnalyzer(game)
 
     assert LineupExtractor(analyzer)._get_game_duration() == 2400 + 300
+
+
+def test_a_player_still_on_court_when_an_overtime_ends_has_a_segment_up_to_its_end_regression():
+    """CodeRabbit (#1196): open segments were closed at the end of the regulation, so a player on court at the end of an overtime got a segment (2694, 2400) that subtracted time played."""
+    game = doc(MENS_OT)
+    analyzer = PlayByPlayAnalyzer(game)
+    segments = [seg for team in game["BOXSCORE"]["TEAM"] for p in team["PLAYER"] for seg in analyzer.get_player_court_segments(str(p["id"]))]
+
+    assert segments and all(end >= start for start, end in segments)
+    assert max(end for _, end in segments) == 2400 + 300

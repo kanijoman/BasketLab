@@ -2,7 +2,7 @@
 
 from typing import Dict, List, Tuple, Optional
 from collections import defaultdict
-from src.live_core.clock import regulation_seconds
+from src.live_core.clock import game_length, regulation_seconds
 
 from .event_helpers import get_timestamp
 from .period_scheme import scheme_of
@@ -91,6 +91,16 @@ class PlayByPlayAnalyzer:
         """
         # Delegates to the shared helper, which also handles OT periods (5min each).
         return get_timestamp({"quarter": quarter, "time": time_str}, is_fbcyl=False, scheme=self.scheme)
+
+    def _game_end(self) -> int:
+        """Seconds from the start to the end of the last period played (the regulation of the scheme plus each overtime)."""
+        periods = []
+        for line in self.lines:
+            try:
+                periods.append(int(line.get("period" if self.is_fbcyl else "quarter") or 0))
+            except (TypeError, ValueError):
+                continue
+        return game_length(max(periods, default=0), self.scheme)
 
     def _get_team_key(self, id_team: Optional[str]) -> Optional[str]:
         """Get team key (team1/team2) from team ID."""
@@ -309,8 +319,8 @@ class PlayByPlayAnalyzer:
 
         # If player was still on court at game end
         if current_start is not None:
-            # Game ends at the end of the regulation (2400 seconds for four quarters of ten)
-            segments.append((current_start, self.game_seconds))
+            # the game ends at the end of its last period: the regulation (2400 seconds for four quarters of ten) plus each overtime played
+            segments.append((current_start, self._game_end()))
 
         return segments
 
