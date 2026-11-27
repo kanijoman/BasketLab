@@ -80,4 +80,26 @@ def test_fatigue_needs_exactly_five_of_the_own_team_on_court_regression():
     """#1124: with six on court (a lost ``sub_out``) nobody can say who is tired; with five the alert is said as always."""
     assert len(_fatigue(5)) == 1
     assert _fatigue(6) == []
-    assert _fatigue(4) == []
+
+
+def _short_handed(bench):
+    """Four own players on court (the first one tired) and ``bench``: (pf, unsportsmanlike, technical) of each own player on the bench."""
+    players = {f"p{i}": _player(f"P{i}", OWN, stint=720 if i == 1 else 60, minutes=1100 if i == 1 else 300) for i in range(1, 5)}
+    for i, (pf, unsports, technical) in enumerate(bench):
+        players[f"b{i}"] = {**_player(f"B{i}", OWN, on_court=False, pf=pf), "unsportsmanlike": unsports, "technical": technical}
+    snapshot = snap(elapsed=1200, players=players, log=[])
+    for pid in [k for k in snapshot["players"] if k.startswith("_fresh")]:
+        del snapshot["players"][pid]
+    return [a for a in engine(baselines=BASE).evaluate(snapshot) if a.id == "fatigue_high"]
+
+
+def test_a_team_that_can_only_field_four_is_still_told_who_is_tired_regression():
+    """Eight inscribed and four of them out of the game (fifth foul, two technicals, one of each, ...): playing with four is legal and unusual, not a lost substitution. The
+    guard of five would silence the fatigue of exactly the team that is most tired."""
+    bench = [(5, 0, 0), (5, 0, 0), (2, 0, 2), (3, 1, 1)]
+    assert len(_short_handed(bench)) == 1
+
+
+def test_with_four_on_court_and_a_fifth_who_can_play_a_lost_substitution_is_assumed():
+    assert _short_handed([(5, 0, 0), (5, 0, 0), (5, 0, 0), (4, 0, 0)]) == []      # the fourth one on the bench has four fouls: he can still play
+    assert _short_handed([(5, 0, 0), (0, 0, 1)]) == []                              # one technical foul does not disqualify
