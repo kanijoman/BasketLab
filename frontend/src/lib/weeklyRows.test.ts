@@ -39,6 +39,12 @@ describe.each(vectors.leagues)('the rows of the $name league are those of the se
 
   it('consistency of the teams', () => same(consistencyRows(league.consistency as never), league.consistency_rows))
 
+  it('the order of the teams with the same CV does not depend on the order of the keys (#1154)', () => {
+    const own = league.consistency as Record<string, never>
+    const reversed = Object.fromEntries(Object.entries(own).reverse()) as never
+    expect(consistencyRows(reversed)).toEqual(consistencyRows(own as never))
+  })
+
   it('last match', () => {
     if (!('last_match' in league)) return
     same(lastMatchRows(teams[0], teams[1], teams[2], teams[3], String(teams[0].team_name), String(teams[1].team_name)), league.last_match as Expected)

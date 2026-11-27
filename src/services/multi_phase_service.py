@@ -26,7 +26,7 @@ _SUM_FIELDS = (
     "ft_made", "ft_attempts",
     "rebounds_off", "rebounds_def", "total_rebounds",
     "assists", "steals", "turnovers", "blocks", "personal_fouls",
-    "total_possessions", "total_minutes",
+    "total_possessions", "pace_possessions", "total_minutes",
     "total_points",  # player-level alias
     "valoracion",    # player valoración (PIR)
 )
@@ -35,7 +35,7 @@ _SUM_FIELDS = (
 _PG_FIELDS: Dict[str, tuple] = {
     "points_per_game":     ("points_scored",   "games_played"),
     "points_against_per_game": ("points_received", "games_played"),
-    "possessions_per_game": ("total_possessions", "games_played"),
+    "possessions_per_game": ("pace_possessions", "games_played"),          # per 40 minutes: ratings use the real total_possessions (#1154)
     "rebounds_per_game":   ("total_rebounds",  "games_played"),
     "assists_per_game":    ("assists",          "games_played"),
     "steals_per_game":     ("steals",           "games_played"),

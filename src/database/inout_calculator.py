@@ -1,7 +1,6 @@
 """IN/OUT statistics calculator -- extracted from playbyplay_analyzer.py."""
 
 from typing import Dict, List, Tuple, Optional
-from src.live_core.clock import GAME_SECONDS
 from src.pbp.playbyplay_core import PlayByPlayAnalyzer
 from .pbp_stat_counters import add_points, bump, count_rebound, count_shot, empty_stats, first_match
 
@@ -197,7 +196,7 @@ class InOutStatsCalculator:
 
         time_in = self.analyzer.calculate_time_played(player_id)
         stats_in['minutes'] = time_in / 60
-        stats_out['minutes'] = (GAME_SECONDS - time_in) / 60
+        stats_out['minutes'] = (self.analyzer.game_seconds - time_in) / 60
         return {'in': stats_in, 'out': stats_out}
 
     def _count_fbcyl_game(self, lines: List[Dict], player_id: str, id_team: str, stats_in: Dict, stats_out: Dict) -> None:

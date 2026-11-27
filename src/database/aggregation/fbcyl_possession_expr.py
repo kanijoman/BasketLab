@@ -15,6 +15,18 @@ def box_estimate(team: str) -> Dict[str, Any]:
                      f"{data}.lost", {"$multiply": [-1, f"{data}.offensiveRebound"]}]}
 
 
+def game_minutes() -> Dict[str, Any]:
+    """The minutes of the regulation of an FBCYL game: the sum of its four ``stats.periodDurationList`` quarters (a minibasket game has 4 x 8), 40 when the list does not give four real ones
+    (as ``pbp.game_possessions.game_minutes``). Overtimes are not counted here: the pipelines do not read the moves (#1155)."""
+    quarters = [{"$arrayElemAt": [{"$ifNull": ["$stats.periodDurationList", []]}, n]} for n in range(4)]          # a missing quarter is not > 0
+    return {"$cond": [{"$and": [{"$gt": [q, 0]} for q in quarters]}, {"$add": quarters}, 40]}
+
+
+def per_40(possessions: Any) -> Dict[str, Any]:
+    """The possessions of a game per 40 minutes of its regulation: the pace figure (ratings divide by the real count)."""
+    return {"$multiply": [possessions, {"$divide": [40, "$game_minutes"]}]}
+
+
 def team_possessions(index: Any, team: str) -> Dict[str, Any]:
     """The stored possessions of the team at ``index`` of the game, or the estimate of its box ``team`` when the game has no ``DERIVED``."""
     return {"$ifNull": [{"$arrayElemAt": ["$DERIVED.TEAM.possessions", index]}, box_estimate(team)]}

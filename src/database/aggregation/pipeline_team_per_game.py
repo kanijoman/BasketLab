@@ -4,7 +4,7 @@ from typing import List, Dict
 from .basic_stats import get_shooting_percentages, get_per_game_stats  # noqa: F401
 from .advanced_stats import get_all_advanced_stats  # noqa: F401
 from .pipeline_team_stats import TeamStatsPipelineMixin
-from .possession_expr import game_minutes
+from .possession_expr import game_minutes, real_possessions
 from src.live_core.four_factors import FT_POSSESSION_COST
 
 
@@ -42,6 +42,8 @@ class TeamPerGamePipelineMixin:
             TeamStatsPipelineMixin._add_match_level_fields(),
             TeamStatsPipelineMixin._unwind_teams(),
             TeamStatsPipelineMixin._project_match_data(),
+            # the rates divide by the REAL possessions of the game; ``possessions`` is per 40 minutes and stays the pace (#1154). Its own stage: the next one reads them
+            {"$addFields": {"real_poss": real_possessions("$possessions"), "opp_real_poss": real_possessions("$opponent_possessions")}},
             # Add per-game derived values needed for std-dev computation
             {
                 "$addFields": {
@@ -70,15 +72,15 @@ class TeamPerGamePipelineMixin:
                     # Advanced per-game: OER / DER / Net Rating
                     "oer_game": {
                         "$cond": {
-                            "if":  {"$gt": ["$possessions", 0]},
-                            "then": {"$multiply": [{"$divide": ["$points", "$possessions"]}, 100]},
+                            "if":  {"$gt": ["$real_poss", 0]},
+                            "then": {"$multiply": [{"$divide": ["$points", "$real_poss"]}, 100]},
                             "else": None,
                         }
                     },
                     "der_game": {
                         "$cond": {
-                            "if":  {"$gt": ["$possessions", 0]},
-                            "then": {"$multiply": [{"$divide": ["$opponent_points", "$possessions"]}, 100]},
+                            "if":  {"$gt": ["$real_poss", 0]},
+                            "then": {"$multiply": [{"$divide": ["$opponent_points", "$real_poss"]}, 100]},
                             "else": None,
                         }
                     },
@@ -163,7 +165,7 @@ class TeamPerGamePipelineMixin:
                     "total_rebounds": 1,
                     "def_rebounds": 1, "off_rebounds": 1,
                     "assists": 1, "steals": 1, "turnovers": 1, "blocks": 1,
-                    "possessions": 1, "opponent_possessions": 1,
+                    "possessions": 1, "opponent_possessions": 1, "real_poss": 1, "opp_real_poss": 1,
                     # Advanced computed fields
                     "oer_game": 1, "der_game": 1, "net_game": 1,
                     "efg_pct_game": 1, "ts_pct_game": 1, "tov_pct_game": 1,
@@ -222,18 +224,18 @@ class TeamPerGamePipelineMixin:
                 "$addFields": {
                     # --- Opponent (rival) advanced per-game ---
                     "opp_oer_game": {
-                        "$cond": {"if": {"$gt": ["$opp_possessions", 0]},
-                                  "then": {"$multiply": [{"$divide": ["$opponent_points", "$opp_possessions"]}, 100]},
+                        "$cond": {"if": {"$gt": ["$opp_real_poss", 0]},
+                                  "then": {"$multiply": [{"$divide": ["$opponent_points", "$opp_real_poss"]}, 100]},
                                   "else": None}
                     },
                     "opp_der_game": {
-                        "$cond": {"if": {"$gt": ["$opp_possessions", 0]},
-                                  "then": {"$multiply": [{"$divide": ["$points", "$opp_possessions"]}, 100]},
+                        "$cond": {"if": {"$gt": ["$opp_real_poss", 0]},
+                                  "then": {"$multiply": [{"$divide": ["$points", "$opp_real_poss"]}, 100]},
                                   "else": None}
                     },
                     "opp_net_game": {
-                        "$cond": {"if": {"$gt": ["$opp_possessions", 0]},
-                                  "then": {"$multiply": [{"$divide": [{"$subtract": ["$opponent_points", "$points"]}, "$opp_possessions"]}, 100]},
+                        "$cond": {"if": {"$gt": ["$opp_real_poss", 0]},
+                                  "then": {"$multiply": [{"$divide": [{"$subtract": ["$opponent_points", "$points"]}, "$opp_real_poss"]}, 100]},
                                   "else": None}
                     },
                     "opp_efg_pct_game": {
@@ -271,14 +273,14 @@ class TeamPerGamePipelineMixin:
                                   "else": None}
                     },
                     "opp_assist_rate_game": {
-                        "$cond": {"if": {"$gt": ["$opp_possessions", 0]},
-                                  "then": {"$multiply": [{"$divide": ["$opp_assists", "$opp_possessions"]}, 100]},
+                        "$cond": {"if": {"$gt": ["$opp_real_poss", 0]},
+                                  "then": {"$multiply": [{"$divide": ["$opp_assists", "$opp_real_poss"]}, 100]},
                                   "else": None}
                     },
                     # steal_rate = rival steals / own possessions
                     "opp_steal_rate_game": {
-                        "$cond": {"if": {"$gt": ["$possessions", 0]},
-                                  "then": {"$multiply": [{"$divide": ["$opp_steals", "$possessions"]}, 100]},
+                        "$cond": {"if": {"$gt": ["$real_poss", 0]},
+                                  "then": {"$multiply": [{"$divide": ["$opp_steals", "$real_poss"]}, 100]},
                                   "else": None}
                     },
                     # block_rate = rival blocks / own fg2_attempts
@@ -314,13 +316,13 @@ class TeamPerGamePipelineMixin:
                                   "else": None}
                     },
                     "assist_rate_game": {
-                        "$cond": {"if": {"$gt": ["$possessions", 0]},
-                                  "then": {"$multiply": [{"$divide": ["$assists", "$possessions"]}, 100]},
+                        "$cond": {"if": {"$gt": ["$real_poss", 0]},
+                                  "then": {"$multiply": [{"$divide": ["$assists", "$real_poss"]}, 100]},
                                   "else": None}
                     },
                     "steal_rate_game": {
-                        "$cond": {"if": {"$gt": ["$opp_possessions", 0]},
-                                  "then": {"$multiply": [{"$divide": ["$steals", "$opp_possessions"]}, 100]},
+                        "$cond": {"if": {"$gt": ["$opp_real_poss", 0]},
+                                  "then": {"$multiply": [{"$divide": ["$steals", "$opp_real_poss"]}, 100]},
                                   "else": None}
                     },
                     "block_rate_game": {

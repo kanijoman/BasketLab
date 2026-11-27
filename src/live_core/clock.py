@@ -7,18 +7,37 @@ overtimes (period >= 5) last 5. "Elapsed" is seconds since tip-off.
 from __future__ import annotations
 
 import re
-from typing import Optional
+from typing import NamedTuple, Optional
 
 REGULATION_PERIODS = 4
 REGULATION_LENGTH = 600
 OVERTIME_LENGTH = 300
 GAME_SECONDS = REGULATION_LENGTH * REGULATION_PERIODS      # a game of four quarters: the length every per-40 rate and fraction of the game is measured against
 
+class Scheme(NamedTuple):
+    """The regulation of a game: ``periods`` of ``minutes`` each; every overtime lasts ``OVERTIME_LENGTH`` (#1131: NCAA men play two halves of 20)."""
+
+    periods: int
+    minutes: int
+
+
+FEB_SCHEME = Scheme(REGULATION_PERIODS, REGULATION_LENGTH // 60)
+
 _CLOCK_RE = re.compile(r"^(\d{1,2}):(\d{2})$")
 
 
-def period_length(period: int) -> int:
-    return REGULATION_LENGTH if period <= REGULATION_PERIODS else OVERTIME_LENGTH
+def period_length(period: int, scheme: Scheme = FEB_SCHEME) -> int:
+    return scheme.minutes * 60 if period <= scheme.periods else OVERTIME_LENGTH
+
+
+def regulation_seconds(scheme: Scheme = FEB_SCHEME) -> int:
+    """The seconds of a game without overtimes."""
+    return scheme.periods * scheme.minutes * 60
+
+
+def game_length(last_period: int, scheme: Scheme = FEB_SCHEME) -> int:
+    """The seconds of a game whose last period was ``last_period`` (its regulation plus each overtime played)."""
+    return regulation_seconds(scheme) + max(0, last_period - scheme.periods) * OVERTIME_LENGTH
 
 
 def game_seconds_left(period: int, remaining: int) -> int:
@@ -27,11 +46,11 @@ def game_seconds_left(period: int, remaining: int) -> int:
     return max(0, remaining) + later
 
 
-def period_start(period: int) -> int:
+def period_start(period: int, scheme: Scheme = FEB_SCHEME) -> int:
     """Elapsed seconds at the start of ``period``."""
-    if period <= REGULATION_PERIODS:
-        return REGULATION_LENGTH * (period - 1)
-    return REGULATION_LENGTH * REGULATION_PERIODS + OVERTIME_LENGTH * (period - REGULATION_PERIODS - 1)
+    if period <= scheme.periods:
+        return scheme.minutes * 60 * (period - 1)
+    return regulation_seconds(scheme) + OVERTIME_LENGTH * (period - scheme.periods - 1)
 
 
 def parse_clock(text: Optional[str]) -> Optional[int]:
@@ -40,8 +59,8 @@ def parse_clock(text: Optional[str]) -> Optional[int]:
     return int(match.group(1)) * 60 + int(match.group(2)) if match else None
 
 
-def elapsed_seconds(period: int, remaining: int) -> int:
-    return period_start(period) + period_length(period) - remaining
+def elapsed_seconds(period: int, remaining: int, scheme: Scheme = FEB_SCHEME) -> int:
+    return period_start(period, scheme) + period_length(period, scheme) - remaining
 
 
 def period_and_remaining(elapsed: int) -> "tuple[int, int]":

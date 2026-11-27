@@ -11,7 +11,7 @@ import re
 from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
-from .clock import elapsed_seconds, parse_clock
+from .clock import FEB_SCHEME, Scheme, elapsed_seconds, parse_clock
 
 _NAME_RE = re.compile(r"^\([^)]*\)\s*([^:]+):")
 # "TIRO DE 2 ANOTADO", or "MATE ANOTADO" for a dunk (a 2-point field goal; #365)
@@ -95,8 +95,8 @@ def _classify(action: str, text: str) -> Dict[str, Any]:
     return {"kind": _SIMPLE_KINDS.get(action, "other")}
 
 
-def parse_line(line: Dict[str, Any]) -> Optional[Event]:
-    """Parse one FEB PBP line; None when it lacks a usable number/period/clock."""
+def parse_line(line: Dict[str, Any], scheme: Scheme = FEB_SCHEME) -> Optional[Event]:
+    """Parse one FEB PBP line; None when it lacks a usable number/period/clock. ``scheme``: the periods of the game (NCAA men: two halves, #1131)."""
     num = _to_int(line.get("num"))
     period = _to_int(line.get("quarter"))
     remaining = parse_clock(line.get("time"))
@@ -109,7 +109,7 @@ def parse_line(line: Dict[str, Any]) -> Optional[Event]:
         num=num,
         period=period,
         remaining=remaining,
-        elapsed=elapsed_seconds(period, remaining),
+        elapsed=elapsed_seconds(period, remaining, scheme),
         team_id=line.get("idTeam"),
         player_id=line.get("idPlayer"),
         name=name.group(1).strip() if name else None,

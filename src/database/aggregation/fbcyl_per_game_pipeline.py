@@ -309,7 +309,7 @@ def build_fbcyl_season_rows_pipeline() -> List[Dict]:
     (``Oct 4, 2025 7:00:00 PM``), ``tied`` marks the third result FBCYL has and ``total_rebounds`` / ``fouls`` are the box totals this league reports.
     The possessions are the stored count of ``DERIVED`` or the box estimate, as in the season pipeline.
     """
-    from .fbcyl_possession_expr import team_possessions
+    from .fbcyl_possession_expr import game_minutes, team_possessions
 
     def box(side: str, field: str) -> str:
         return f"${side}.data.{field}"
@@ -339,5 +339,6 @@ def build_fbcyl_season_rows_pipeline() -> List[Dict]:
             "opponent_turnovers": box(rival, "lost"), "opponent_blocks": box(rival, "block"), "opponent_fouls": box(rival, "faults"),
             "possessions": team_possessions("$teamIndex", "$teams"),
             "opponent_possessions": team_possessions({"$subtract": [1, "$teamIndex"]}, "$opponent"),
+            "game_minutes": game_minutes(),          # FBCYL rows hold the REAL possessions; the pace is these per 40 of this regulation (#1155)
         }},
     ]

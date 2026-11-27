@@ -5,6 +5,7 @@ from typing import List, Dict, Optional
 from .basic_stats import get_shooting_percentages, get_per_game_stats  # noqa: F401
 from .advanced_stats import get_all_advanced_stats  # noqa: F401
 from .pipeline_team_stats import TeamStatsPipelineMixin
+from .possession_expr import game_minutes
 
 
 class OpponentStatsPipelineMixin:
@@ -125,6 +126,7 @@ class OpponentStatsPipelineMixin:
                 "possessions": builder._opponent_conditional_field("team_0_poss", "team_1_poss"),
                 # Team's possessions (for DER calculation)
                 "opponent_possessions": builder._conditional_field("team_0_poss", "team_1_poss"),
+                "game_minutes": game_minutes(),                                  # brings the per-40 possessions back to the real count (#1154)
                 "steals": builder._opponent_conditional_field("team_0_steals", "team_1_steals"),
                 "turnovers": builder._opponent_conditional_field("team_0_turnovers", "team_1_turnovers"),
                 "blocks": builder._opponent_conditional_field("team_0_blocks", "team_1_blocks"),

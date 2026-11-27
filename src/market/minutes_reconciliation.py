@@ -1,7 +1,7 @@
 """The minutes of the official box counted from the play-by-play (#963): the starting five of the box (``sta``) and the substitution lines give the seconds each player is on court.
 
 A minute that does not agree within ``MINUTES_TOLERANCE`` is reported but never discards a game (it is an information statistic, not a core one). A game whose lineup cannot be known (a team without five starters in
-the box) has no minute check at all, and the report says so. The clock of the lines is the time REMAINING in the period (the one FIBA writes); quarters last ``QUARTER_SECONDS`` and every overtime ``OVERTIME_SECONDS``.
+the box) has no minute check at all, and the report says so. The clock of the lines is the time REMAINING in the period (the one FIBA writes); the regulation periods last what the scheme of the game says (``HEADER.PERIODS``, #1131: NCAA men play two halves of 20; else four quarters of 10) and every overtime ``OVERTIME_SECONDS``.
 Pure functions, no I/O, the same answer whatever the order of the lines.
 """
 from __future__ import annotations
@@ -9,7 +9,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Dict, List, Set, Tuple
 
-QUARTER_SECONDS = 600
+from src.live_core.clock import FEB_SCHEME, Scheme
+from src.pbp.period_scheme import scheme_of
+
 OVERTIME_SECONDS = 300
 MINUTES_TOLERANCE = 2                    # seconds: the box rounds (the real FIBA games agree within one)
 _STARTERS = 5
@@ -39,8 +41,8 @@ def _seconds(value: Any) -> int:
         return 0
 
 
-def _period_length(period: int) -> int:
-    return QUARTER_SECONDS if period <= 4 else OVERTIME_SECONDS
+def _period_length(period: int, scheme: Scheme = FEB_SCHEME) -> int:
+    return scheme.minutes * 60 if period <= scheme.periods else OVERTIME_SECONDS
 
 
 def _moves(lines: List[Dict[str, Any]], team_id: str) -> Dict[int, List[Tuple[int, int, str, bool]]]:
@@ -58,12 +60,12 @@ def _moves(lines: List[Dict[str, Any]], team_id: str) -> Dict[int, List[Tuple[in
     return out
 
 
-def _team_seconds(lines: List[Dict[str, Any]], team: Dict[str, Any], periods: List[int]) -> Dict[str, int]:
+def _team_seconds(lines: List[Dict[str, Any]], team: Dict[str, Any], periods: List[int], scheme: Scheme = FEB_SCHEME) -> Dict[str, int]:
     on: Set[str] = {str(p["id"]) for p in team["PLAYER"] if p.get("sta")}
     total: Dict[str, int] = {}
     moves = _moves(lines, str(team["id"]))
     for period in periods:
-        remaining = _period_length(period)
+        remaining = _period_length(period, scheme)
         for clock, _num, player, comes_in in moves.get(period, []):
             clock = min(clock, remaining)
             for person in on:
@@ -86,7 +88,7 @@ def minutes_checks(doc: Dict[str, Any]) -> Tuple[MinuteCheck, ...]:
     periods = sorted({int(l.get("quarter") or 0) for l in lines if int(l.get("quarter") or 0) > 0})
     checks: List[MinuteCheck] = []
     for team in teams[:2]:
-        worked = _team_seconds(lines, team, periods)
+        worked = _team_seconds(lines, team, periods, scheme_of(doc))
         for player in team["PLAYER"]:
             pid = str(player["id"])
             official = _seconds(player.get("min"))

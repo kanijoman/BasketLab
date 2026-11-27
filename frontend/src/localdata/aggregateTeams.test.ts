@@ -38,6 +38,16 @@ describe('aggregateTeams: the team tables from the rows of the contract (issue #
     expect([team.offensive_rating, team.defensive_rating, team.net_rating, team.turnover_rate]).toEqual([0, 0, 0, 0])
   })
 
+  it('the ratings divide by the real possessions of a game with overtime and only the pace stays per 40 minutes (#1154)', () => {
+    const [base] = rows.filter(r => r.team_id === rows[0].team_id).slice(0, 1)
+    const overtime = { ...base, possessions: 80, opponent_possessions: 72, game_minutes: 45, points: 90, opponent_points: 81 }
+    const [team] = aggregateTeams([overtime], {}).team_stats
+    expect(team.total_possessions).toBeCloseTo(90, 9)                    // 80 per 40 minutes x 45 / 40
+    expect(team.offensive_rating).toBeCloseTo(100, 9)                    // 90 points / 90 possessions, not 90 / 80
+    expect(team.defensive_rating).toBeCloseTo(100, 9)                    // 81 / 81
+    expect(team.possessions_per_game).toBe(80)
+  })
+
   it('a row whose date cannot be read is out of any filtered range, as in Mongo (onError null), and in the unfiltered table', () => {
     const bad = rows.map((r, i) => (i === 0 ? { ...r, starttime: 'sin fecha' } : r))
     const total = (f: TeamTableFilter) => aggregateTeams(bad, f).team_stats.reduce((n, t) => n + t.total_games, 0)

@@ -25,11 +25,10 @@ const estimate = (box: { fga: number; fta: number; tov: number; orb: number }) =
 
 /**
  * The possessions the service counts in a game: FEB's stored exact count (`DERIVED`) or, if the game has none, the box-score estimate; the published row holds them
- * scaled to 40 minutes, so a game with overtime is brought back to its own length. FBCYL's pipeline never reads `DERIVED`: it always estimates.
+ * scaled to 40 minutes, so a game with overtime is brought back to its own length. FBCYL rows hold the real count (`DERIVED` or the estimate of its box), as its season tables read it (#1155).
  */
 function possessionsOf(row: GameRow, own: Parameters<typeof estimate>[0], rival: Parameters<typeof estimate>[0]): { poss: number; oppPoss: number } {
-  if (row.fouls !== undefined) return { poss: estimate(own), oppPoss: estimate(rival) }           // only FBCYL rows carry fouls
-  const unscale = (row.game_minutes ?? 40) / 40
+  const unscale = row.fouls !== undefined ? 1 : (row.game_minutes ?? 40) / 40           // only FBCYL rows carry fouls: they hold the real count (#1155)
   // undoing the 40-minute scaling leaves noise in the last digits (68.72888888888887 × 1.125 = 77.31999999999998, the game had 77.32), enough to flip a rounding at .xx5 in the averages
   const rescale = (value: number) => (unscale === 1 ? value : Math.round(value * unscale * 1e9) / 1e9)
   return { poss: rescale(row.possessions) || estimate(own), oppPoss: rescale(row.opponent_possessions) || estimate(rival) }

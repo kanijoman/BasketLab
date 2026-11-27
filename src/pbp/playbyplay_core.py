@@ -2,9 +2,10 @@
 
 from typing import Dict, List, Tuple, Optional
 from collections import defaultdict
-from src.live_core.clock import GAME_SECONDS
+from src.live_core.clock import game_length, regulation_seconds
 
 from .event_helpers import get_timestamp
+from .period_scheme import scheme_of
 
 
 class PlayByPlayAnalyzer:
@@ -20,6 +21,8 @@ class PlayByPlayAnalyzer:
         """
         self.game_data = game_data
         self.is_fbcyl = is_fbcyl
+        self.scheme = scheme_of(game_data)                 # NCAA men: two halves of 20 (#1131)
+        self.game_seconds = regulation_seconds(self.scheme)
 
         if is_fbcyl:
             # FBCYL: moves are directly in 'moves' key (list)
@@ -87,7 +90,17 @@ class PlayByPlayAnalyzer:
             Absolute seconds from game start
         """
         # Delegates to the shared helper, which also handles OT periods (5min each).
-        return get_timestamp({"quarter": quarter, "time": time_str}, is_fbcyl=False)
+        return get_timestamp({"quarter": quarter, "time": time_str}, is_fbcyl=False, scheme=self.scheme)
+
+    def _game_end(self) -> int:
+        """Seconds from the start to the end of the last period played (the regulation of the scheme plus each overtime)."""
+        periods = []
+        for line in self.lines:
+            try:
+                periods.append(int(line.get("period" if self.is_fbcyl else "quarter") or 0))
+            except (TypeError, ValueError):
+                continue
+        return game_length(max(periods, default=0), self.scheme)
 
     def _get_team_key(self, id_team: Optional[str]) -> Optional[str]:
         """Get team key (team1/team2) from team ID."""
@@ -101,8 +114,8 @@ class PlayByPlayAnalyzer:
 
         Args:
             period: Period number (1-4, or 5+ for overtime)
-            min: Minutes elapsed in period
-            sec: Seconds elapsed in minute
+            min: Minutes REMAINING in the period (FBCYL's clock counts down, #370)
+            sec: Seconds remaining in that minute
 
         Returns:
             Absolute seconds from game start
@@ -306,8 +319,8 @@ class PlayByPlayAnalyzer:
 
         # If player was still on court at game end
         if current_start is not None:
-            # Game ends at 40 minutes (2400 seconds) for regular time
-            segments.append((current_start, GAME_SECONDS))
+            # the game ends at the end of its last period: the regulation (2400 seconds for four quarters of ten) plus each overtime played
+            segments.append((current_start, self._game_end()))
 
         return segments
 

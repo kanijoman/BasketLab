@@ -488,3 +488,18 @@ class TestCvFormulaRegression:
                 # don't have cv — skip them
                 continue
             assert entry["cv"] <= 200.0, f"CV for '{field}' exceeded cap: {entry['cv']}"
+
+
+def test_consistency_rows_do_not_depend_on_the_order_of_the_teams_regression():
+    """The teams with the same CV (a zero or a missing one goes last) were left in the order the dict had: the vectors are written with sorted keys and the browser read another order (#1154)."""
+    from src.services._weekly_report_helpers import build_consistency_rows
+
+    def cv(value):
+        return {"net_rating": {"cv": value}, "points_per_game": {"cv": 5.0}}
+
+    own = {"B": cv(0), "A": cv(0), "C": cv(3.0), "D": cv(None)}
+    forward = build_consistency_rows(own)
+    backward = build_consistency_rows(dict(reversed(list(own.items()))))
+
+    assert forward == backward
+    assert [row[0] for row in forward[0]] == ["C", "A", "B", "D"]
