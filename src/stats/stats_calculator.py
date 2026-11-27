@@ -14,6 +14,7 @@ from utils.numeric_utils import safe_int, safe_float
 
 from src.pbp.game_possessions import estimate_possessions
 from src.live_core.four_factors import FT_POSSESSION_COST
+from src.stats.formulas import evaluate
 
 
 class StatsCalculator:
@@ -54,6 +55,12 @@ class StatsCalculator:
             'bs': data.get('block', 0)
         }
         return normalized
+
+    @staticmethod
+    def _turnover_rate(turnovers: float, fga: float, fta: float) -> float:
+        """TOV% from the registry (``config/formulas.json``); 0 when the team neither shot nor lost the ball."""
+        value = evaluate("turnover_rate", {"tov": turnovers, "fg2a": fga, "fg3a": 0, "fta": fta})
+        return 0 if value is None else value
 
     @staticmethod
     def _extract_boxscore_values(team_data: Dict, opponent_data: Dict) -> Dict:
@@ -155,8 +162,8 @@ class StatsCalculator:
         # Assist Rate (AST / Possessions)
         assist_rate = (assists / poss * 100) if poss > 0 else 0
 
-        # Turnover Rate
-        turnover_rate = (turnovers / poss * 100) if poss > 0 else 0
+        # Turnover Rate: the Four Factors one, TOV / (FGA + 0.44 FTA + TOV) (registry, #1153)
+        turnover_rate = self._turnover_rate(turnovers, fg2_att + fg3_att, ft_att)
 
         # Steal Rate
         steal_rate = (steals / opp_poss * 100) if opp_poss > 0 else 0
@@ -384,7 +391,7 @@ class StatsCalculator:
         elif stat_field == "assist_rate":
             return (assists / poss * 100) if poss > 0 else 0
         elif stat_field == "turnover_rate":
-            return (turnovers / poss * 100) if poss > 0 else 0
+            return self._turnover_rate(turnovers, fg2_att + fg3_att, ft_att)
         elif stat_field == "steal_rate":
             return (steals / opp_poss * 100) if opp_poss > 0 else 0
         elif stat_field == "block_rate":

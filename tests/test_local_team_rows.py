@@ -93,4 +93,4 @@ def test_the_per_game_rates_divide_by_the_real_possessions_of_the_game_regressio
     assert sorted(round(g["real_poss"], 6) for g in per_game) == real
     for g in per_game:
         assert g["oer_game"] == pytest.approx(g["points"] / g["real_poss"] * 100)
-        assert g["der_game"] == pytest.approx(g["opponent_points"] / g["real_poss"] * 100)
+        assert g["der_game"] == pytest.approx(g["opponent_points"] / g["opp_real_poss"] * 100)          # over the RIVAL's possessions (#1153)

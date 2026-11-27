@@ -18,6 +18,7 @@ from src.database.aggregation.fbcyl_possession_expr import team_possessions
 from src.database.aggregation.pipeline_team_stats import TeamStatsPipelineMixin
 from utils.collection_utils import is_fbcyl as _is_fbcyl
 from src.live_core.four_factors import FT_POSSESSION_COST
+from src.stats.formulas import evaluate_all
 
 # ---------------------------------------------------------------------------
 # All stat keys supported by the evolution endpoints
@@ -425,10 +426,14 @@ class EvolutionService:
         opp_tov  = si(row.get("opp_tov"))
 
         fga = fg2a + fg3a
-        fgm = fg2m + fg3m
         opp_fga = opp_fg2a + opp_fg3a
-        poss     = row.get("poss") or max(fga     + FT_POSSESSION_COST * fta     + tov     - orb,     1.0)
-        opp_poss = row.get("opp_poss") or max(opp_fga + FT_POSSESSION_COST * opp_fta + opp_tov - opp_orb, 1.0)
+        # the stored exact count, else the estimate of the box; with no floor: a game without possessions has no rate (the registry says None, as the consistency does, #1153)
+        poss     = row.get("poss") or (fga     + FT_POSSESSION_COST * fta     + tov     - orb)
+        opp_poss = row.get("opp_poss") or (opp_fga + FT_POSSESSION_COST * opp_fta + opp_tov - opp_orb)
+
+        # every rate of the game with the formulas of the registry (config/formulas.json, #1153); None when its denominator is 0
+        rates = evaluate_all({"points": pts, "points_against": opp_pts, "fg2m": fg2m, "fg2a": fg2a, "fg3m": fg3m, "fg3a": fg3a, "fta": fta, "ast": ast, "stl": stl, "blk": blk,
+                              "tov": tov, "orb": orb, "drb": drb, "opp_orb": opp_orb, "opp_drb": opp_drb, "poss": poss, "opp_poss": opp_poss})
 
         lookup: Dict[str, Any] = {
             # Basic — counting
@@ -452,21 +457,21 @@ class EvolutionService:
             "fg3_percentage":    (fg3m / fg3a * 100) if fg3a > 0 else None,
             "ft_percentage":     (ftm  / fta  * 100) if fta  > 0 else None,
             # Advanced
-            "possessions":       float(poss),
-            "offensive_rating":  pts     / poss     * 100,
-            "defensive_rating":  opp_pts / opp_poss * 100,
-            "net_rating":        (pts / poss * 100) - (opp_pts / opp_poss * 100),
-            "efg_percentage":    ((fgm + 0.5 * fg3m) / fga * 100)       if fga > 0 else None,
-            "true_shooting":     (pts / (2 * (fga + FT_POSSESSION_COST * fta)) * 100) if (fga + FT_POSSESSION_COST * fta) > 0 else None,
-            "three_point_rate":  (fg3a / fga * 100)  if fga  > 0 else None,
-            "free_throw_rate":   (fta  / fga * 100)  if fga  > 0 else None,
-            "assist_fg_rate":    (ast  / fgm * 100)  if fgm  > 0 else None,
-            "assist_rate":       ast  / poss * 100,
-            "turnover_rate":     tov  / poss * 100,
-            "steal_rate":        stl  / opp_poss * 100,
-            "block_rate":        blk  / opp_poss * 100,
-            "off_rebound_rate":  (orb / (orb + opp_drb) * 100) if (orb + opp_drb) > 0 else None,
-            "def_rebound_rate":  (drb / (drb + opp_orb) * 100) if (drb + opp_orb) > 0 else None,
+            "possessions":       float(poss) if poss > 0 else None,
+            "offensive_rating":  rates["offensive_rating"],
+            "defensive_rating":  rates["defensive_rating"],
+            "net_rating":        rates["net_rating"],
+            "efg_percentage":    rates["efg_percentage"],
+            "true_shooting":     rates["true_shooting"],
+            "three_point_rate":  rates["three_point_rate"],
+            "free_throw_rate":   rates["free_throw_rate"],
+            "assist_fg_rate":    rates["assist_fg_rate"],
+            "assist_rate":       rates["assist_rate"],
+            "turnover_rate":     rates["turnover_rate"],
+            "steal_rate":        rates["steal_rate"],
+            "block_rate":        rates["block_rate"],
+            "off_rebound_rate":  rates["offensive_rebound_rate"],
+            "def_rebound_rate":  rates["defensive_rebound_rate"],
         }
         val = lookup.get(stat)
         return self._safe_num(val)

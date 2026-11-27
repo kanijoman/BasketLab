@@ -2,6 +2,7 @@
 // The tables of several collections (the phases of a competition) are merged by team or player name: the counting stats are added up, the per-game figures,
 // percentages and ratings are recomputed from the totals. Every quirk of the service is kept on purpose (what it does not add is seeded with 0 and what is not
 // a number comes from the first row), because the page must show what the API shows. Parity: `multiPhase.test.ts` against `tests/local_vectors/multi_phase.json`.
+import { evaluateAll } from '@/lib/formulas'
 import { parseComponents } from './collections'
 import { pyRound } from './pyMath'
 
@@ -10,7 +11,7 @@ type Row = Record<string, unknown>
 /** Fields that are simple totals (added across phases). */
 const SUM_FIELDS = [
   'games_played', 'games_won', 'games_lost', 'points_scored', 'points_received', 'fg2_made', 'fg2_attempts', 'fg3_made', 'fg3_attempts', 'ft_made', 'ft_attempts',
-  'rebounds_off', 'rebounds_def', 'total_rebounds', 'assists', 'steals', 'turnovers', 'blocks', 'personal_fouls', 'total_possessions', 'pace_possessions', 'total_minutes',
+  'rebounds_off', 'rebounds_def', 'total_rebounds', 'assists', 'steals', 'turnovers', 'blocks', 'personal_fouls', 'total_possessions', 'opponent_possessions', 'pace_possessions', 'opponent_rebounds_off', 'opponent_rebounds_def', 'total_minutes',
   'total_points', 'valoracion',
 ] as const
 
@@ -86,37 +87,14 @@ function recomputeDerived(row: Row): void {
     row.defensive_rebounds_per_game = round2(drb / games)
   }
 
-  const fg2m = orZero(row.fg2_made), fg2a = orZero(row.fg2_attempts), fg3m = orZero(row.fg3_made), fg3a = orZero(row.fg3_attempts), fta = orZero(row.ft_attempts)
-  const fgm = fg2m + fg3m, fga = fg2a + fg3a
-  const tov = orZero(row.turnovers), ast = orZero(row.assists), stl = orZero(row.steals), blk = orZero(row.blocks)
-  const pts = orZero(row.points_scored) || orZero(row.total_points)
-  const poss = orZero(row.total_possessions), oppPts = orZero(row.points_received)
-
-  if (poss) {
-    row.offensive_rating = round2((pts / poss) * 100)
-    row.defensive_rating = round2((oppPts / poss) * 100)
-    row.net_rating = round2(((pts - oppPts) / poss) * 100)
-  }
-  if (fga) {
-    row.efg_percentage = round2(((fg2m + 1.5 * fg3m) / fga) * 100)
-    row.three_point_rate = round2((fg3a / fga) * 100)
-  }
-  const tovDenominator = fga + 0.44 * fta + tov
-  if (tovDenominator) row.turnover_rate = round2((tov / tovDenominator) * 100)
-  if (fga) row.free_throw_rate = round2((fta / fga) * 100)
-  const tsDenominator = 2 * (fga + 0.44 * fta)
-  if (tsDenominator && pts) row.true_shooting = round2((pts / tsDenominator) * 100)
-  if (fgm) row.assist_fg_rate = round2((ast / fgm) * 100)
-  if (poss) {
-    row.assist_rate = round2((ast / poss) * 100)
-    row.steal_rate = round2((stl / poss) * 100)
-    row.block_rate = round2((blk / poss) * 100)
-  }
-  const rebounds = orb + drb
-  if (rebounds) {
-    row.offensive_rebound_rate = round2((orb / rebounds) * 100)
-    row.defensive_rebound_rate = round2((drb / rebounds) * 100)
-  }
+  // The rates: the formulas of the registry (config/formulas.json, #1153) over the totals of every phase; a rate with an empty denominator is left out (Python's `_recompute_derived`).
+  const rates = evaluateAll({
+    points: orZero(row.points_scored) || orZero(row.total_points), points_against: orZero(row.points_received),
+    fg2m: orZero(row.fg2_made), fg2a: orZero(row.fg2_attempts), fg3m: orZero(row.fg3_made), fg3a: orZero(row.fg3_attempts), fta: orZero(row.ft_attempts),
+    ast: orZero(row.assists), stl: orZero(row.steals), blk: orZero(row.blocks), tov: orZero(row.turnovers), orb, drb,
+    opp_orb: orZero(row.opponent_rebounds_off), opp_drb: orZero(row.opponent_rebounds_def), poss: orZero(row.total_possessions), opp_poss: orZero(row.opponent_possessions),
+  })
+  for (const [name, value] of Object.entries(rates)) if (value !== null) row[name] = round2(value)
 }
 
 /**

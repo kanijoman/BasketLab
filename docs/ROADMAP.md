@@ -103,6 +103,10 @@ Actualizar al cerrar cada entrega (regla de [CLAUDE.md](../CLAUDE.md)). Estado d
 - **Casos que antes caían a la API y ahora son error** (huecos de capacidad del lado local, candidatos a cubrir al publicar): IN/OUT de FBCYL y de una jugadora que no está en la publicación, comparación por tramo sin fecha, ventana de evolución fuera de 2-15 partidos, multifase con alguna fase sin publicar, partido sin análisis publicado y competición exportada sin filas de jugadoras.
 - **#447 queda sin objeto** (activar `ADMIN_API_KEY` para dar de alta colecciones desde la web) y #157–#159 siguen aparcadas.
 
+### 9d. Retirar la API (épica #1199, decidido el 27/11/2026)
+- **Se elimina `src/api`, `run_api.py` y el modo `?data=api`** en un PR de cinco commits (#1200 web, #1201 e2e y fixtures, #1202 borrar la API con auditoría de cobertura, #1203 servicios huérfanos, #1204 docs). Mediciones, riesgos y alcance en [la evaluación](evaluaciones/2026-11-27_eliminar-la-api.md): ≈ −25 % del tiempo de la suite, ≈ 3.300 líneas de producción y 7.700 de tests, `fastapi` y `uvicorn`.
+- **Queda fuera**: el oráculo Python de los vectores (≈ 2.137 líneas) y que TS sea canónico con vectores congelados como golden files (#641).
+
 ### 10. Dependencias y seguridad (#525)
 - **Dependencias y seguridad** (#525, 23/10/2026): vulnerabilidades npm del frontend web corregidas (de 10 a 0; `react-router-dom` 7 en #526), Dependabot semanal agrupado (npm web y app, GitHub Actions; pip solo avisos de seguridad) y `pip-audit` limpio; pendiente probar `action-gh-release` v3 con una publicación de prueba (#535, PR #532 retenido).
 
