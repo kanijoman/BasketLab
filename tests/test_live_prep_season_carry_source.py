@@ -71,3 +71,18 @@ def test_the_package_of_one_pair_also_starts_from_the_last_rating(world):
     carried = build_package_from_db(Handler(world), SEGUNDA, OWN, RIVAL, "2026-2027")
     plain = build_package_from_db(Handler({SEGUNDA: world[SEGUNDA]}), SEGUNDA, OWN, RIVAL, "2026-2027")
     assert carried.baselines["net_rtg_prior"] > plain.baselines["net_rtg_prior"]
+
+
+def test_a_code_in_two_groups_does_not_depend_on_the_order_of_the_groups_regression(feb_game_doc):
+    """#1130: ``ratings.update(found)`` kept the last group that had the code; now the value is the mean of its groups' (each centred on its own scale)."""
+    group_b = "SEGUNDA_FEB_2025_2026_Liga_Regular_B"
+    a = [played(feb_game_doc, ("11", CODE_OWN, 90), ("22", CODE_RIVAL, 60), 1, "05-10-2025 - 12:00")]
+    b = [played(feb_game_doc, ("33", CODE_OWN, 50), ("44", "99999999", 80), 2, "05-10-2025 - 12:00")]
+
+    alone_a = carry_ratings(Handler({OLD: a}), SEGUNDA)[CODE_OWN]
+    alone_b = carry_ratings(Handler({group_b: b}), SEGUNDA)[CODE_OWN]
+    both = carry_ratings(Handler({OLD: a, group_b: b}), SEGUNDA)
+
+    assert alone_a > 0 > alone_b
+    assert both[CODE_OWN] == pytest.approx((alone_a + alone_b) / 2)
+    assert set(both) == {CODE_OWN, CODE_RIVAL, "99999999"}

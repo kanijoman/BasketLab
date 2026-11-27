@@ -217,12 +217,12 @@ class SeasonAccumulator:
                     self.ratings.seed(str(t["id"]), self._carry[code])
 
     def link_clubs(self, team_ids: Iterable[str], linker: Any) -> None:
-        """Teams that have not played yet: their club (``ClubLinker``) gives their teamCode of last season, and so its final rating (issue #862)."""
+        """Teams that have not played yet: their club (``ClubLinker``) gives their teamCode of last season, and so its final rating (issue #862). A code another team of this season already has is not given twice (#1130)."""
         for team_id in dict.fromkeys(str(t) for t in team_ids):
             if team_id in self.ratings.known():
                 continue
             code = linker.code_of(team_id)
-            if code is not None and code in self._carry:
+            if code is not None and code in self._carry and code not in self.codes.values():       # a teamCode is seeded once (#1130)
                 self.codes.setdefault(team_id, code)
                 self.ratings.seed(team_id, self._carry[code])
 

@@ -56,13 +56,15 @@ def _final_by_code(mongo_collection: Any) -> Tuple[Dict[str, float], Dict[str, s
 def carry_for(handler: Any, collection: str) -> Carry:
     """The final ratings (by teamCode) of the previous season and the id each team had then; empty when there is none or anything fails (a package never depends on it)."""
     try:
-        ratings: Dict[str, float] = {}
+        seen: Dict[str, List[float]] = {}
         ids: Dict[str, str] = {}
         for name in previous_collections(handler, collection):
             found, found_ids = _final_by_code(handler.repository.connection.get_collection(name))
-            ratings.update(found)
+            mean = sum(found.values()) / len(found) if found else 0.0
+            for code, rating in found.items():                  # each group on its own scale (#1130): centred before the groups are put together
+                seen.setdefault(code, []).append(rating - mean)
             ids.update(found_ids)
-        return Carry(ratings, ids)
+        return Carry({code: sum(values) / len(values) for code, values in sorted(seen.items())}, ids)
     except Exception as exc:  # noqa: BLE001 - the carry only refines the prior
         log.warning("no carry-over ratings for %s: %s", collection, exc)
         return Carry({}, {})
