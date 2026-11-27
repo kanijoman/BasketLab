@@ -59,9 +59,32 @@ def _persons_by_birth(rows: Iterable[Dict[str, Any]]) -> Dict[str, Dict[str, Set
     return out
 
 
+def _names_by_person(rows: Iterable[Dict[str, Any]]) -> Dict[str, Set[str]]:
+    """``{person_id: every name the person has been written with}`` (the words alone lose which one is the given name)."""
+    out: Dict[str, Set[str]] = {}
+    for row in rows:
+        if row.get("birth") and row.get("person_id") and row.get("name"):
+            out.setdefault(str(row["person_id"]), set()).add(str(row["name"]))
+    return out
+
+
+def _given_initials(name: Any, shared: Set[str]) -> Set[str]:
+    """The initials of the words of a name that are not the shared surnames (initials such as ``M.`` count): what is left is the given name."""
+    return {w[0] for w in plain_words(name) if w not in shared and w not in _PARTICLES}
+
+
+def _given_name_agrees(player_names: Iterable[Any], person_names: Iterable[str], shared: Iterable[str]) -> bool:
+    """The surnames do not tell sisters apart (#1126): some name of the player and some of the person must have a given name (or an initial) in common; a name with none left cannot contradict."""
+    common = set(shared)
+    mine = [_given_initials(n, common) for n in player_names if n]
+    theirs = [_given_initials(n, common) for n in person_names]
+    return any(not a or not b or a & b for a in mine for b in theirs)
+
+
 def link_players(feb_rows: Iterable[Dict[str, Any]], players: Iterable[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """The links of ``players`` to the persons of ``feb_rows`` (the roster rows of FEB: ``person_id``, ``name``, ``birth``), sorted by external id. A player with no candidate is not in the answer."""
-    by_birth = _persons_by_birth(feb_rows)
+    feb_rows = list(feb_rows)
+    by_birth, names = _persons_by_birth(feb_rows), _names_by_person(feb_rows)
     links: List[Dict[str, Any]] = []
     for player in sorted(players, key=lambda p: str(p["id"])):
         words = _words(player.get("name")) | _words(player.get("full_name"))
@@ -69,8 +92,11 @@ def link_players(feb_rows: Iterable[Dict[str, Any]], players: Iterable[Dict[str,
         for person, theirs in sorted(by_birth.get(str(player.get("birth")), {}).items()):
             shared = sorted(words & theirs)
             if shared:
-                fits.append({"feb": person, "shared": shared})
-        strong = [f for f in fits if len(f["shared"]) >= MIN_SHARED]
+                fit = {"feb": person, "shared": shared}
+                if len(shared) >= MIN_SHARED and not _given_name_agrees([player.get("name"), player.get("full_name")], names.get(person, ()), shared):
+                    fit["reason"] = "given_name"
+                fits.append(fit)
+        strong = [f for f in fits if len(f["shared"]) >= MIN_SHARED and "reason" not in f]
         base = {"external": str(player["id"]), "method": METHOD, "birth": str(player["birth"])}
         if len(strong) == 1:
             links.append({**base, "status": "linked", "feb": strong[0]["feb"], "shared": strong[0]["shared"]})
