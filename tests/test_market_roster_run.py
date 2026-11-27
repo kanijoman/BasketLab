@@ -117,17 +117,17 @@ class TestTeamsBySeason:
         import games
 
         monkeypatch.setattr(pymongo, "MongoClient", mongomock.MongoClient)
-        from src.api import deps
+        from src.database import shared_handler as _shared
 
-        deps._create_handler.cache_clear()
-        handler = deps._create_handler()
+        _shared.shared_handler.cache_clear()
+        handler = _shared.shared_handler()
         db = handler.connection.client["BASKETBALL"]
         for name, season in (("LF_ENDESA_2025_2026_Liga_Regular_Único", "2025"), ("LF_ENDESA_2024_2025_Liga_Regular_Único", "2024")):
             db[name].insert_many(games.build_games())
             db["COLLECTION_META"].insert_one({"_id": name, "league": "FEB", "competition_label": "LF ENDESA", "season_value": season, "season_label": f"{season}/{int(season) + 1}", "group_label": "x"})
         db["FBCYL_1ª_FASE-GRUPO_A-1_2026_"].insert_many(fbcyl_games.build_games())
         yield handler.connection
-        deps._create_handler.cache_clear()
+        _shared.shared_handler.cache_clear()
 
     def test_every_team_of_every_season_and_none_of_fbcyl_which_has_no_roster_page(self, connection):
         names = ["LF_ENDESA_2025_2026_Liga_Regular_Único", "LF_ENDESA_2024_2025_Liga_Regular_Único", "FBCYL_1ª_FASE-GRUPO_A-1_2026_"]

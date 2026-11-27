@@ -44,10 +44,3 @@ def test_the_removed_ai_package_and_router_are_gone():
     assert not (ROOT / "frontend" / "src" / "pages" / "AIAnalysisPage.tsx").exists()
 
 
-def test_the_ai_url_prefix_is_not_served():
-    from fastapi.testclient import TestClient
-
-    from src.api.app import app
-
-    client = TestClient(app)
-    assert client.get("/api/v1/ai/analyze/stream").status_code == 404

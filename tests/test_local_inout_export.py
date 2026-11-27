@@ -14,24 +14,24 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parent / "local_vectors"))
 
 from lineup_games import FBCYL, FEB, sample_games  # noqa: E402
-from src.api.routers.players import get_inout_analysis  # noqa: E402
+from src.services.inout_service import inout_analysis  # noqa: E402
 from src.local_data.export import FORMAT  # noqa: E402
 from src.local_data.inout_export import export_inout  # noqa: E402
 
 
 @pytest.fixture()
 def handler(monkeypatch):
-    from src.api import deps
+    from src.database import shared_handler as _shared
 
     monkeypatch.setattr(pymongo, "MongoClient", mongomock.MongoClient)
-    deps._create_handler.cache_clear()
-    handler = deps._create_handler()
+    _shared.shared_handler.cache_clear()
+    handler = _shared.shared_handler()
     db = handler.connection.client["BASKETBALL"]
     plan = [{"day": "2025-10-05"}, {"day": "2025-10-12", "periods": 3}]
     db[FEB].insert_many(sample_games("feb", plan))
     db[FBCYL].insert_many(sample_games("fbcyl", plan))
     yield handler
-    deps._create_handler.cache_clear()
+    _shared.shared_handler.cache_clear()
 
 
 def test_each_player_has_what_the_endpoint_answers_for_them(handler):
@@ -42,7 +42,7 @@ def test_each_player_has_what_the_endpoint_answers_for_them(handler):
     assert len(ids) == len(set(ids))
     answered = 0
     for entry in payload["players"][:6]:
-        expected = json.loads(json.dumps(get_inout_analysis(FEB, entry["player_id"], handler), default=str))
+        expected = json.loads(json.dumps(inout_analysis(handler, FEB, entry["player_id"]), default=str))
         assert entry["analysis"] == expected
         answered += bool(expected)
     assert answered > 0 and any("on" in p["analysis"] and "off" in p["analysis"] for p in payload["players"])
@@ -57,6 +57,6 @@ def test_fbcyl_publishes_each_player_by_his_uuid_regression(handler):
     ids = [p["player_id"] for p in payload["players"]]
     assert len(ids) == len(set(ids)) and all("-" in i for i in ids)                          # uuids, not the numeric actorIds of the table
     for entry in payload["players"][:6]:
-        expected = json.loads(json.dumps(get_inout_analysis(FBCYL, entry["player_id"], handler), default=str))
+        expected = json.loads(json.dumps(inout_analysis(handler, FBCYL, entry["player_id"]), default=str))
         assert entry["analysis"] == expected
     assert any(p["analysis"].get("games_analyzed") for p in payload["players"])               # asked by uuid, the analysis finds the games

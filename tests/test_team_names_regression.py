@@ -22,16 +22,16 @@ FBCYL = "FBCYL_1ª_FASE-GRUPO_A-1_2026_"
 
 @pytest.fixture()
 def handler(monkeypatch):
-    from src.api import deps
+    from src.database import shared_handler as _shared
 
     monkeypatch.setattr(pymongo, "MongoClient", mongomock.MongoClient)
-    deps._create_handler.cache_clear()
-    handler = deps._create_handler()
+    _shared.shared_handler.cache_clear()
+    handler = _shared.shared_handler()
     db = handler.connection.client["BASKETBALL"]
     db[FEB].insert_many(games.build_games())
     db[FBCYL].insert_many(fbcyl_games.build_games())
     yield handler
-    deps._create_handler.cache_clear()
+    _shared.shared_handler.cache_clear()
 
 
 def test_the_teams_of_an_fbcyl_competition_are_listed_regression(handler):

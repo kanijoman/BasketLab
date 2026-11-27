@@ -22,17 +22,17 @@ from src.services.player_stats_service import PlayerStatsService  # noqa: E402
 
 @pytest.fixture()
 def handler(monkeypatch):
-    from src.api import deps
+    from src.database import shared_handler as _shared
 
     monkeypatch.setattr(pymongo, "MongoClient", mongomock.MongoClient)
-    deps._create_handler.cache_clear()
-    handler = deps._create_handler()
+    _shared.shared_handler.cache_clear()
+    handler = _shared.shared_handler()
     db = handler.connection.client["BASKETBALL"]
     plan = [{"day": "2025-10-05"}, {"day": "2025-10-12", "periods": 3}, {"day": "2025-10-19"}]
     db[FEB].insert_many(sample_games("feb", plan))
     db[FBCYL].insert_many(sample_games("fbcyl", plan))
     yield handler
-    deps._create_handler.cache_clear()
+    _shared.shared_handler.cache_clear()
 
 
 def test_each_player_has_what_the_endpoint_answers_for_them_in_fbcyl(handler):

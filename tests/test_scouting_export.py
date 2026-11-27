@@ -113,11 +113,11 @@ def handler(monkeypatch):
     import mongomock
     import pymongo
 
-    from src.api import deps
+    from src.database import shared_handler as _shared
 
     monkeypatch.setattr(pymongo, "MongoClient", mongomock.MongoClient)
-    deps._create_handler.cache_clear()
-    handler = deps._create_handler()
+    _shared.shared_handler.cache_clear()
+    handler = _shared.shared_handler()
     import sys
     from pathlib import Path
 
@@ -126,7 +126,7 @@ def handler(monkeypatch):
 
     handler.connection.client["BASKETBALL"]["L_F_-2_2025_2026_Liga_Regular_B"].insert_many(games.build_games())
     yield handler
-    deps._create_handler.cache_clear()
+    _shared.shared_handler.cache_clear()
 
 
 def test_the_publication_with_scouting_satisfies_the_contract_and_lists_the_files_in_the_report_index(handler, docs, tmp_path):
