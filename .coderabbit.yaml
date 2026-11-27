@@ -34,9 +34,6 @@ reviews:
       instructions: |
         Biblioteca estándar solamente (corre en Pyodide en la tablet). Debe ser determinista y no depender del orden de los datos.
         Cualquier cambio de comportamiento exige regenerar los vectores y revisar su diff.
-    - path: "src/api/**"
-      instructions: |
-        FastAPI con `Depends(get_db)`. Un endpoint de escritura necesita `require_admin`. Operaciones largas en `BackgroundTasks`.
     - path: "frontend/src/**"
       instructions: |
         React 18 + TypeScript. Textos de UI en español. Sin colores sueltos (`#hex`, `gray-500`, `dark:`): vocabulario del preset de `design/`; gráficos con `useChartTheme`.
