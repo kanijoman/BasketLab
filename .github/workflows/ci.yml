@@ -154,8 +154,8 @@ jobs:
         run: npm run build:market
 
   # ── Web smoke e2e (issue #111) ─────────────────────────────────────────────
-  # Real Chromium against the production build and the real FastAPI app on an in-memory MongoDB
-  # (tests/e2e_web/serve_api.py): no credentials, no network.
+  # Real Chromium against the production build, with the REAL publication of the fixtures league served in place of the `web-data` branch (frontend/e2e/publication.ts): no server,
+  # no credentials, no network. Python is for `previa-completa` (it seals a publication on each run, tests/e2e_web/forecast_publication.py).
   e2e-web:
     name: Web smoke e2e (Playwright)
     runs-on: ubuntu-latest

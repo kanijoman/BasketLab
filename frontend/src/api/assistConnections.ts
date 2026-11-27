@@ -1,7 +1,6 @@
 /** Assist connections of a team (issue #773): who passes, who receives and from which zones the receiver scores, assisted against not assisted. */
 import { fromSource } from '@/datasource/resolve'
 import { localAssistConnections } from '@/localdata/source'
-import { get } from './http'
 
 export interface ConnectionZone {
   zone: string
@@ -82,6 +81,5 @@ export function getAssistConnections(collection: string, teamId: string): Promis
   return fromSource(
     'assist-connections',
     () => localAssistConnections(collection, teamId),
-    () => get<AssistConnections>(`/assist-connections/${encodeURIComponent(collection)}/${encodeURIComponent(teamId)}`),
   )
 }

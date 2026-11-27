@@ -8,9 +8,6 @@ const scouting = vi.hoisted(() => ({
   getScoutingScopes: vi.fn(),
   getPublishedScouting: vi.fn(),
   getOwnComparison: vi.fn(),
-  startScouting: vi.fn(),
-  getScoutingProgress: vi.fn(),
-  getScoutingReport: vi.fn(),
   downloadScoutingPdf: vi.fn(),
 }))
 const collectionState = vi.hoisted(() => ({ value: { name: 'FEB_X', label: 'FEB X', isFbcyl: false } }))
@@ -62,14 +59,9 @@ beforeEach(() => {
   Object.values({ ...api, ...scouting }).forEach(f => f.mockReset())
   collectionState.value = { name: 'FEB_X', label: 'FEB X', isFbcyl: false }
   api.getLiveTeamNames.mockResolvedValue([{ id: '1', name: 'Equipo A' }, { id: '2', name: 'Equipo B' }, { id: '3', name: 'Equipo C' }])
-  scouting.getScoutingScopes.mockResolvedValue([])                            // nothing published: the page works as always
-  scouting.getPublishedScouting.mockResolvedValue(null)
+  scouting.getScoutingScopes.mockResolvedValue(['liga'])                      // the report of the rival is published: the files are the only source
+  scouting.getPublishedScouting.mockResolvedValue(REPORT)
   scouting.getOwnComparison.mockResolvedValue([])
-  scouting.startScouting.mockResolvedValue({ job_id: 'j1' })
-  scouting.getScoutingProgress
-    .mockResolvedValueOnce({ status: 'running', current: 4, total: 16, team: 'Equipo B', own_team: 'Equipo A', error: null })
-    .mockResolvedValue({ status: 'done', current: 16, total: 16, team: 'Equipo B', own_team: 'Equipo A', error: null })
-  scouting.getScoutingReport.mockResolvedValue(REPORT)
   scouting.downloadScoutingPdf.mockResolvedValue(new Blob(['%PDF']))
   vi.stubGlobal('URL', { ...URL, createObjectURL: vi.fn(() => 'blob:x'), revokeObjectURL: vi.fn() })
 })
@@ -88,15 +80,9 @@ describe('ScoutingRivalPage (issue #299)', () => {
     expect(screen.getByRole('button', { name: /generar informe/i })).not.toBeDisabled()
   })
 
-  it('has one h1 and, while the report is made, the button says it is working and nothing can be changed (issue #666)', async () => {
+  it('has one h1', async () => {
     renderPage()
     expect(screen.getByRole('heading', { level: 1, name: 'Scouting del rival' })).toBeTruthy()
-    await choose()
-    fireEvent.click(screen.getByRole('button', { name: /generar informe/i }))
-    const working = await screen.findByRole('button', { name: /generar informe/i })
-    await waitFor(() => expect(working.getAttribute('aria-busy')).toBe('true'))
-    expect((working as HTMLButtonElement).disabled).toBe(true)
-    expect((screen.getByLabelText(/equipo a analizar/i) as HTMLSelectElement).disabled).toBe(true)
   })
 
   it('does not accept the same team as scouted and as ours', async () => {
@@ -106,12 +92,11 @@ describe('ScoutingRivalPage (issue #299)', () => {
     expect(screen.getByText(/deben ser distintos/i)).toBeTruthy()
   })
 
-  it('generates, shows progress and then the preview with the findings, the plan and the matchup', async () => {
+  it('generates the preview with the findings, the plan and the matchup', async () => {
+    scouting.getOwnComparison.mockResolvedValue(REPORT.comparison)                // the matchup is computed on the device and added to the published report
     renderPage()
     await choose()
     fireEvent.click(screen.getByRole('button', { name: /generar informe/i }))
-    await waitFor(() => expect(screen.getByRole('progressbar', { name: /progreso del informe/i })).toBeTruthy())
-    expect(scouting.startScouting).toHaveBeenCalledWith({ collection: 'FEB_X', team_id: '2', own_team_id: '1' })
     await act(async () => { await vi.advanceTimersByTimeAsync(1500) })
     expect(await screen.findByRole('heading', { name: 'Equipo B' })).toBeTruthy()
     expect(screen.getByText(/depende de A\. ESCOLTA/i)).toBeTruthy()
@@ -123,7 +108,7 @@ describe('ScoutingRivalPage (issue #299)', () => {
   })
 
   it('shows the origin of the points of the team against the league when the report has it (#358)', async () => {
-    scouting.getScoutingReport.mockResolvedValue({ ...REPORT, origin: ORIGIN })
+    scouting.getPublishedScouting.mockResolvedValue({ ...REPORT, origin: ORIGIN })
     renderPage()
     await choose('2', '')
     fireEvent.click(screen.getByRole('button', { name: /generar informe/i }))
@@ -138,7 +123,7 @@ describe('ScoutingRivalPage (issue #299)', () => {
 
   it.each([['M', 'Jugadores clave', 'Jugador'], ['F', 'Jugadoras clave', 'Jugadora'], [undefined, 'Jugadores clave', 'Jugador']])(
     'names the key players in the gender of the competition (%s, #495)', async (gender, title, column) => {
-      scouting.getScoutingReport.mockResolvedValue({ ...REPORT, gender })
+      scouting.getPublishedScouting.mockResolvedValue({ ...REPORT, gender })
       renderPage()
       await choose('2', '')
       fireEvent.click(screen.getByRole('button', { name: /generar informe/i }))
@@ -157,15 +142,16 @@ describe('ScoutingRivalPage (issue #299)', () => {
     expect(screen.queryByText('Origen de los puntos')).toBeNull()
   })
 
-  it('without our team it asks for no matchup', async () => {
+  it('without our team the matchup is not computed', async () => {
     renderPage()
     await choose('2', '')
     fireEvent.click(screen.getByRole('button', { name: /generar informe/i }))
-    await waitFor(() => expect(scouting.startScouting).toHaveBeenCalledWith({ collection: 'FEB_X', team_id: '2' }))
+    await screen.findByText('Claves tácticas')
+    expect(scouting.getOwnComparison).not.toHaveBeenCalled()
   })
 
   it('says it when there are few games and shows the notice', async () => {
-    scouting.getScoutingReport.mockResolvedValue({ ...REPORT, low_sample: true, sample_games: 2, notices: ['Muestra pequeña: solo 2 partidos con jugada a jugada detrás de estos datos; son orientativos.'] })
+    scouting.getPublishedScouting.mockResolvedValue({ ...REPORT, low_sample: true, sample_games: 2, notices: ['Muestra pequeña: solo 2 partidos con jugada a jugada detrás de estos datos; son orientativos.'] })
     renderPage()
     await choose()
     fireEvent.click(screen.getByRole('button', { name: /generar informe/i }))
@@ -185,22 +171,6 @@ describe('ScoutingRivalPage (issue #299)', () => {
     await waitFor(() => expect(scouting.downloadScoutingPdf).toHaveBeenCalledTimes(2))
   })
 
-  it('shows the error of a failed job', async () => {
-    scouting.getScoutingProgress.mockReset().mockResolvedValue({ status: 'error', current: 0, total: 0, team: 'Equipo B', own_team: null, error: 'El equipo 2 no tiene partidos con jugada a jugada en la colección' })
-    renderPage()
-    await choose('2', '')
-    fireEvent.click(screen.getByRole('button', { name: /generar informe/i }))
-    expect(await screen.findByText(/no tiene partidos con jugada a jugada/i)).toBeTruthy()
-  })
-
-  it('shows the error when the job cannot be started', async () => {
-    scouting.startScouting.mockRejectedValue(new Error('Ya hay un informe en preparación; espera a que termine'))
-    renderPage()
-    await choose('2', '')
-    fireEvent.click(screen.getByRole('button', { name: /generar informe/i }))
-    expect(await screen.findByText(/ya hay un informe en preparación/i)).toBeTruthy()
-  })
-
   // Issue #635: FBCYL has its scouting too (it was «solo FEB por ahora»): the same page, the teams of the competition, and the notice of its experimental play-by-play
   // comes with the report
   it('serves FBCYL too: the teams of the competition can be chosen and the report is read', async () => {
@@ -215,7 +185,6 @@ describe('ScoutingRivalPage (issue #299)', () => {
     expect(await screen.findByText(/jugada a jugada de FBCYL es experimental/i)).toBeInTheDocument()
     expect(scouting.getPublishedScouting).toHaveBeenCalledWith('FBCYL_X', '2', 'liga')
     expect(screen.queryByRole('radiogroup', { name: 'Partidos a analizar' })).toBeNull()          // no cups: only the league
-    expect(scouting.startScouting).not.toHaveBeenCalled()
   })
 })
 
@@ -241,7 +210,6 @@ describe('ScoutingRivalPage: published scouting by scope (issue #638)', () => {
     fireEvent.click(screen.getByRole('button', { name: /generar informe/i }))
     expect(await screen.findByText('Alcance liga')).toBeInTheDocument()
     expect(scouting.getPublishedScouting).toHaveBeenCalledWith('FEB_X', '2', 'liga')
-    expect(scouting.startScouting).not.toHaveBeenCalled()
     expect(screen.getByRole('button', { name: /descargar pdf/i })).toBeInTheDocument()          // the PDF is made in the browser from the report: a published one has it too (issue #715)
   })
 
@@ -280,7 +248,6 @@ describe('ScoutingRivalPage: published scouting by scope (issue #638)', () => {
     expect(scouting.getOwnComparison).toHaveBeenCalledWith('FEB_X', '1', '2')
     expect(await screen.findByText('Comparativa: Equipo A frente a Equipo B')).toBeInTheDocument()
     expect(screen.getByText('55,0 %')).toBeInTheDocument()
-    expect(scouting.startScouting).not.toHaveBeenCalled()
   })
 
   it('changing the scope keeps the matchup of our team', async () => {
@@ -294,23 +261,12 @@ describe('ScoutingRivalPage: published scouting by scope (issue #638)', () => {
     expect(await screen.findByText('Comparativa: Equipo A frente a Equipo B')).toBeInTheDocument()
   })
 
-  it('on the published files, a rival with nothing published says so and no job is started on a server', async () => {
-    localStorage.setItem('basketlab.data', 'local')
+  it('a rival with nothing published says so: nothing is generated on a server', async () => {
     scouting.getScoutingScopes.mockResolvedValue([])
     renderPage()
     await choose('2', '1')
     fireEvent.click(screen.getByRole('button', { name: /generar informe/i }))
     expect(await screen.findByText(/todavía no está publicado/i)).toBeInTheDocument()
-    expect(scouting.startScouting).not.toHaveBeenCalled()
-  })
-
-  it('when the publication cannot give the report (the API asked for on purpose), it is generated as always', async () => {
-    localStorage.setItem('basketlab.data', 'api')                     // this describe clears the storage: the API is asked for here
-    scouting.getPublishedScouting.mockResolvedValue(null)
-    renderPage()
-    await choose('2', '')
-    fireEvent.click(screen.getByRole('button', { name: /generar informe/i }))
-    await waitFor(() => expect(scouting.startScouting).toHaveBeenCalled())
   })
 
   it('without a key it asks for an invitation, and the one pasted unlocks it without leaving the page', async () => {

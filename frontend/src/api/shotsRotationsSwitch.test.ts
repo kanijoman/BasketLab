@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ScopedAccessError } from '@live-package/crypto'
 import { getShotRaw, getShotZones, streamRotacionesAnalysis } from './client'
-import { DATA_FLAG_KEY, resetLocalData } from '@/localdata/source'
+import { resetLocalData } from '@/localdata/source'
 import { loadWebRotations, loadWebShots, WebDataUnavailable } from '@/webdata/client'
 import shotVectors from '../../../tests/local_vectors/shots_feb.json'
 import { DataUnavailable } from '@/datasource/resolve'
@@ -26,7 +26,7 @@ class FakeEventSource {                                              // what the
 }
 
 beforeEach(() => {
-  localStorage.clear(); localStorage.setItem('basketlab.data', 'api'); resetLocalData(); calls = []; streamed = []
+  localStorage.clear(); resetLocalData(); calls = []; streamed = []
   vi.mocked(loadWebShots).mockReset().mockResolvedValue(shotVectors.payload as never)
   vi.mocked(loadWebRotations).mockReset().mockResolvedValue(ROTATIONS as never)
   ;(globalThis as { EventSource?: unknown }).EventSource = FakeEventSource
@@ -38,14 +38,7 @@ beforeEach(() => {
 afterEach(() => { globalThis.fetch = realFetch; (globalThis as { EventSource?: unknown }).EventSource = realEventSource })       // not unstubAllGlobals: it would drop the in-memory localStorage of the setup
 
 describe('data source switch: Tiros', () => {
-  it('off: the API answers and nothing is downloaded', async () => {
-    expect((await getShotZones(COLLECTION, {}))[0].zone).toBe('DE LA API')
-    expect((await getShotRaw(COLLECTION, {}))[0].x).toBe(-1)
-    expect(loadWebShots).not.toHaveBeenCalled()
-  })
-
   it('on: the zones and the raw shots are what the endpoints answer, counted on the device, with one file for both', async () => {
-    localStorage.setItem(DATA_FLAG_KEY, 'local:shots')
     const zones = await getShotZones(COLLECTION, { compare: 'league' })
     expect(zones.map(z => z.zone)).toEqual(shotVectors.zones.find(c => c.compare === 'league' && Object.keys(c.filter).length === 0)!.zones.map(z => z.zone))
     const raw = await getShotRaw(COLLECTION, { limit: 7 })
@@ -55,7 +48,6 @@ describe('data source switch: Tiros', () => {
   })
 
   it('on, but not published: a clear error, not the API; with no key: the access error', async () => {
-    localStorage.setItem(DATA_FLAG_KEY, 'local:shots')
     vi.mocked(loadWebShots).mockRejectedValue(new WebDataUnavailable('no publicado'))
     await expect(getShotZones(COLLECTION, {})).rejects.toBeInstanceOf(DataUnavailable)
     resetLocalData()
@@ -65,24 +57,10 @@ describe('data source switch: Tiros', () => {
 })
 
 describe('data source switch: Rotaciones', () => {
-  it('off: the stream of the API', async () => {
-    expect((await streamRotacionesAnalysis(COLLECTION, '101', 'ALPHA')).total_games).toBe(-1)
-    expect(streamed).toHaveLength(1)
-  })
-
-  it('on: the analysis of the team as it was published, at once (the progress goes to 100 %), without the stream', async () => {
-    localStorage.setItem(DATA_FLAG_KEY, 'local:rotations')
-    const progress = vi.fn()
-    expect(await streamRotacionesAnalysis(COLLECTION, '101', 'ALPHA', progress)).toEqual(ANALYSIS)
-    expect(progress).toHaveBeenCalledWith(100, 1, 1)
-    expect(streamed).toEqual([])
-  })
-
   it('on, but the team is not in the publication or the competition is not published: a clear error, not the API', async () => {
-    localStorage.setItem(DATA_FLAG_KEY, 'local:rotations')
-    await expect(streamRotacionesAnalysis(COLLECTION, '999', 'OTHER')).rejects.toBeInstanceOf(DataUnavailable)
+    await expect(streamRotacionesAnalysis(COLLECTION, '999')).rejects.toBeInstanceOf(DataUnavailable)
     resetLocalData()
     vi.mocked(loadWebRotations).mockRejectedValue(new WebDataUnavailable('no publicado'))
-    await expect(streamRotacionesAnalysis(COLLECTION, '101', 'ALPHA')).rejects.toBeInstanceOf(DataUnavailable)
+    await expect(streamRotacionesAnalysis(COLLECTION, '101')).rejects.toBeInstanceOf(DataUnavailable)
   })
 })

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { getTeamEvolution } from './client'
-import { DATA_FLAG_KEY, resetLocalData } from '@/localdata/source'
+import { resetLocalData } from '@/localdata/source'
 import teams from '../../../tests/local_vectors/team_stats_feb.json'
 import evolution from '../../../tests/local_vectors/team_evolution_feb.json'
 import { DataUnavailable } from '@/datasource/resolve'
@@ -15,7 +15,7 @@ let calls: string[]
 const realFetch = globalThis.fetch
 
 beforeEach(() => {
-  localStorage.clear(); localStorage.setItem('basketlab.data', 'api'); resetLocalData(); calls = []
+  localStorage.clear(); resetLocalData(); calls = []
   globalThis.fetch = vi.fn(async (url: string) => {
     calls.push(String(url))
     const file = String(url).split('/local-data/')[1]
@@ -28,18 +28,12 @@ afterEach(() => { globalThis.fetch = realFetch })
 describe('data source switch: the evolution of a team', () => {
   const want = evolution.cases.find(c => c.team_id === '101' && c.stat === 'points' && c.window === 5)!.points
 
-  it('off: the API answers', async () => {
-    expect((await getTeamEvolution(FEB, '101', 'points', 5))[0].game_number).toBe(-1)
-  })
-
   it('on: the series of the rows, the one of the API, with no call to it', async () => {
-    localStorage.setItem(DATA_FLAG_KEY, 'local:evolution')
     expect(await getTeamEvolution(FEB, '101', 'points', 5)).toEqual(want)
     expect(calls.filter(c => c.includes('/api/'))).toEqual([])
   })
 
   it('on with a window the API refuses, or a competition that is not published: a clear error, not the API', async () => {
-    localStorage.setItem(DATA_FLAG_KEY, 'local:evolution')
     await expect(getTeamEvolution(FEB, '101', 'points', 20)).rejects.toBeInstanceOf(DataUnavailable)
     await expect(getTeamEvolution('OTRA', '101', 'points', 5)).rejects.toBeInstanceOf(DataUnavailable)
   })

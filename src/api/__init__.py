@@ -1,1 +1,0 @@
-"""BasketLab FastAPI application package."""

@@ -33,7 +33,7 @@ async function servePublication(page: Page) {
 
 /** Opens the preview of the first match to play of the first team that has one. */
 async function openPreview(page: Page, query = '') {
-  await page.goto(`/${encodeURIComponent(C)}/previa?data=local${query}`)
+  await page.goto(`/${encodeURIComponent(C)}/previa${query}`)
   const team = page.getByRole('combobox', { name: 'Equipo' })
   await expect(team).toBeVisible()
   await team.selectOption({ index: 1 })

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ScopedAccessError } from '@live-package/crypto'
 import { getInOutAnalysis } from './client'
-import { DATA_FLAG_KEY, resetLocalData } from '@/localdata/source'
+import { resetLocalData } from '@/localdata/source'
 import { loadWebInOut, WebDataUnavailable } from '@/webdata/client'
 import { DataUnavailable } from '@/datasource/resolve'
 
@@ -16,20 +16,14 @@ let calls: string[]
 const realFetch = globalThis.fetch
 
 beforeEach(() => {
-  localStorage.clear(); localStorage.setItem('basketlab.data', 'api'); resetLocalData(); calls = []
+  localStorage.clear(); resetLocalData(); calls = []
   vi.mocked(loadWebInOut).mockReset().mockResolvedValue(PUBLISHED as never)
   globalThis.fetch = vi.fn(async (url: string) => { calls.push(String(url)); return { ok: true, json: async () => ({ on: { minutes: -1 } }) } }) as unknown as typeof fetch
 })
 afterEach(() => { globalThis.fetch = realFetch })                       // not unstubAllGlobals: it would drop the in-memory localStorage of the setup
 
 describe('data source switch: IN/OUT', () => {
-  it('off: the API answers and nothing is downloaded', async () => {
-    expect((await getInOutAnalysis(COLLECTION, '7')).on.minutes).toBe(-1)
-    expect(loadWebInOut).not.toHaveBeenCalled()
-  })
-
   it('on: the analysis as it was published, one file for every player, without calling the API', async () => {
-    localStorage.setItem(DATA_FLAG_KEY, 'local:inout')
     expect(await getInOutAnalysis(COLLECTION, '7')).toEqual(ANALYSIS)
     expect(await getInOutAnalysis(COLLECTION, '8')).toEqual({})               // a player the endpoint cannot analyse: empty, as the endpoint says
     expect(calls).toEqual([])
@@ -37,7 +31,6 @@ describe('data source switch: IN/OUT', () => {
   })
 
   it('on, but the player is not in the publication or the competition is not published: a clear error, not the API; with no key: the access error', async () => {
-    localStorage.setItem(DATA_FLAG_KEY, 'local:inout')
     await expect(getInOutAnalysis(COLLECTION, '999')).rejects.toBeInstanceOf(DataUnavailable)
     resetLocalData()
     vi.mocked(loadWebInOut).mockRejectedValue(new WebDataUnavailable('no publicado'))

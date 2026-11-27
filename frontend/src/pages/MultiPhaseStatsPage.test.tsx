@@ -35,7 +35,7 @@ describe('MultiPhaseStatsPage on the base components (issue #192)', () => {
   it('has one h1 and starts with every sibling phase combined', async () => {
     renderPage()
     expect(await screen.findByRole('heading', { level: 1, name: 'Estadísticas Multifase' })).toBeInTheDocument()
-    await waitFor(() => expect(api.getMultiTeamStats).toHaveBeenCalledWith(SIBLINGS, false))
+    await waitFor(() => expect(api.getMultiTeamStats).toHaveBeenCalledWith(SIBLINGS))
     expect(await screen.findByText('Alfa')).toBeInTheDocument()
   })
 
@@ -47,7 +47,7 @@ describe('MultiPhaseStatsPage on the base components (issue #192)', () => {
     expect(playoffs).toHaveAttribute('aria-pressed', 'true')
     fireEvent.click(playoffs)
     expect(screen.getByRole('button', { name: 'Play-offs' })).toHaveAttribute('aria-pressed', 'false')
-    await waitFor(() => expect(api.getMultiTeamStats).toHaveBeenLastCalledWith([SIBLINGS[0]], false))
+    await waitFor(() => expect(api.getMultiTeamStats).toHaveBeenLastCalledWith([SIBLINGS[0]]))
   })
 
   it('with no phase chosen it says what to do instead of asking for nothing', async () => {
@@ -65,7 +65,7 @@ describe('MultiPhaseStatsPage on the base components (issue #192)', () => {
     expect(screen.getByRole('tab', { name: 'Equipos' })).toHaveAttribute('aria-selected', 'true')
     expect(api.getMultiPlayerStats).not.toHaveBeenCalled()
     fireEvent.click(screen.getByRole('tab', { name: 'Jugadores' }))
-    await waitFor(() => expect(api.getMultiPlayerStats).toHaveBeenCalledWith(SIBLINGS, false))
+    await waitFor(() => expect(api.getMultiPlayerStats).toHaveBeenCalledWith(SIBLINGS))
     const kinds = within(screen.getByRole('tablist', { name: /tipo de estadística/i })).getAllByRole('tab')
     expect(kinds.map(t => t.textContent)).toEqual(['Básico', 'Avanzado'])
     expect(within(screen.getByRole('tablist', { name: /tipo de estadística/i })).getByRole('tab', { name: 'Básico' })).toHaveAttribute('aria-selected', 'true')

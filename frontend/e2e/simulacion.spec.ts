@@ -33,7 +33,7 @@ test('the table, the heat map and a cut line that survives a reload, on a phone'
   const errors: string[] = []
   page.on('pageerror', e => errors.push(e.message))
   await page.setViewportSize({ width: 390, height: 800 })
-  await page.goto(`/${C}/simulacion?data=local`)
+  await page.goto(`/${C}/simulacion`)
   await expect(page.getByRole('heading', { name: 'Clasificación proyectada' })).toBeVisible()
   await expect(page.getByRole('table', { name: 'Probabilidad de cada puesto final' })).toBeVisible()
   await expect(page.getByText(/No se modelan ascensos, descensos ni playoffs/)).toBeVisible()
@@ -54,7 +54,7 @@ test('the table, the heat map and a cut line that survives a reload, on a phone'
 })
 
 test('the team of the reader brings its decisive games', async ({ page }) => {
-  await page.goto(`/${C}/simulacion?data=local`)
+  await page.goto(`/${C}/simulacion`)
   await page.getByLabel('Tu equipo').selectOption({ label: 'ALPHA' })
   await expect(page.getByRole('region', { name: 'Partidos decisivos' })).toBeVisible()
   expect(await page.getByTestId('decisive').count()).toBeGreaterThan(0)
@@ -64,7 +64,7 @@ for (const theme of ['light', 'dark'] as const) {
   test(`no accessibility violations: ${theme}, 390 px`, async ({ page }) => {
     await page.addInitScript(t => localStorage.setItem('basketlab-web-theme', t), theme)
     await page.setViewportSize({ width: 390, height: 800 })
-    await page.goto(`/${C}/simulacion?data=local`)
+    await page.goto(`/${C}/simulacion`)
     await page.getByLabel('Tu equipo').selectOption({ label: 'ALPHA' })
     await expect(page.getByRole('region', { name: 'Partidos decisivos' })).toBeVisible()
     const result = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()

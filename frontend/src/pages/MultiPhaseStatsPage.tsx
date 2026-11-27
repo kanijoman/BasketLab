@@ -239,7 +239,7 @@ export default function MultiPhaseStatsPage() {
   // Combined team stats (only fetched when Equipos tab is active)
   const { data: teamData = [], isLoading: loadingTeams } = useQuery({
     queryKey: ['multi-team-stats', selectedCollections, isFbcyl],
-    queryFn:  () => getMultiTeamStats(selectedCollections, isFbcyl),
+    queryFn:  () => getMultiTeamStats(selectedCollections),
     enabled:  selectedCollections.length > 0 && entityTab === 'equipos',
     staleTime: 5 * 60_000,
   })
@@ -247,7 +247,7 @@ export default function MultiPhaseStatsPage() {
   // Combined player stats (only fetched when Jugadores tab is active)
   const { data: playerData = [], isLoading: loadingPlayers } = useQuery({
     queryKey: ['multi-player-stats', selectedCollections, isFbcyl],
-    queryFn:  () => getMultiPlayerStats(selectedCollections, isFbcyl),
+    queryFn:  () => getMultiPlayerStats(selectedCollections),
     enabled:  selectedCollections.length > 0 && entityTab === 'jugadores',
     staleTime: 5 * 60_000,
   })

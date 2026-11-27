@@ -1,8 +1,6 @@
 /** Rotations: the analysis of a team and its SSE stream (issue #201). */
 import { fromSource } from '@/datasource/resolve'
 import { localRotation } from '@/localdata/source'
-import { BASE } from './http'
-import { streamResult } from './sseStream'
 
 // ── Rotaciones ───────────────────────────────────────────────────────────────
 
@@ -57,10 +55,9 @@ export interface RotationResult {
 export function streamRotacionesAnalysis(
   collection: string,
   teamId: string,
-  teamName: string,
   onProgress?: (pct: number, current: number, total: number) => void,
 ): Promise<RotationResult> {
-  // With the dataset `rotations` on (`?data=local`, issue #684) the analysis was computed when the competition was published: it is there at once, no stream.
+  // From the publication (issue #684) the analysis was computed when the competition was published: it is there at once, no stream.
   return fromSource(
     'rotations',
     async () => {
@@ -68,18 +65,6 @@ export function streamRotacionesAnalysis(
       if (published) onProgress?.(100, 1, 1)
       return published
     },
-    () => streamRotationsFromApi(collection, teamId, teamName, onProgress),
   )
 }
 
-function streamRotationsFromApi(
-  collection: string,
-  teamId: string,
-  teamName: string,
-  onProgress?: (pct: number, current: number, total: number) => void,
-): Promise<RotationResult> {
-  const qs = new URLSearchParams({ team_name: teamName })
-  const url = `${BASE}/rotaciones/${encodeURIComponent(collection)}/${encodeURIComponent(teamId)}/stream?${qs}`
-
-  return streamResult<RotationResult>(url, onProgress)
-}

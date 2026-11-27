@@ -12,9 +12,7 @@ Test groups:
 
 from __future__ import annotations
 
-import io
 import sys
-import zipfile
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -97,78 +95,15 @@ class TestWeeklyReportServiceE2E:
         handler.connection.is_connected.return_value = True
         return handler
 
-    def test_returns_bytes(self, db_handler):
-        from services.weekly_report_service import WeeklyReportService
-        svc = WeeklyReportService(db_handler)
-        result = svc.generate_report_zip("FEB_LF2_2025", "Alpha FC", "Beta BC")
-        assert isinstance(result, bytes)
 
-    def test_returns_valid_zip(self, db_handler):
-        from services.weekly_report_service import WeeklyReportService
-        svc = WeeklyReportService(db_handler)
-        result = svc.generate_report_zip("FEB_LF2_2025", "Alpha FC", "Beta BC")
-        # ZIP format magic bytes: PK\x03\x04
-        assert result[:4] == b"PK\x03\x04" or zipfile.is_zipfile(io.BytesIO(result))
 
-    def test_zip_contains_general_folder(self, db_handler):
-        from services.weekly_report_service import WeeklyReportService
-        svc = WeeklyReportService(db_handler)
-        result = svc.generate_report_zip("FEB_LF2_2025", "Alpha FC", "Beta BC")
-        with zipfile.ZipFile(io.BytesIO(result)) as zf:
-            names = zf.namelist()
-        assert any(n.startswith("General/") for n in names)
 
-    def test_zip_contains_basic_stats_png(self, db_handler):
-        from services.weekly_report_service import WeeklyReportService
-        svc = WeeklyReportService(db_handler)
-        result = svc.generate_report_zip("FEB_LF2_2025", "Alpha FC", "Beta BC")
-        with zipfile.ZipFile(io.BytesIO(result)) as zf:
-            names = zf.namelist()
-        assert any("Basicas_Toda_Competicion.png" in n for n in names)
 
-    def test_zip_contains_advanced_stats_png(self, db_handler):
-        from services.weekly_report_service import WeeklyReportService
-        svc = WeeklyReportService(db_handler)
-        result = svc.generate_report_zip("FEB_LF2_2025", "Alpha FC", "Beta BC")
-        with zipfile.ZipFile(io.BytesIO(result)) as zf:
-            names = zf.namelist()
-        assert any("Avanzadas_Toda_Competicion.png" in n for n in names)
 
-    def test_progress_callback_called(self, db_handler):
-        from services.weekly_report_service import WeeklyReportService
-        svc = WeeklyReportService(db_handler)
-        calls = []
-        svc.generate_report_zip("FEB_LF2_2025", "Alpha FC", "Beta BC",
-                                  progress_callback=lambda s, t, m: calls.append(s))
-        assert len(calls) == 5  # 5 major steps
 
-    def test_progress_callback_steps_are_sequential(self, db_handler):
-        from services.weekly_report_service import WeeklyReportService
-        svc = WeeklyReportService(db_handler)
-        steps = []
-        svc.generate_report_zip("FEB_LF2_2025", "Alpha FC", "Beta BC",
-                                  progress_callback=lambda s, t, m: steps.append(s))
-        assert steps == [1, 2, 3, 4, 5]
 
-    def test_empty_team_stats_produces_zip_without_crash(self, db_handler):
-        from services.weekly_report_service import WeeklyReportService
-        db_handler.get_team_stats.return_value = []
-        svc = WeeklyReportService(db_handler)
-        result = svc.generate_report_zip("FEB_LF2_2025", "Alpha FC", "Beta BC")
-        assert isinstance(result, bytes)
 
-    def test_no_player_stats_produces_zip_without_crash(self, db_handler):
-        from services.weekly_report_service import WeeklyReportService
-        db_handler.get_player_stats.return_value = []
-        svc = WeeklyReportService(db_handler)
-        result = svc.generate_report_zip("FEB_LF2_2025", "Alpha FC", "Beta BC")
-        assert isinstance(result, bytes)
 
-    def test_fbcyl_collection_does_not_crash(self, db_handler):
-        from services.weekly_report_service import WeeklyReportService
-        svc = WeeklyReportService(db_handler)
-        result = svc.generate_report_zip("FBCYL_SE_2025", "Alpha FC", "Beta BC")
-        assert isinstance(result, bytes)
 
 
 # ---------------------------------------------------------------------------
@@ -268,95 +203,11 @@ class TestExtractShotsFbcylE2E:
             }
         }
 
-    def test_extract_shots_fbcyl_returns_correct_count(self):
-        from services.weekly_report_service import _extract_shots
 
-        doc = self._make_fbcyl_doc("Alpha FC")
-        mock_coll = MagicMock()
-        mock_coll.find.return_value = [doc]
-        mock_db = MagicMock()
-        mock_db.connection.get_collection.return_value = mock_coll
 
-        shots, player_map, is_fbcyl = _extract_shots(mock_db, "FBCYL_SE_2025", "T001")
 
-        # 2 made 2s + 1 missed 2 + 1 made 3 = 4 shots
-        assert len(shots) == 4
-        assert is_fbcyl is True
 
-    def test_extract_shots_fbcyl_marks_made_correctly(self):
-        from services.weekly_report_service import _extract_shots
 
-        doc = self._make_fbcyl_doc("Alpha FC")
-        mock_coll = MagicMock()
-        mock_coll.find.return_value = [doc]
-        mock_db = MagicMock()
-        mock_db.connection.get_collection.return_value = mock_coll
-
-        shots, _, _ = _extract_shots(mock_db, "FBCYL_SE_2025", "T001")
-        made = [s for s in shots if s["m"] == 1]
-        missed = [s for s in shots if s["m"] == 0]
-        assert len(made) == 3   # 2 made 2s + 1 made 3
-        assert len(missed) == 1
-
-    def test_extract_shots_fbcyl_builds_player_map(self):
-        from services.weekly_report_service import _extract_shots
-
-        doc = self._make_fbcyl_doc("Alpha FC")
-        mock_coll = MagicMock()
-        mock_coll.find.return_value = [doc]
-        mock_db = MagicMock()
-        mock_db.connection.get_collection.return_value = mock_coll
-
-        _, player_map, _ = _extract_shots(mock_db, "FBCYL_SE_2025", "T001")
-        assert "player-uuid-1" in player_map
-
-    def test_extract_shots_empty_collection_returns_empty(self):
-        from services.weekly_report_service import _extract_shots
-
-        mock_coll = MagicMock()
-        mock_coll.find.return_value = []
-        mock_db = MagicMock()
-        mock_db.connection.get_collection.return_value = mock_coll
-
-        shots, player_map, is_fbcyl = _extract_shots(mock_db, "FBCYL_SE_2025", "Alpha FC")
-        assert shots == []
-        assert player_map == {}
-
-    def test_extract_shots_none_collection_returns_empty(self):
-        from services.weekly_report_service import _extract_shots
-
-        mock_db = MagicMock()
-        mock_db.connection.get_collection.return_value = None
-
-        shots, player_map, is_fbcyl = _extract_shots(mock_db, "FBCYL_SE_2025", "Alpha FC")
-        assert shots == []
-
-    def test_extract_shots_missing_coordinates_skipped(self):
-        from services.weekly_report_service import _extract_shots
-
-        doc = {
-            "stats": {
-                "teams": [{
-                    "name": "Alpha FC",
-                    "teamIdExtern": "T001",
-                    "players": [{
-                        "uuid": "p1",
-                        "name": "Player",
-                        "data": {
-                            # No xnormalize field — should be skipped
-                            "shootingOfTwoSuccessfulPoint": [{"x": 0.3, "y": 0.4}],
-                        },
-                    }],
-                }]
-            }
-        }
-        mock_coll = MagicMock()
-        mock_coll.find.return_value = [doc]
-        mock_db = MagicMock()
-        mock_db.connection.get_collection.return_value = mock_coll
-
-        shots, _, _ = _extract_shots(mock_db, "FBCYL_SE_2025", "Alpha FC")
-        assert shots == []  # malformed coord skipped
 
 
 # ---------------------------------------------------------------------------
@@ -390,30 +241,6 @@ class TestAggregateFbcylPlayersE2E:
             for i in range(count)
         ]
 
-    def test_aggregation_sums_players(self):
-        from services.weekly_report_service import _aggregate_fbcyl_players
-        players = self._make_players(5, base_score=10)
-        result = _aggregate_fbcyl_players(players)
-        assert result["p2a"] == 5 * 8  # 40
-        assert result["p2m"] == 5 * 4  # 20
 
-    def test_aggregation_handles_missing_keys(self):
-        from services.weekly_report_service import _aggregate_fbcyl_players
-        players = [{"uuid": "x", "name": "P", "data": {}}]
-        result = _aggregate_fbcyl_players(players)
-        assert result["p2a"] == 0
-        assert result["pts"] == 0
 
-    def test_aggregation_empty_list(self):
-        from services.weekly_report_service import _aggregate_fbcyl_players
-        result = _aggregate_fbcyl_players([])
-        for key in ("p2a", "p2m", "p3a", "p3m", "p1a", "p1m", "ro", "rd",
-                    "to", "assist", "st", "bs", "pts"):
-            assert result[key] == 0
 
-    def test_aggregation_total_score(self):
-        from services.weekly_report_service import _aggregate_fbcyl_players
-        # 3 players with scores 10, 11, 12 → total 33
-        players = self._make_players(3, base_score=10)
-        result = _aggregate_fbcyl_players(players)
-        assert result["pts"] == 10 + 11 + 12

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ScopedAccessError } from '@live-package/crypto'
 import { getMatchAnalysis, getMatchList } from './client'
-import { DATA_FLAG_KEY, resetLocalData } from '@/localdata/source'
+import { resetLocalData } from '@/localdata/source'
 import { loadWebMatches, WebDataUnavailable } from '@/webdata/client'
 import { DataUnavailable } from '@/datasource/resolve'
 
@@ -22,7 +22,7 @@ let calls: string[]
 const realFetch = globalThis.fetch
 
 beforeEach(() => {
-  localStorage.clear(); localStorage.setItem('basketlab.data', 'api'); resetLocalData(); calls = []
+  localStorage.clear(); resetLocalData(); calls = []
   vi.mocked(loadWebMatches).mockReset().mockResolvedValue(PUBLISHED as never)
   globalThis.fetch = vi.fn(async (url: string) => {
     calls.push(String(url))
@@ -32,14 +32,7 @@ beforeEach(() => {
 afterEach(() => { globalThis.fetch = realFetch })
 
 describe('data source switch: Partidos', () => {
-  it('off: the API answers the list and the analysis', async () => {
-    expect((await getMatchList(COLLECTION))[0].match_id).toBe(-1)
-    expect((await getMatchAnalysis(COLLECTION, 9001)).home.team_name).toBe('DE LA API')
-    expect(loadWebMatches).not.toHaveBeenCalled()
-  })
-
   it('on: the list has no analyses in it, the analysis of a match is the published one, with one file for both and no call to the API', async () => {
-    localStorage.setItem(DATA_FLAG_KEY, 'local:matches')
     const list = await getMatchList(COLLECTION)
     expect(list.map(m => m.match_id)).toEqual([9001, 9002])
     expect(list[0]).not.toHaveProperty('analysis')
@@ -50,13 +43,11 @@ describe('data source switch: Partidos', () => {
   })
 
   it('on, but the match has no analysis in the publication or is not there: a clear error, not the API', async () => {
-    localStorage.setItem(DATA_FLAG_KEY, 'local:matches')
     await expect(getMatchAnalysis(COLLECTION, 9002)).rejects.toBeInstanceOf(DataUnavailable)
     await expect(getMatchAnalysis(COLLECTION, 424242)).rejects.toBeInstanceOf(DataUnavailable)
   })
 
   it('on, but not published: a clear error, not the API; with no key: the access error', async () => {
-    localStorage.setItem(DATA_FLAG_KEY, 'local:matches')
     vi.mocked(loadWebMatches).mockRejectedValue(new WebDataUnavailable('no publicado'))
     await expect(getMatchList(COLLECTION)).rejects.toBeInstanceOf(DataUnavailable)
     resetLocalData()

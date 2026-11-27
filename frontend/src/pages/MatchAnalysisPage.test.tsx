@@ -50,7 +50,7 @@ describe('MatchAnalysisPage on the base components (issue #193)', () => {
   it('choosing a team narrows the matches and forgets the one chosen', async () => {
     renderPage()
     fireEvent.change(await screen.findByLabelText('Partido'), { target: { value: '101' } })
-    await waitFor(() => expect(api.getMatchAnalysis).toHaveBeenCalledWith('LF_CHALLENGE', 101, false))
+    await waitFor(() => expect(api.getMatchAnalysis).toHaveBeenCalledWith('LF_CHALLENGE', 101))
     fireEvent.change(screen.getByLabelText('Equipo'), { target: { value: 'Charlie' } })
     const options = within(screen.getByLabelText('Partido')).getAllByRole('option').map(o => o.textContent)
     expect(options).toHaveLength(1 + 2)                                             // the two matches of Charlie

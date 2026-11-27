@@ -1,9 +1,9 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test } from '@playwright/test'
+import { COLLECTION as C, servePublication } from './publication'
 
 // Issue #197 (U7): accessibility of the key pages, in both themes and on a phone and a desktop (WCAG 2.0/2.1 A and AA: contrast, names of the controls, keyboard
 // access to what scrolls). A violation names the rule, the element and the colours: the audit of 28/10/2026 found 197 of them before the fixes.
-const C = 'L_F_-2_2025_2026_Liga_Regular_B'
 const PAGES = ['/', '/privacidad', `/${C}`, `/${C}/teams`, `/${C}/players`, `/${C}/shots`, `/${C}/lineups`, `/${C}/report`, `/${C}/team-report`, `/${C}/matches`, `/${C}/comparativas`]
 
 for (const theme of ['light', 'dark'] as const) {
@@ -11,7 +11,7 @@ for (const theme of ['light', 'dark'] as const) {
     test(`no accessibility violations: ${theme}, ${width} px`, async ({ page }) => {
       test.setTimeout(180_000)
       await page.addInitScript(t => localStorage.setItem('basketlab-web-theme', t), theme)
-      await page.addInitScript(() => localStorage.setItem('basketlab.data', 'api'))      // the real API over an in-memory database, not the published files (the default since #334)
+      await servePublication(page)
       await page.setViewportSize({ width, height: 800 })
       const found: string[] = []
       for (const path of PAGES) {

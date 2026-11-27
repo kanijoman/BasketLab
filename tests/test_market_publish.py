@@ -35,10 +35,10 @@ META = {LF2: ("L.F.-2", "Liga Regular · B"), CHALLENGE: ("LF CHALLENGE", "Liga 
 @pytest.fixture()
 def connection(monkeypatch):
     monkeypatch.setattr(pymongo, "MongoClient", mongomock.MongoClient)
-    from src.api import deps
+    from src.database import shared_handler as _shared
 
-    deps._create_handler.cache_clear()
-    handler = deps._create_handler()
+    _shared.shared_handler.cache_clear()
+    handler = _shared.shared_handler()
     db = handler.connection.client["BASKETBALL"]
     for name in (LF2, CHALLENGE):
         db[name].insert_many(games.build_games())
@@ -46,7 +46,7 @@ def connection(monkeypatch):
         db["COLLECTION_META"].insert_one({"_id": name, "league": "FEB", "competition_label": label, "season_value": "2025", "season_label": "2025/2026", "group_label": group})
     db[FBCYL].insert_many(fbcyl_games.build_games())
     yield handler.connection
-    deps._create_handler.cache_clear()
+    _shared.shared_handler.cache_clear()
 
 
 def _manifest(out):

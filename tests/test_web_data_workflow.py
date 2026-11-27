@@ -47,7 +47,7 @@ def test_a_push_to_main_publishes_when_the_code_that_shapes_the_files_changes():
     assert push["branches"] == ["main"]
     paths = push["paths"]
     assert "src/**" in paths and "run_web_data.py" in paths and "config/competitions.json" in paths
-    assert "!src/api/**" in paths, "the routers do not shape a published file (build_cache._OUT_OF_THE_BUILD): changing one must not rebuild everything"
+    assert not [p for p in paths if p.startswith("!src/")]          # nothing of src/ is out of the build since the API was retired (#1199): see build_cache._OUT_OF_THE_BUILD
 
 
 def test_the_push_trigger_does_not_fire_for_the_web_or_the_docs():

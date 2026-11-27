@@ -1,5 +1,5 @@
 /** Rule-based team report (own-team analysis / rival scouting). */
-import { API_BASE, getLiveTeamNames, type TeamEntry } from './client'
+import type { TeamEntry } from './client'
 import { fromSource } from '@/datasource/resolve'
 import { loadReportTeams, loadWebReport } from '@/webdata/client'
 
@@ -71,31 +71,17 @@ export interface TeamReport {
   training: ReportAction[]
 }
 
-function url(collection: string, teamId: string, mode: ReportMode, suffix = ''): string {
-  const params = new URLSearchParams({ team_id: teamId, mode })
-  return `${API_BASE}/reports/team-report/${encodeURIComponent(collection)}${suffix}?${params}`
-}
-
-async function failure(res: Response): Promise<Error> {
-  const body = await res.json().catch(() => ({}))
-  return new Error(typeof body.detail === 'string' ? body.detail : `HTTP ${res.status}`)
-}
-
 /**
- * The report of a team. With the dataset `team-report` on (`?data=local`) it is the one published in `web-data`, opened with the open key of the beta or
- * the invitations of the reader (issue #639); when that cannot answer it is a clear error (#334), never the API. An access error (`ScopedAccessError`) is not answered
- * by the API either (`fromSource`): the page must tell the reader to unlock, otherwise the keys would mean nothing.
+ * The report of a team. It is the one published in `web-data`, opened with the open key of the beta or
+ * the invitations of the reader (issue #639); when that cannot answer it is a clear error (#334), never a server. An access error (`ScopedAccessError`) is not hidden
+ * either (`fromSource`): the page must tell the reader to unlock, otherwise the keys would mean nothing.
  */
 export const getTeamReport = (collection: string, teamId: string, mode: ReportMode): Promise<TeamReport> =>
-  fromSource('team-report', () => loadWebReport(collection, teamId, mode), async () => {
-    const res = await fetch(url(collection, teamId, mode))
-    if (!res.ok) throw await failure(res)
-    return res.json() as Promise<TeamReport>
-  })
+  fromSource('team-report', () => loadWebReport(collection, teamId, mode))
 
-/** The teams to choose from: the ones with a published report with the dataset `report-teams` on (a clear error if it cannot answer), else the API's (`?data=api`). */
+/** The teams to choose from: the ones with a published report with the dataset `report-teams` on (a clear error if it cannot answer). */
 export const getReportTeams = (collection: string): Promise<TeamEntry[]> =>
-  fromSource('report-teams', () => loadReportTeams(collection), () => getLiveTeamNames(collection))
+  fromSource('report-teams', () => loadReportTeams(collection))
 
 /** The PDF of the report, made in the browser from the report itself (issue #714: no server step; the libraries are loaded when the button is pressed). */
 export async function downloadTeamReportPdf(collection: string, teamId: string, mode: ReportMode): Promise<Blob> {

@@ -1,7 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-
-const COLLECTION = 'L_F_-2_2025_2026_Liga_Regular_B'
-const TEAM = 'ACEITES ABRIL ADBA SANFER'
+import { COLLECTION, TEAM, servePublication } from './publication'
 
 /** Fail the test on any uncaught error of the page. */
 function collectErrors(page: Page): string[] {
@@ -14,9 +12,8 @@ test.beforeEach(async ({ page }) => {
   // a clean start once per test: a reload keeps what the test stored (the theme chosen)
   await page.addInitScript(() => {
     if (!sessionStorage.getItem('e2e-started')) { localStorage.clear(); sessionStorage.setItem('e2e-started', '1') }
-    // the e2e talks to the real API over an in-memory database, not to the published files (the default since #334)
-    if (localStorage.getItem('basketlab.data') === null) localStorage.setItem('basketlab.data', 'api')
   })
+  await servePublication(page)                    // the real publication of the fixtures league: the web reads the published files and nothing else
 })
 
 test('opens in the light theme even on a dark device, keeps the one chosen and paints it before the app runs (#188)', async ({ page }) => {
@@ -125,22 +122,8 @@ test('on a wide screen the competition can be changed from the header and the pa
   await expect(page.getByRole('button', { name: 'Abrir menú' })).toHaveCount(0)
 })
 
-test('the API behind the page is healthy', async ({ request }) => {
-  const live = await request.get('/api/v1/health')
-  expect(await live.json()).toMatchObject({ status: 'ok' })
-  const db = await request.get('/api/v1/health/db')
-  expect(await db.json()).toMatchObject({ connected: true })
-})
-
 test('the header keeps its five selectors, FEB or FBCYL, and fits at 768 px without scrolling sideways (#912)', async ({ page }) => {
   const errors = collectErrors(page)
-  const list = [
-    { name: COLLECTION, league: 'FEB', competition: 'L_F_-2', season: '2025_2026', group: 'B', game_count: 30 },
-    { name: 'LF_ENDESA_2025_2026_Liga_Regular_Único', league: 'FEB', competition: 'LF_ENDESA', season: '2025_2026_Liga_Regular_Único', group: '', game_count: 30 },
-    { name: 'FBCYL_1ª_2026_FASE-GRUPO_A-1', league: 'FBCYL', competition: '1ª', season: '2026 FASE-GRUPO A-1', group: '', game_count: 20 },
-    { name: 'FBCYL_1ª_2026_FASE-GRUPO_A-2', league: 'FBCYL', competition: '1ª', season: '2026 FASE-GRUPO A-2', group: '', game_count: 20 },
-  ]
-  await page.route('**/collections/list', route => route.fulfill({ json: list }))
   for (const width of [768, 1024]) {
     await page.setViewportSize({ width, height: 800 })
     await page.goto(`/${COLLECTION}/teams`)

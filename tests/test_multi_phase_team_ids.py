@@ -9,14 +9,6 @@ from unittest.mock import MagicMock
 from src.services.multi_phase_service import MultiPhaseService
 
 
-def test_multi_phase_rows_carry_the_team_id_of_the_team_stats_regression(smoke_api):
-    """The real pipeline on the games of the web smoke: Multifase gives every team the id Equipo gives it (the crest of TeamCell)."""
-    http, name = smoke_api
-    teams = {r["team_name"]: r["team_id"] for r in http.get(f"/api/v1/teams/{name}").json()["team_stats"]}
-    multi = http.get("/api/v1/multi/team-stats", params={"collections": name, "is_fbcyl": "false"}).json()
-    assert teams and {r["team_name"]: r.get("team_id") for r in multi} == teams
-
-
 def _phases(rows_by_collection: Dict[str, List[Dict]], players: Dict[str, List[Dict]] | None = None) -> MultiPhaseService:
     db = MagicMock()
     db.get_team_stats.side_effect = lambda coll, *a, **k: [dict(r) for r in rows_by_collection.get(coll, [])]

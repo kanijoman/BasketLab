@@ -37,7 +37,7 @@ test('an external competition says its data is from the day it last worked, and 
   const errors: string[] = []
   page.on('pageerror', e => errors.push(e.message))
   await page.setViewportSize({ width: 390, height: 800 })
-  await page.goto(`/${NCAA}/teams?data=local`)
+  await page.goto(`/${NCAA}/teams`)
   const notice = page.getByRole('status').filter({ hasText: 'Datos de NCAA del 17/11' })
   await expect(notice).toBeVisible()
   await expect(notice).toContainText('la última actualización falló')
@@ -47,14 +47,14 @@ test('an external competition says its data is from the day it last worked, and 
 
 test('a competition of a source that is fine shows no notice', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 })
-  await page.goto(`/${FIBA}/teams?data=local`)
+  await page.goto(`/${FIBA}/teams`)
   await expect(page.getByRole('combobox', { name: 'Ámbito' })).toHaveValue('FIBA')            // the page and its selectors are there
   await expect(page.getByRole('status').filter({ hasText: 'Datos de' })).toHaveCount(0)
 })
 
 test('the selector of the header offers the sources next to FEB and FBCYL and goes to the competition of the one chosen', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 })
-  await page.goto(`/${NCAA}/teams?data=local`)
+  await page.goto(`/${NCAA}/teams`)
   const ambito = page.getByRole('combobox', { name: 'Ámbito' })
   await expect(ambito).toBeVisible()
   expect(await ambito.locator('option').allTextContents()).toEqual(['FEB', 'FBCYL', 'FIBA', 'NCAA'])
@@ -68,7 +68,7 @@ for (const theme of ['light', 'dark'] as const) {
   test(`no accessibility violations with the notice of a stale source: ${theme}, 390 px`, async ({ page }) => {
     await page.addInitScript(t => localStorage.setItem('basketlab-web-theme', t), theme)
     await page.setViewportSize({ width: 390, height: 800 })
-    await page.goto(`/${NCAA}/teams?data=local`)
+    await page.goto(`/${NCAA}/teams`)
     await expect(page.getByRole('status').filter({ hasText: 'Datos de NCAA' })).toBeVisible()
     const result = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()
     expect(result.violations.map(v => `${v.id}: ${v.nodes[0]?.target.join(' ')}`)).toEqual([])

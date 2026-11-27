@@ -1,11 +1,10 @@
 # Arquitectura (para Claude)
-Flujo: **frontend → API (routers) → servicios → repositorio → MongoDB**. Nada de BD en el frontend. Operaciones y clave de admin: [OPERATIONS.md](OPERATIONS.md). Detalle de datos: [DATA_FORMATS.md](DATA_FORMATS.md); motor live: [LIVE.md](LIVE.md).
+Flujo: **frontend ← ficheros publicados ← publicación (`local_data`) ← servicios → repositorio → MongoDB** (sin servidor de API desde #1199). Nada de BD en el frontend. Operaciones: [OPERATIONS.md](OPERATIONS.md). Detalle de datos: [DATA_FORMATS.md](DATA_FORMATS.md); motor live: [LIVE.md](LIVE.md).
 
 ## Mapa del documento
 Sección -> pregunta que responde (`grep -n '^#'` da el índice completo):
 - Paquetes `src/` (tabla) -> ¿qué hace el paquete `src/x`? (una línea y enlace a su detalle)
-- Detalle por paquete `src/` -> ¿módulos y reglas de `src/api`, `pbp`, `live_prep`, `local_data`, `market`, `external`…?
-- Routers API (`src/api/routers`, prefijo `/api/v1/<x>`) -> ¿qué router/endpoint existe? ¿seguridad, `ADMIN_API_KEY`?
+- Detalle por paquete `src/` -> ¿módulos y reglas de `pbp`, `live_prep`, `local_data`, `market`, `external`…?
 - Servicios (`src/services`) -> ¿qué servicio calcula X? ¿qué páginas tiene cada competición?
 - Base de datos (`src/database`) -> ¿conexión, colecciones, pipelines, índices, `DERIVED`?
 - Frontend Analytics (`frontend/src`) -> ¿tema, `datasource/`, `forecast/`, `webdata/`, `localdata/`, `api/client.ts`?
@@ -16,7 +15,6 @@ Sección -> pregunta que responde (`grep -n '^#'` da el índice completo):
 ## Paquetes `src/` (tabla)
 | Paquete | Propósito | Detalle |
 |---|---|---|
-| `src/api` | FastAPI: `app.py`, `deps.py` (`get_db`), `routers/`; 503 con pista accionable sin Mongo | [detalle](#srcapi-fastapi-apppy-depspy-get_db-routers) |
 | `src/services` | lógica de negocio | [detalle](#servicios-srcservices) |
 | `src/database` | conexión, repositorios, pipelines, índices, `shared_handler`, `db_health` | [detalle](#base-de-datos-srcdatabase) |
 | `src/scraper` | clientes FEB/FBCYL (JWT, API, calendarios) | [detalle](#srcscraper-clientes-febfbcyl-fbcyl_calendar-schedule_client) |
@@ -33,9 +31,6 @@ Sección -> pregunta que responde (`grep -n '^#'` da el índice completo):
 | `src/external` | fuentes externas ACB, Euroliga, FIBA, NCAA convertidas a formato FEB | [detalle](#srcexternal-fuentes-externas-acb_-fiba_-euroleague_-ncaa_-registry-refresh) |
 
 ## Detalle por paquete `src/`
-
-### `src/api`: FastAPI, `app.py`, `deps.py`, `get_db`, `routers/`
-- FastAPI: `app.py` (todos los routers, CORS), `deps.py` (`get_db`; el handler único es `src/database/shared_handler.py` con `lru_cache`, **que también usan los jobs de publicación, #334**: nada de lo que publica datos importa `src.api`, lo vigila `test_publication_without_api.py`; 503 con pista accionable si no hay Mongo o se rechazan las credenciales: el clasificador está en `src/database/db_health.py` y `src/api/db_health.py` lo reexporta), `routers/`
 
 ### `src/scraper`: clientes FEB/FBCYL, `fbcyl_calendar`, `schedule_client`
 - clientes FEB/FBCYL: token JWT, API, calendario HTML
@@ -303,32 +298,10 @@ Sección -> pregunta que responde (`grep -n '^#'` da el índice completo):
 - `fiba_catalogue` + `run_fiba_catalogue.py --year 2025` añaden al catálogo, **pausadas**, las entradas de los eventos que existen y listan partidos reales (U16, U18 y U20 EuroBasket, U19 Copa del Mundo y EuroBasket absoluto, masculino y femenino; U16 y U18 son formación).
 - Un evento cuya página existe pero lista solo huecos sin equipos (la «cáscara» del Mundial U19 de años pares) no tiene partidos aún.
 
-## Routers API (`src/api/routers`, prefijo `/api/v1/<x>`)
-
-### Lista de routers y endpoints (`health`, `collections`, `teams`, `players`, `lineups`, `shots`, `possessions`, `scouting_rival`, `team_report`, `reports`, `matches`, `multi_phase`, `rotaciones`)
-- `health` (`GET /api/v1/health`: vivo + commit desplegado, sin BD; `GET /api/v1/health/db`, público: conexión a Mongo, latencia y causa clasificada sin secretos)
-- `collections`
-- `teams`
-- `players` (incluye IN/OUT)
-- `lineups` (REST + SSE `/stream`)
-- `assist_connections` (`GET /api/v1/assist-connections/{collection}/{team_id}[?player_id=]`: pasadores, receptores y zonas de anotación asistidas y sin asistir de un equipo, #773)
-- `shots` (zonas; `?compare=league` añade `rating`/`league_pct`/`delta_pp`/`low_sample`)
-- `possessions` (incluye `GET /{collection}/points-by-origin`: puntos por origen, banquillo y pintura de temporada por equipo y del rival, #352, `GET /{collection}/situations` (ATO propio y del rival, primera posesión de cada periodo y primeros/últimos 2:00 frente al resto, #354), `GET /{collection}/timeouts` (rating neto 5 posesiones antes y después de cada tiempo muerto, propio y del rival, y % que mejora al solicitante, #355) y `GET /{collection}/by-period`: puntos, posesiones, ORtg/DRtg, ritmo, eFG%, TOV%, ORB%, FTr y faltas por equipo y cuarto —Q1-Q4 y OT— con las del rival, #353)
-- `scouting_rival` (informe de scouting de **cualquier equipo** de una colección FEB, en PDF —**hecho ya en el navegador a partir del informe (#715: `lib/scoutingPdf.ts` pide las mismas llamadas que `scouting_pdf.lay_out`, comprobadas una a una contra `scouting_pdf.json`, y las dibuja con `jspdf`; funciona también con el informe publicado, sin trabajo
-  - `/pdf/{job}` queda sin uso y se retirará con #334)**— y como JSON para la vista previa: `POST /api/v1/scouting-rival` {collection, team_id, own_team_id?} lanza el trabajo en segundo plano, `/progress/{job}`, `/report/{job}`, `/pdf/{job}`; público (solo cómputo), **un solo trabajo a la vez**, caducidad de 30 min y hecho para ejecutarse en local, ver [LIVE.md](LIVE.md))
-- `team_report` (informe automático por reglas JSON/PDF, modos `own`/`rival`; **el PDF ya se hace en el navegador** (#714: `lib/teamReportPdf.ts` escribe el mismo HTML que `render_report_html`, comparado cadena a cadena con `report_html.json`, y lo dibuja con `jspdf` al pulsar el botón, sea cual sea el origen del informe), así que `/pdf` queda sin uso y se retirará con #334; en `/reports/team-report/{collection}`)
-- `reports` (informe semanal ZIP, `individual-scouting/docx`; los endpoints sin ningún cliente se retiraron en #202 —los paquetes live los publica Actions y la app los baja de `live-packages`; [historia](evaluaciones/2026-11-27_historia-architecture.md)—)
-- (**retirados con el predictivo antiguo, #853**: `historical`, `analysis` y `analysis_predictive`; el ajuste por rival lo calcula `rival_adjusted_service` y lo publica `web-data`, `rival_adjusted/`)
-- `matches`
-- `multi_phase` (`/multi`)
-- `rotaciones` (REST + SSE; **jugadoras significativas (#757)**: las que han jugado al menos el 15 % de los partidos **del equipo** y promedian al menos 5 minutos —umbrales relativos, `min_games_pct` y `min_avg_min`—; el resto es «marginal» y no entra en el Gini, el CV ni el quinteto).
-
-### Seguridad de la API (`require_admin`, `ADMIN_API_KEY`, `X-Admin-Key`)
-- **Seguridad**: no hay usuarios ni roles
-- **el servidor no recibe escrituras de la web desde #724** (se retiraron `DELETE collections`, `scrape/*`, `historical/ingest*` y el servicio scraper: los datos los carga el refresco programado del archivo y se retiran con la purga) y **ninguna ruta exige ya la cabecera `X-Admin-Key` = `ADMIN_API_KEY`**: el entrenamiento del predictivo (`elasticity/train*`) se retiró con él (#853).
-- La guarda (`src/api/security.require_admin`; guía en [OPERATIONS.md](OPERATIONS.md)) queda como patrón para la próxima escritura y se prueba sobre una aplicación pequeña
-- `tests/test_admin_auth.py` obliga a clasificar todo endpoint de escritura nuevo (protegido o en la lista pública explícita) y `tests/test_server_writes_retired.py` exige que no quede ninguna que la pida.
-- El resto de la API es de lectura/cómputo y público.
+## Sin servidor de API (retirada en #1199)
+- No hay API: se eliminaron `src/api` (15 routers, `deps`, `security`, `db_health`, `memory`, `runtime`), `run_api.py`, el modo `?data=api` de la web y `fastapi`/`uvicorn`. La web lee **solo** los ficheros publicados (`web-data`, `talent-data`, `web-data-ext`); los servicios (`src/services`) corren en la publicación (`src/local_data`) y en los generadores de vectores, no detrás de un endpoint. Los endpoints que se citan más abajo en la descripción de los servicios son históricos.
+- **Escrituras**: ninguna desde la web (#724). Si alguna vuelve, antes se decide el modelo de acceso (#591, #153); el patrón de la clave de administración (`ADMIN_API_KEY`, `X-Admin-Key`) queda en [la historia de operaciones](evaluaciones/2026-11-27_historia-operations.md).
+- Evaluación y alcance: [eliminar la API](evaluaciones/2026-11-27_eliminar-la-api.md).
 
 ## Servicios (`src/services`)
 
@@ -367,7 +340,6 @@ Sección -> pregunta que responde (`grep -n '^#'` da el índice completo):
 ### Páginas que dependen de una sección de `web-data` (`RequirePublished`, `useVisibleNavGroups`, #780)
 - `NavItem.requires` (sección y dataset) en `lib/nav.ts`
 - `useVisibleNavGroups` (menú y tarjetas del resumen) y `RequirePublished` (la ruta dice que no está disponible) leen del manifiesto qué secciones tiene la competición (`webdata/client.publishedSectionsOf`) y **ocultan** la página hasta que existe (nada mientras se lee ni si el manifiesto falla)
-- con `?data=api` siempre se ofrece.
 - `web-data.yml` se lanza además con un `push` a `main` que toque lo que da forma a los ficheros (#781).
 - Protocolo completo: [OPERATIONS.md](OPERATIONS.md#protocolo-de-despliegue-épica-784).
 
@@ -447,13 +419,13 @@ Sección -> pregunta que responde (`grep -n '^#'` da el índice completo):
 ### Análisis pbp y Comparativas (`api/pbpExtended.ts`, `pages/ComparativasPage.tsx`, `DiffBadge`)
 - `api/pbpExtended.ts` (tipos y hooks de `points-by-origin`, `by-period`, `situations` y `timeouts` de `/possessions`; página «Análisis pbp», ruta `pbp`, #359)
   - `pages/ComparativasPage.tsx` (ruta `comparativas`, #607: local/visitante, ganados/perdidos o un tramo con atajos de 30 y 15 días; cada celda = valor + diferencia con `DiffBadge`, verde bueno y rojo malo, invertido en la vista de rivales) con las columnas compartidas en `lib/teamColumns.ts`
-  - `components/ui/DiffBadge.tsx` (la diferencia real que sustituye a las flechas de tendencia, #608; el informe semanal PNG dice lo mismo: `73.0 (+2.1)`) (sin página Administración —`/admin` redirige al inicio— ni predictivo antiguo —`/predictive` redirige a «Previa del partido»—; `getRivalAdjusted` y `getLiveTeamNames` viven en `api/teams.ts` y `api/collections.ts`; retiros #724 y #852: [historia](evaluaciones/2026-11-27_historia-architecture.md))
+  - `components/ui/DiffBadge.tsx` (la diferencia real que sustituye a las flechas de tendencia, #608: la píldora de su tono, `TONE_PILL`, sobre un fondo opaco propio, para que llegue a AA sobre la celda pintada del cuartil, #1199; el informe semanal PNG dice lo mismo: `73.0 (+2.1)`) (sin página Administración —`/admin` redirige al inicio— ni predictivo antiguo —`/predictive` redirige a «Previa del partido»—; `getRivalAdjusted` y `getLiveTeamNames` viven en `api/teams.ts` y `api/collections.ts`; retiros #724 y #852: [historia](evaluaciones/2026-11-27_historia-architecture.md))
 
-### `datasource/`: conmutador local/API y conjuntos de datos (`switch.ts`, `fromSource`)
+### `datasource/`: conjuntos de datos y `fromSource` (sin conmutador desde #1199)
 - `datasource/` (**#329**; el conjunto `scouting` (#638) lo leen `getScoutingScopes` y `getPublishedScouting`, y la página «Scouting del rival» muestra **Liga; Copa; Agrupado** cuando el rival tiene scouting de copa; la migración sin «big bang». `switch.ts`: qué **conjuntos de datos** leen los ficheros publicados y cuáles la API
   - **desde #334 el valor por defecto es local para todos** (sin nada guardado ni en la URL, o con almacenamiento bloqueado
   - **desde la parte 2 de #334 no hay respaldo a la API**: si los ficheros no pueden responder, `fromSource` lanza `DataNotAvailable` —«estos datos no están disponibles todavía para esta competición o no se pueden calcular sin servidor»— o el error de los ficheros, que ya dice por qué, y devuelve un valor neutro solo donde el llamador lo dice (`whenUnavailable`: «nada publicado» es una lista vacía en el scouting del rival)
-  - TanStack Query no reintenta ese error); `?data=api` fuerza la API para todos (se recuerda), `?data=local` vuelve al valor por defecto, `?data=local:team-report,team-stats` activa solo esos y el resto lee la API, y se recuerda en el navegador (`localStorage`; un valor guardado dañado es el valor por defecto); la cabecera muestra «Datos de la API» (con los conjuntos que la leen) si alguno la lee
+  - TanStack Query no reintenta ese error); desde #1199 no hay `?data=`, ni valor guardado en el navegador, ni cabecera «Datos de la API»: el único modo es leer los ficheros publicados.
   - **el manifiesto lleva además `possessions/`, `possession_csv/`, `matches/`, `shots/`, `rotations/`, `lineups/`, `inout/`, `consistency/` y `rival_adjusted/` (#678, #686, #685, #684, #709, #710: ficheros por competición, sellados igual) y `derived/` (#676, bloque B): el `DERIVED` de cada partido —una fila por partido con sus dos entradas `DERIVED.TEAM` y los nombres de los equipos—, sellado por competición en un fichero aparte para que las tablas de temporada no lo paguen
   - es el insumo de las pestañas de Análisis PBP**; **las filas de las que se calculan salen de `rows/` de la publicación (`webdata/client.loadWebRows`: sellado por competición, clave abierta en la beta o invitación; #673) y `local-data/`, la exportación manual de `run_local_export.py`, es solo el respaldo de desarrollo**
   - los conjuntos son `team-stats` y `player-stats` —los que leen `getTeamStats`/`getPlayerStats`: Resumen, Estadísticas de equipo, Individual, Rankings, Gráficos de tiro, IN/OUT, Combinaciones, Rotaciones—, `team-comparison` —Comparativas (#670): `localdata/comparison.ts` calcula en el navegador local/visitante, ganados/perdidos y tramo contra el resto con los mismos filtros que las tablas,
@@ -484,7 +456,7 @@ Sección -> pregunta que responde (`grep -n '^#'` da el índice completo):
 
 ### `forecast/`: previa del partido y simulación de la liga (`api/forecast.ts`, `useForecast`, `useSeasonSim`)
 - `api/forecast.ts` (**#849**:
-  - `getForecastInputs`, conjunto `forecast` del conmutador: las filas, el calendario —si lo hay— y el género de la competición desde `web-data`; **con `?data=api` o sin ficheros dice que solo funciona con los datos publicados**: la API no tiene predictivo), `forecast/inputs.ts`
+  - `getForecastInputs`, conjunto `forecast` del conmutador: las filas, el calendario —si lo hay— y el género de la competición desde `web-data`; **sin ficheros dice que solo funciona con los datos publicados**), `forecast/inputs.ts`
   - `forecast/useForecast.ts` (la consulta y el modelo, una vez)
   - `forecast/fixtures.ts` (los partidos pendientes de un equipo, con el rival y el campo desde su lado, y el próximo)
   - `forecast/storage.ts` (equipo propio y líneas de corte por competición en `localStorage`, con `try/catch` y valores por defecto si está bloqueado o dañado)
@@ -529,12 +501,12 @@ Sección -> pregunta que responde (`grep -n '^#'` da el índice completo):
 ### `localdata/`: tablas calculadas en el dispositivo (`aggregateTeams`, `aggregatePlayers`, `source.ts`)
 - `localdata/` (**spike local-first, #327**: las tablas de equipo, rival y jugador calculadas en el dispositivo a partir de las filas del contrato —una por equipo o jugador y partido—, sin servidor: `aggregateTeams` (FEB y FBCYL), `aggregatePlayers` + `advancedStats` (port de `live_core/advanced_stats`), `aggregatePlayersFbcyl` (**#644**: la tabla de jugadores de FBCYL, con su fórmula propia —suma por `(player_uuid, team_id)` de filas ya limpias— y su rival real
   - `source.ts` elige la agregación por liga) y `pyMath`; las filas las exportan `build_season_rows_pipeline`, `build_season_player_rows_pipeline` y `build_fbcyl_season_rows_pipeline` de `src/database/aggregation`; todavía no lo usa ninguna página)
-- con `?data=local` (se recuerda en `localStorage`; `?data=api` lo apaga) `getTeamStats` y `getPlayerStats` de `api/client.ts` leen los ficheros de `local-data/` por `localdata/source.ts` —Resumen, Estadísticas de equipo, Individual, Rankings, Gráficos de tiro, IN/OUT, Combinaciones, Rotaciones
+- `getTeamStats` y `getPlayerStats` de `api/client.ts` leen los ficheros de `local-data/` por `localdata/source.ts` —Resumen, Estadísticas de equipo, Individual, Rankings, Gráficos de tiro, IN/OUT, Combinaciones, Rotaciones
 - **no** Comparativas, que usa `GET /teams/{col}/compare` y queda por portar— y la cabecera muestra «Datos locales»
 - si la competición no está exportada, no tiene filas de jugador (una exportación anterior a #644) o falla la carga, vuelven a la API)
 
 ### `api/client.ts`, `components/ui`, `lib/` y rutas
-- `api/client.ts` (**barrel de reexportaciones** desde #201: las llamadas y tipos viven en un módulo por dominio —`http`, `collections`, `teams`, `players`, `lineups`, `rotations`, `shots`, `possessions`, `matches`, `multiPhase`— y las páginas siguen importando de `@/api/client`; ningún módulo pasa de 500 líneas, lo vigila `api/moduleSize.test.ts`; `http.ts` guarda `BASE`, `get`, `post` y `downloadBlob`; `BASE` = `VITE_API_BASE`+`/api/v1`, scraper = `VITE_SCRAPER_BASE`), SSE con `EventSource` en lineups y rotaciones
+- `api/client.ts` (**barrel de reexportaciones** desde #201: las llamadas y tipos viven en un módulo por dominio —`http`, `collections`, `teams`, `players`, `lineups`, `rotations`, `shots`, `possessions`, `matches`, `multiPhase`— y las páginas siguen importando de `@/api/client`; ningún módulo pasa de 500 líneas, lo vigila `api/moduleSize.test.ts`; sin `http.ts` ni `VITE_API_BASE` desde #1199), SSE con `EventSource` en lineups y rotaciones
   - `context/` (`CollectionContext`, `AuthContext` stub)
   - `components/ui` (componentes base de #190 —`Button`/`IconButton`, `Field`/`Input`/`Select`, `SegmentedControl`, `Tabs`, `Card`, `PageHeader`, `EmptyState`, `Spinner`/`Skeleton`, tonos de `Badge`/`StatCard` en `tone.ts`— y StatCard, FilterBar, DataTable, ExportButton…; guía en docs/UI.md)
   - `lib/` (utils, statLabels, exportDom, pdfLayout, zoneRating, quartiles, teamColumns, `useTeamOptions` —la lista `{id, name}` de equipos de las páginas que eligen uno—; `api/sseStream.ts` lee el análisis por SSE de lineups y rotations, #452).
@@ -546,7 +518,6 @@ Sección -> pregunta que responde (`grep -n '^#'` da el índice completo):
   - `scoutingCompare.test.ts` falla si se separan, con los vectores de `tests/local_vectors/scouting_compare.json` que genera Python) y `api/scoutingRival.getOwnComparison` (filas de `getTeamStats` + `getPointsByOrigin`)
 - la página añade esa comparativa al informe publicado del rival, sin trabajo en el servidor.
 - Con los ficheros como origen y nada publicado, la página lo dice en vez de lanzar un trabajo
-- el trabajo del servidor (`startScouting`…) solo queda con `?data=api`.
 
 ## Frontend Talent (`frontend/src/market`)
 
@@ -655,13 +626,12 @@ Sección -> pregunta que responde (`grep -n '^#'` da el índice completo):
 
 ## Despliegue y config
 
-### Despliegue: Vercel, CI y API sin alojamiento (#334)
-- **Sin alojamiento de la API en el repositorio (#334, 05/11/2026)** y **conservada para desarrollo y pruebas** (decisión del 05/11/2026: no se elimina, y el rework del predictivo se resolvió sin ella en #841; los ficheros de test que importan `src.api` y el e2e dependen de ella): no hay `render.yaml` ni despliegue de la API
-- `python run_api.py` sirve para desarrollo local, pruebas y el e2e (el servicio `basketlab-scraper` y `DISABLE_SCRAPING` se retiraron en #724: la API ya no scrapea ni ingiere nada).
-- Frontend en Vercel (`vercel.json`: rewrite SPA). CI (`.github/workflows/ci.yml`): solo tests (backend repartido, web, e2e), sin despliegue.
+### Despliegue: Vercel y CI (sin API, #1199)
+- **No hay API ni alojamiento de servidor** (decisión #334 del 05/11/2026 y, desde el 27/11/2026, la API se eliminó: #1199): no hay `render.yaml` ni despliegue de servidor. El servicio `basketlab-scraper` y `DISABLE_SCRAPING` se retiraron en #724.
+- Frontend en Vercel (`vercel.json`: rewrite SPA). CI (`.github/workflows/ci.yml`): solo tests (backend repartido, web, e2e sobre la publicación real, sin servidor), sin despliegue.
 
 ### Variables de entorno (backend y frontend)
-- Env backend: `MONGODB_CONNECTION_STRING`, `ALLOWED_ORIGINS`, `ADMIN_API_KEY` (ninguna ruta la usa hoy), `WEB_CONCURRENCY` (workers, 1 por defecto), `MALLOC_ARENA_MAX`, `LOG_MEMORY` (ver [OPERATIONS.md](OPERATIONS.md#memoria-servidor-pequeño-512-mb)), `ENVIRONMENT`, `DISABLE_SCRAPING`, `BASKETLAB_DEV`, `PORT`. Frontend: `VITE_API_BASE`, `VITE_SCRAPER_BASE`. Ejemplo en `.env.example`.
+- Env (jobs y scripts): `MONGODB_CONNECTION_STRING` (o `src/database/db_credentials.txt`) y `ENVIRONMENT` (`db_config`). Frontend: `VITE_DATA_BASE` (anfitrión de los ficheros publicados). Ejemplo en `.env.example`.
 
 ## Rutas de import
 Usa siempre `src.…`. Los parsers PBP viven en `src/pbp` (sin BD); los antiguos shims se eliminaron (`tests/test_pbp_isolation.py` lo vigila). `tests/conftest.py` limpia cachés bajo ambos alias por compatibilidad con tests antiguos.

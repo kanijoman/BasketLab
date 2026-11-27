@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ScopedAccessError } from '@live-package/crypto'
 import { getByPeriod, getDerivedCoverage, getPointsByOrigin, getSituations, getTimeoutEffects } from './pbpExtended'
-import { DATA_FLAG_KEY, resetLocalData } from '@/localdata/source'
+import { resetLocalData } from '@/localdata/source'
 import { loadWebDerived, WebDataUnavailable } from '@/webdata/client'
 import vectors from '../../../tests/local_vectors/pbp_feb.json'
 import { DataUnavailable } from '@/datasource/resolve'
@@ -14,7 +14,7 @@ let calls: string[]
 const realFetch = globalThis.fetch
 
 beforeEach(() => {
-  localStorage.clear(); localStorage.setItem('basketlab.data', 'api'); resetLocalData(); calls = []
+  localStorage.clear(); resetLocalData(); calls = []
   vi.mocked(loadWebDerived).mockReset().mockResolvedValue(vectors.derived as never)
   globalThis.fetch = vi.fn(async (url: string) => {
     calls.push(String(url))
@@ -24,16 +24,7 @@ beforeEach(() => {
 afterEach(() => { globalThis.fetch = realFetch })
 
 describe('data source switch: Análisis PBP', () => {
-  it('off: the API answers every table and nothing local is read', async () => {
-    expect((await getPointsByOrigin(COLLECTION))[0].team_name).toBe('DE LA API')
-    expect((await getByPeriod(COLLECTION))[0].team_name).toBe('DE LA API')
-    expect((await getSituations(COLLECTION))[0].team_name).toBe('DE LA API')
-    expect((await getTimeoutEffects(COLLECTION))[0].team_name).toBe('DE LA API')
-    expect(loadWebDerived).not.toHaveBeenCalled()
-  })
-
   it('on: the five tables are what the services answer, summed on the device, and the API is not asked', async () => {
-    localStorage.setItem(DATA_FLAG_KEY, 'local:pbp')
     expect((await getPointsByOrigin(COLLECTION)).map(r => r.team_name)).toEqual(vectors.expected.origin.map(r => r.team_name))
     expect((await getByPeriod(COLLECTION)).map(r => r.team_name)).toEqual(vectors.expected.periods.map(r => r.team_name))
     expect((await getSituations(COLLECTION)).map(r => r.team_name)).toEqual(vectors.expected.situations.map(r => r.team_name))
@@ -44,20 +35,14 @@ describe('data source switch: Análisis PBP', () => {
   })
 
   it('on, but the competition has no published DERIVED: a clear error, not the API', async () => {
-    localStorage.setItem(DATA_FLAG_KEY, 'local:pbp')
     vi.mocked(loadWebDerived).mockRejectedValue(new WebDataUnavailable('no publicado'))
     await expect(getSituations(COLLECTION)).rejects.toBeInstanceOf(DataUnavailable)
   })
 
   it('on, but the reader has no key: the access error goes through, the API is not a way round it', async () => {
-    localStorage.setItem(DATA_FLAG_KEY, 'local:pbp')
     vi.mocked(loadWebDerived).mockRejectedValue(new ScopedAccessError('sin clave'))
     await expect(getByPeriod(COLLECTION)).rejects.toBeInstanceOf(ScopedAccessError)
     expect(calls).toEqual([])
   })
 
-  it('only that dataset reads the published DERIVED: the others keep reading the API', async () => {
-    localStorage.setItem(DATA_FLAG_KEY, 'local:team-comparison')
-    expect((await getPointsByOrigin(COLLECTION))[0].team_name).toBe('DE LA API')
-  })
 })

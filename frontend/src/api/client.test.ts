@@ -22,28 +22,6 @@ describe('api client', () => {
     vi.unstubAllGlobals()
   })
 
-  it('prefixes requests with VITE_API_BASE', async () => {
-    const api = await loadClient('https://api.example.com')
-    await api.getLiveTeamNames('FEB 2025/26')
-    expect(fetchMock.mock.calls[0][0]).toBe(
-      'https://api.example.com/api/v1/teams/FEB%202025%2F26/teams',
-    )
-  })
-
-  it('uses a relative /api/v1 URL when no base is set', async () => {
-    const api = await loadClient('')
-    await api.getLiveTeamNames('c1')
-    expect(fetchMock.mock.calls[0][0]).toBe('/api/v1/teams/c1/teams')
-  })
-
-  it('surfaces the API error detail', async () => {
-    fetchMock.mockResolvedValue({
-      ok: false, status: 422, json: async () => ({ detail: 'bad input' }),
-    } as Response)
-    const api = await loadClient('')
-    await expect(api.getLiveTeamNames('c1')).rejects.toThrow('bad input')
-  })
-
   it('no longer exports endpoints that do not exist in the backend', async () => {
     const api = (await loadClient('')) as Record<string, unknown>
     expect(api.getPlayerRankings).toBeUndefined()
@@ -51,22 +29,6 @@ describe('api client', () => {
   })
 
   describe('lineup period filter', () => {
-    it('sends the number of days as `period` and no `last_game`', async () => {
-      const api = await loadClient('')
-      await api.getLineupAnalysis('C', '1', 'Team', 5, 'net_rating', 7)
-      const url = new URL(String(fetchMock.mock.calls[0][0]), 'http://x')
-      expect(url.searchParams.get('period')).toBe('7')
-      expect(url.searchParams.has('last_game')).toBe(false)
-    })
-
-    it('the last-game option asks for `last_game=true` instead of a number of days', async () => {
-      const api = await loadClient('')
-      await api.getLineupAnalysis('C', '1', 'Team', 5, 'net_rating', api.LAST_GAME)
-      const url = new URL(String(fetchMock.mock.calls[0][0]), 'http://x')
-      expect(url.searchParams.get('last_game')).toBe('true')
-      expect(url.searchParams.get('period')).toBe('0')
-    })
-
     it('offers the full season, the last game and the day ranges', async () => {
       const api = await loadClient('')
       expect(api.LINEUP_PERIODS.map(p => p.label)).toEqual([

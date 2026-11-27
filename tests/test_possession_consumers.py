@@ -3,9 +3,6 @@ possessions and validated rebounds / turnovers (#379): the weekly report's last 
 import pytest
 
 from src.services.inout_service import enrich_stat_block as _enrich_stat_block
-from src.services.weekly_report_service import WeeklyReportService
-from src.stats.match_derived import with_derived
-from src.stats.stats_calculator import StatsCalculator
 
 
 def _box(**kw):
@@ -14,19 +11,8 @@ def _box(**kw):
     return {k: str(v) if not isinstance(v, str) else v for k, v in base.items()}
 
 
-def test_the_single_match_possessions_use_the_common_estimate_of_a_free_throw():
-    team = _box()                    # FGA 60, FTA 20, TOV 12, ORB 10
-    stats = StatsCalculator().calculate_single_match_stats(team, _box())
-
-    assert stats["possessions_per_game"] == pytest.approx(60 + 0.44 * 20 + 12 - 10)       # 70.8, not 71
 
 
-def test_given_possessions_replace_the_estimate_and_feed_the_ratings():
-    stats = StatsCalculator().calculate_single_match_stats(_box(pts=80), _box(pts=70), possessions=75.0, opp_possessions=72.0)
-
-    assert stats["possessions_per_game"] == 75.0
-    assert stats["offensive_rating"] == pytest.approx(80 / 75 * 100)
-    assert stats["defensive_rating"] == pytest.approx(70 / 72 * 100)
 
 
 def _game(derived=True):
@@ -38,42 +24,14 @@ def _game(derived=True):
     return doc
 
 
-def test_with_derived_overrides_rebounds_turnovers_and_gives_the_exact_possessions():
-    game = _game()
-    own, rival, poss, opp_poss = with_derived(game["BOXSCORE"]["TEAM"][0]["TOTAL"], game["BOXSCORE"]["TEAM"][1]["TOTAL"], game, 0)
-
-    assert (own["ro"], own["rd"], own["to"]) == (13, 26, 13) and (rival["ro"], rival["rd"], rival["to"]) == (9, 22, 15)
-    assert (poss, opp_poss) == (75.0, 72.0)
-    assert game["BOXSCORE"]["TEAM"][0]["TOTAL"]["ro"] == "10"          # the stored box score is not touched
 
 
-def test_with_derived_looks_at_the_team_by_index_so_it_works_from_either_side():
-    game = _game()
-    own, rival, poss, opp_poss = with_derived(game["BOXSCORE"]["TEAM"][1]["TOTAL"], game["BOXSCORE"]["TEAM"][0]["TOTAL"], game, 1)
-
-    assert (own["ro"], rival["ro"], poss, opp_poss) == (9, 13, 72.0, 75.0)
 
 
-def test_without_derived_fields_nothing_changes():
-    game = _game(derived=False)
-    own, rival, poss, opp_poss = with_derived(game["BOXSCORE"]["TEAM"][0]["TOTAL"], game["BOXSCORE"]["TEAM"][1]["TOTAL"], game, 0)
-
-    assert own == game["BOXSCORE"]["TEAM"][0]["TOTAL"] and (poss, opp_poss) == (None, None)
 
 
-def test_the_weekly_last_match_uses_the_exact_figures_of_the_game_when_they_exist():
-    stats = WeeklyReportService._feb_last_match_stats(StatsCalculator(), _game(), 0, "Local")
-
-    sel, opp, opp_name, _ = stats
-    assert sel["possessions_per_game"] == 75.0 and opp["possessions_per_game"] == 72.0 and opp_name == "Visitante"
-    assert sel["offensive_rebounds_per_game"] == 13 and sel["turnovers_per_game"] == 13
 
 
-def test_the_weekly_last_match_falls_back_to_the_estimate_without_derived_fields():
-    sel, opp, _, _ = WeeklyReportService._feb_last_match_stats(StatsCalculator(), _game(derived=False), 0, "Local")
-
-    assert sel["possessions_per_game"] == pytest.approx(60 + 0.44 * 20 + 12 - 10)
-    assert opp["possessions_per_game"] > 0
 
 
 def test_the_player_sheet_blocks_use_the_common_free_throw_cost():

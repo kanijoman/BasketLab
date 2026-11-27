@@ -5,7 +5,6 @@ import { downloadIndividualScoutingDocx } from './individualScouting'
 import * as client from './client'
 import * as web from '@/webdata/client'
 import * as source from '@/localdata/source'
-import { DATA_FLAG_KEY } from '@/datasource/switch'
 import { DataUnavailable } from '@/datasource/resolve'
 
 const raster = vi.hoisted(() => ({ svgToPng: vi.fn() }))
@@ -18,7 +17,7 @@ const FEB = 'PRIMERA_FEB_2026_2027_Liga_Regular_Unico'
 const PLAYERS = [1, 2, 3, 4, 5].map(i => ({ player_id: String(i), player_name: `JUGADOR ${i}`, team_id: i < 4 ? '101' : '102', team_name: i < 4 ? 'ALFA' : 'BRAVO', games_played: 10, points_per_game: i })) as never[]
 
 beforeEach(() => {
-  localStorage.clear(); localStorage.setItem('basketlab.data', 'api')
+  localStorage.clear()
   raster.svgToPng.mockReset().mockResolvedValue(TINY_PNG)
   vi.spyOn(client, 'getShotRaw').mockResolvedValue([])                    // a test that wants shots says so; none must reach the network
   vi.spyOn(source, 'loadCompetition').mockResolvedValue(null)             // the rows of the competition (for the notes of #1083): a test that wants them says so
@@ -34,7 +33,6 @@ describe('the DOCX of the individual scouting', () => {
   const person = (extra: Record<string, unknown>) => ({ name: null, no: null, photo: null, birth_date: null, height: null, ...extra })
 
   it('on: a player whose line of the FEB has a baja already reached has no page, and the others do (#1082)', async () => {
-    localStorage.setItem(DATA_FLAG_KEY, 'local')
     vi.spyOn(client, 'getPlayerStats').mockResolvedValue(PLAYERS)
     vi.spyOn(client, 'getLiveTeamNames').mockResolvedValue([{ id: '101', name: 'ALFA' }])
     vi.spyOn(web, 'loadWebImages').mockResolvedValue(imagesWith({ '1': person({ baja: '2026-01-10' }), '2': person({ baja: '2999-01-01' }), '3': person({}) }))   // 2: a baja still to come
@@ -45,7 +43,6 @@ describe('the DOCX of the individual scouting', () => {
   })
 
   it('on: a team whose players all left is not made: there is nobody to scout', async () => {
-    localStorage.setItem(DATA_FLAG_KEY, 'local')
     vi.spyOn(client, 'getPlayerStats').mockResolvedValue(PLAYERS)
     vi.spyOn(client, 'getLiveTeamNames').mockResolvedValue([{ id: '101', name: 'ALFA' }])
     vi.spyOn(web, 'loadWebImages').mockResolvedValue(imagesWith({ '1': person({ baja: '2026-01-10' }), '2': person({ baja: '2026-01-10' }), '3': person({ baja: '2026-01-10' }) }))
@@ -53,7 +50,6 @@ describe('the DOCX of the individual scouting', () => {
   })
 
   it('on: the notes carry the games a player has missed, counted from his alta, and nothing for who played the last one (#1083)', async () => {
-    localStorage.setItem(DATA_FLAG_KEY, 'local')
     vi.spyOn(client, 'getPlayerStats').mockResolvedValue(PLAYERS)
     vi.spyOn(client, 'getLiveTeamNames').mockResolvedValue([{ id: '101', name: 'ALFA' }])
     vi.spyOn(web, 'loadWebImages').mockResolvedValue(imagesWith({ '3': person({ alta: '2026-10-20' }) }))
@@ -67,7 +63,6 @@ describe('the DOCX of the individual scouting', () => {
   })
 
   it('on: it is made here from the players of the competition and the images of the team', async () => {
-    localStorage.setItem(DATA_FLAG_KEY, 'local')
     vi.spyOn(client, 'getPlayerStats').mockResolvedValue(PLAYERS)
     vi.spyOn(client, 'getLiveTeamNames').mockResolvedValue([{ id: '101', name: 'ALFA' }, { id: '102', name: 'BRAVO' }])
     const images = vi.spyOn(web, 'loadWebImages').mockResolvedValue({ format: 1, collection: FEB, team_id: '101', team: 'ALFA', logo: null, players: { '1': { name: 'JUGADOR 1', no: '4', photo: null, birth_date: '05/03/1998', height: '198 cm' } } })
@@ -83,7 +78,6 @@ describe('the DOCX of the individual scouting', () => {
   })
 
   it('on: it reports its progress, the charts of each player and then the document (#215)', async () => {
-    localStorage.setItem(DATA_FLAG_KEY, 'local')
     vi.spyOn(client, 'getPlayerStats').mockResolvedValue(PLAYERS)
     vi.spyOn(client, 'getLiveTeamNames').mockResolvedValue([{ id: '101', name: 'ALFA' }])
     vi.spyOn(web, 'loadWebImages').mockResolvedValue(null as never)
@@ -97,7 +91,6 @@ describe('the DOCX of the individual scouting', () => {
   })
 
   it('on, with no images published for the competition: the document is made without them', async () => {
-    localStorage.setItem(DATA_FLAG_KEY, 'local')
     vi.spyOn(client, 'getPlayerStats').mockResolvedValue(PLAYERS)
     vi.spyOn(client, 'getLiveTeamNames').mockResolvedValue([{ id: '101', name: 'ALFA' }])
     vi.spyOn(web, 'loadWebImages').mockRejectedValue(new DataUnavailable('Este informe no está publicado.'))
@@ -105,7 +98,6 @@ describe('the DOCX of the individual scouting', () => {
   })
 
   it('on, with no key for the images: the reader must unlock, the document is not made half blank', async () => {
-    localStorage.setItem(DATA_FLAG_KEY, 'local')
     vi.spyOn(client, 'getPlayerStats').mockResolvedValue(PLAYERS)
     vi.spyOn(client, 'getLiveTeamNames').mockResolvedValue([{ id: '101', name: 'ALFA' }])
     vi.spyOn(web, 'loadWebImages').mockRejectedValue(new ScopedAccessError('sin clave'))
@@ -116,7 +108,6 @@ describe('the DOCX of the individual scouting', () => {
     const ZONES = [{ zone: 'key_area', zone_label: 'Pintura', points: 2, fga: 5, fgm: 3, fg_pct: 60, rating: 'average', low_sample: true }]
     const SHOT = [{ x: 7, y: 3, made: true, zone: 'key_area' }]
     function setUp(collection: string) {
-      localStorage.setItem(DATA_FLAG_KEY, 'local')
       vi.spyOn(client, 'getPlayerStats').mockResolvedValue(PLAYERS)
       vi.spyOn(client, 'getLiveTeamNames').mockResolvedValue([{ id: '101', name: 'ALFA' }])
       vi.spyOn(web, 'loadWebImages').mockRejectedValue(new DataUnavailable('no'))
@@ -158,11 +149,4 @@ describe('the DOCX of the individual scouting', () => {
     })
   })
 
-  it('off: the server makes it and its failure is said', async () => {
-    const fetched = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response(JSON.stringify({ detail: 'FEB no responde' }), { status: 502 }))
-    await expect(downloadIndividualScoutingDocx(FEB, '101')).rejects.toThrow('FEB no responde')
-    expect(String(fetched.mock.calls[0][0])).toContain('/reports/individual-scouting/docx?collection=')
-    fetched.mockResolvedValueOnce(new Response('docx'))
-    expect(await (await downloadIndividualScoutingDocx(FEB, '101')).text()).toBe('docx')
-  })
 })

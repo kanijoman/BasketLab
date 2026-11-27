@@ -20,7 +20,7 @@ from typing import Any, Dict, List, Mapping, Optional, Sequence, Set, Tuple, Uni
 CACHE = "build-cache.json"
 EPOCH = 1                            # raise it to make the next publication compute everything again (a change in how sections are sealed, a doubt about the memory)
 _REPO = Path(__file__).resolve().parent.parent.parent
-_OUT_OF_THE_BUILD = {"api"}          # the routers do not shape a published file (the exporters call the same service functions the routers do)
+_OUT_OF_THE_BUILD: Set[str] = set()   # source folders that do not shape a published file (the routers of ``src/api`` were the only one until the API was retired, #1199)
 
 
 # --------------------------------------------------------------------------------------------- the import graph
@@ -78,7 +78,7 @@ def _imports(path: Path, root: Path) -> Optional[List[str]]:
 
 def module_files(module: str, root: Optional[Path] = None) -> Set[Path]:
     """The files ``module`` depends on: itself, everything it imports (transitively, wherever the import is) and the ``__init__`` of every package on the way.
-    Only the repository counts (the standard library and the installed packages do not); the routers (``src/api``) do not either. Empty when ``module`` is not found.
+    Only the repository counts (the standard library and the installed packages do not); a folder listed in ``_OUT_OF_THE_BUILD`` does not either (none today). Empty when ``module`` is not found.
 
     The ``__init__`` of a package that is only on the way to a module (``src/services/__init__.py`` for ``src.services.assist_links``) counts as a file (its text is hashed) but its own
     imports are not followed: those files re-export the whole package, and following them would make every section depend on everything. The ``__init__`` of a package that is

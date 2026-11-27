@@ -1,7 +1,6 @@
 /** Season figures derived from the play-by-play (#347): points by origin, by period, situations and timeouts (FEB only). */
 import { useQuery } from '@tanstack/react-query'
 
-import { API_BASE } from './client'
 import { fromSource } from '@/datasource/resolve'
 import { localByPeriod, localDerivedCoverage, localPointsByOrigin, localSituations, localTimeoutEffects } from '@/localdata/source'
 
@@ -93,20 +92,11 @@ export interface TimeoutRow {
   rival: TimeoutGroup
 }
 
-async function get<T>(collection: string, path: string): Promise<T> {
-  const res = await fetch(`${API_BASE}/possessions/${encodeURIComponent(collection)}/${path}`)
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}))
-    throw new Error(typeof body.detail === 'string' ? body.detail : `HTTP ${res.status}`)
-  }
-  return res.json() as Promise<T>
-}
-
-// With the dataset `pbp` on (`?data=local`, issue #676) the tables are summed on the device from the published DERIVED; if it cannot answer, a clear error (#334), never the API.
-export const getPointsByOrigin = (collection: string) => fromSource('pbp', () => localPointsByOrigin(collection), () => get<OriginRow[]>(collection, 'points-by-origin'))
-export const getByPeriod = (collection: string) => fromSource('pbp', () => localByPeriod(collection), () => get<PeriodRow[]>(collection, 'by-period'))
-export const getSituations = (collection: string) => fromSource('pbp', () => localSituations(collection), () => get<SituationRow[]>(collection, 'situations'))
-export const getTimeoutEffects = (collection: string) => fromSource('pbp', () => localTimeoutEffects(collection), () => get<TimeoutRow[]>(collection, 'timeouts'))
+// From the publication (issue #676) the tables are summed on the device from the published DERIVED; if it cannot answer, a clear error (#334), never the API.
+export const getPointsByOrigin = (collection: string) => fromSource('pbp', () => localPointsByOrigin(collection))
+export const getByPeriod = (collection: string) => fromSource('pbp', () => localByPeriod(collection))
+export const getSituations = (collection: string) => fromSource('pbp', () => localSituations(collection))
+export const getTimeoutEffects = (collection: string) => fromSource('pbp', () => localTimeoutEffects(collection))
 
 const STALE = 5 * 60_000
 
@@ -127,7 +117,7 @@ export interface DerivedCoverage {
   pending_games: { code: string; teams: string[] }[]
 }
 
-export const getDerivedCoverage = (collection: string) => fromSource('pbp', () => localDerivedCoverage(collection), () => get<DerivedCoverage>(collection, 'derived-coverage'))
+export const getDerivedCoverage = (collection: string) => fromSource('pbp', () => localDerivedCoverage(collection))
 
 export const useDerivedCoverage = (collection?: string) =>
   useQuery<DerivedCoverage>({

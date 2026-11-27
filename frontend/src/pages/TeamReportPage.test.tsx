@@ -4,7 +4,6 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import TeamReportPage from './TeamReportPage'
 import { CollectionProvider } from '@/context/CollectionContext'
-import * as client from '@/api/client'
 import * as api from '@/api/teamReport'
 import { ScopedAccessError } from '@live-package/crypto'
 import { loadRights } from '@live-package/rights'
@@ -13,7 +12,7 @@ const FEB = 'L_F_-2_2025_2026_Liga_Regular_B'
 const FBCYL = 'FBCYL_1DF_2025_A'
 
 function page(collection: string, report = vi.spyOn(api, 'getTeamReport')) {
-  vi.spyOn(client, 'getLiveTeamNames').mockResolvedValue([{ id: '10', name: 'Zamora' }] as never)
+  vi.spyOn(api, 'getReportTeams').mockResolvedValue([{ id: '10', name: 'Zamora' }] as never)
   if (!report.getMockImplementation()) report.mockResolvedValue({
     team: 'Zamora', mode: 'own', strengths: [], weaknesses: [], zones: [], areas: [], consistency: [], differential: [], sample: { games: 5 },
   } as never)
@@ -61,7 +60,7 @@ describe('TeamReportPage (issue #627)', () => {
 const invitation = (scope: string) => `bl1.${btoa(JSON.stringify({ s: scope, k: btoa(String.fromCharCode(...new Uint8Array(32).fill(3))), e: null })).replace(/=+$/, '')}`
 
 describe('TeamReportPage: unlocking (issue #639)', () => {
-  beforeEach(() => { localStorage.clear(); localStorage.setItem('basketlab.data', 'api') })      // the page lists the teams through the API here: the keys are what is under test
+  beforeEach(() => { localStorage.clear() })      // the page lists the teams through the API here: the keys are what is under test
 
   it('a reader without the key is asked for an invitation, and the one pasted unlocks the report', async () => {
     const report = vi.spyOn(api, 'getTeamReport')

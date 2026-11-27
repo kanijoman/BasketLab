@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { NAV_ITEMS, type Section } from './nav'
 import { isOffered } from './useVisibleNav'
 
@@ -15,7 +15,6 @@ const SECTIONS: Record<string, Section[]> = {
 const offered = (source: string) => NAV_ITEMS.filter(i => i.subPath !== '' && isOffered(i.requires, new Set(SECTIONS[source]))).map(i => i.subPath)
 const hidden = (source: string) => NAV_ITEMS.filter(i => i.subPath !== '' && !offered(source).includes(i.subPath)).map(i => i.subPath).sort()
 
-beforeEach(() => localStorage.setItem('basketlab.data', 'local'))         // the tests start on the API; here the pages read the publication, as in production
 
 describe('what each source offers in Analytics (#1099, #1100)', () => {
   it('every page of a competition says what it needs from the publication', () => {

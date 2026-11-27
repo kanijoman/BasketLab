@@ -1,7 +1,6 @@
 /** Reports and match analysis (issue #201). */
 import { fromSource } from '@/datasource/resolve'
 import { localMatchAnalysis, localMatchList } from '@/localdata/source'
-import { get } from './http'
 
 // ── Match Analysis ────────────────────────────────────────────────────────────
 
@@ -34,21 +33,18 @@ export interface MatchAnalysis {
   comparison: MatchComparisonRow[]
 }
 
-// With the dataset `matches` on (`?data=local`, issue #677) the list and the analysis of a match are the ones computed when the competition was published.
-export const getMatchList = (collection: string, is_fbcyl = false) =>
+// From the publication (issue #677) the list and the analysis of a match are the ones computed when the competition was published.
+export const getMatchList = (collection: string) =>
   fromSource(
     'matches',
     () => localMatchList(collection),
-    () => get<MatchSummary[]>(`/matches/${encodeURIComponent(collection)}?is_fbcyl=${is_fbcyl}`),
   )
 
 export const getMatchAnalysis = (
   collection: string,
   matchId: string | number,
-  is_fbcyl = false,
 ) =>
   fromSource(
     'matches',
     () => localMatchAnalysis(collection, matchId),
-    () => get<MatchAnalysis>(`/matches/${encodeURIComponent(collection)}/${matchId}?is_fbcyl=${is_fbcyl}`),
   )

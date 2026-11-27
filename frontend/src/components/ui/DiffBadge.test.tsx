@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import DiffBadge, { formatDiff } from './DiffBadge'
+import { TONE_PILL } from './tone'
 
 describe('formatDiff (issue #608)', () => {
   it('says the real difference with its sign and the decimals of the figure', () => {
@@ -57,6 +58,20 @@ describe('DiffBadge (issue #608)', () => {
     expect(screen.getByText('+2.1').getAttribute('title')).toBe('78.4 frente a 76.3')
     rerender(<DiffBadge recent={null} season={76.3} />)
     expect(container).toBeEmptyDOMElement()
+  })
+
+  // A difference sits in cells painted with the colour of their quartile: green or red text straight on them does not reach WCAG AA (axe on /comparativas, #1199). The badge is the pill of
+  // its tone (`TONE_PILL`, measured at AA over every surface by designTokens.test.ts, #856) over an opaque surface of its own, so it reads whatever colour the cell has.
+  it.each([
+    [80, 70, false, 'ok'],
+    [60, 70, false, 'bad'],
+    [16, 14, true, 'bad'],
+    [5, 5, false, 'neutral'],
+  ] as const)('recent %s against %s (reverse %s) is the %s pill over an opaque surface', (recent, season, reverse, tone) => {
+    render(<DiffBadge recent={recent} season={season} reverse={reverse} />)
+    const pill = screen.getByText(formatDiff(recent, season)!)
+    for (const cls of TONE_PILL[tone].split(' ')) expect(pill.className.split(' ')).toContain(cls)
+    expect(pill.parentElement!.className).toMatch(/(^|\s)bg-surface(\s|$)/)
   })
 
   it('uses the decimals it is given', () => {

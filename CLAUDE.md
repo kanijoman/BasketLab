@@ -3,7 +3,7 @@ Doc solo para Claude: terso, sin duplicar el código. Humanos: [README.md](READM
 
 ## Identidad
 Analizador de estadísticas de baloncesto (ligas españolas FEB / FBCYL) + motor de partido en vivo (FEB, alertas y propuestas para el staff).
-**Stack:** Python 3.11 · FastAPI · MongoDB (pymongo, síncrono) · matplotlib · fpdf2 · python-docx | React 18 + Vite + TypeScript + TanStack Query | Vercel (frontend) y GitHub Actions (datos y paquetes publicados en ramas); **sin Render ni alojamiento de la API en el repositorio**. Fase PoC (LF2).
+**Stack:** Python 3.11 · MongoDB (pymongo, síncrono) · matplotlib · fpdf2 · python-docx | React 18 + Vite + TypeScript + TanStack Query | Vercel (frontend) y GitHub Actions (datos y paquetes publicados en ramas); **sin servidor de API ni Render: la API se eliminó (#1199)**. Fase PoC (LF2).
 Sin LLMs externos (eliminados): los informes automáticos serán por reglas, ver [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Mapa de documentación (leer cuando…)
@@ -13,7 +13,7 @@ Sin LLMs externos (eliminados): los informes automáticos serán por reglas, ver
 | [docs/DATA_FORMATS.md](docs/DATA_FORMATS.md) | parseas FEB/FBCYL, play-by-play, SHOTCHART, campos |
 | [docs/LIVE.md](docs/LIVE.md) | `src/live_core`, `live_prep`, `pbp`, scraper en vivo, vectores Pyodide |
 | [docs/TESTING.md](docs/TESTING.md) | escribes/ejecutas tests, CI, cobertura, checklist manual |
-| [docs/OPERATIONS.md](docs/OPERATIONS.md) | Vercel, variables de entorno, `ADMIN_API_KEY` (ninguna ruta la usa hoy: patrón para la próxima escritura), errores 401/503 |
+| [docs/OPERATIONS.md](docs/OPERATIONS.md) | Vercel, variables de entorno, refresco del archivo, publicaciones |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | fases, pendientes, deuda técnica, límites conocidos |
 | [docs/DECISIONS.md](docs/DECISIONS.md) | dudas si algo ya está decidido (no re-debatir): razón, fecha y excepciones |
 | [docs/UI.md](docs/UI.md) | toques la UI de la web: componentes base, vocabulario de color, tema |
@@ -55,7 +55,7 @@ Checklist: sin excepciones · bordes (vacío/None/cero) · FEB+FBCYL · sin regr
 ## Calidad (antes de escribir y cada ~100 líneas)
 | Comprobación | Umbral | Acción |
 |---|---|---|
-| Líneas del archivo | >300 aviso · >500 **parar** (excepción, #203: los literales de pipelines de Mongo —`database/aggregation/fbcyl_pipeline.py`, `pipeline_team_stats.py`—, `detailed_zones._create_10_zone_system` y los vectores generados son datos declarativos de baja complejidad: no se parten por líneas; la excepción se revisa si se elimina la API, #641) | extraer módulo/helper **ahora** |
+| Líneas del archivo | >300 aviso · >500 **parar** (excepción, #203: los literales de pipelines de Mongo —`database/aggregation/fbcyl_pipeline.py`, `pipeline_team_stats.py`—, `detailed_zones._create_10_zone_system` y los vectores generados son datos declarativos de baja complejidad: no se parten por líneas; la excepción se revisa en #641 (la API ya se eliminó)) | extraer módulo/helper **ahora** |
 | Longitud de función | >40 | dividir antes de seguir |
 | Duplicación | similar existente | reutilizar/extraer helper |
 | Anidación / condicionales | >3 niveles o >5 | refactorizar |
@@ -91,18 +91,17 @@ Antes de dar una entrega por terminada y del commit/PR, revisa y **actualiza** (
 | regla de trabajo, comando, decisión | este archivo (mantenerlo ≤ ~170 líneas; el detalle va a docs/) |
 
 ## Arquitectura (resumen; detalle en ARCHITECTURE)
-- **UI → API → Servicio → Repositorio → MongoDB.** El frontend nunca toca la BD. Consultas complejas = aggregation pipelines (no filtrar en Python).
-- Backend `src/api` (FastAPI :8000, `run_api.py`; **sin escrituras desde la web desde #724**: los datos los carga el refresco programado del archivo y se retiran con la purga). Frontend `frontend/` (Vite :5173).
-- Visualización: matplotlib → PNG bytes por la API. Sync `pymongo` (decisión tomada).
+- **Web ← ficheros publicados (`web-data`) ← publicación ← Servicio → Repositorio → MongoDB.** El frontend lee solo los ficheros publicados: no hay servidor de API (#1199). Consultas complejas = aggregation pipelines (no filtrar en Python).
+- Sin escrituras desde la web (#724): los datos los carga el refresco programado del archivo y se retiran con la purga. Frontend `frontend/` (Vite :5173).
+- Sync `pymongo` (decisión tomada).
 
 ## Patrones obligatorios
 ```python
-@router.get("/example/{collection}")
-def get_example(collection: str, db: MongoDBHandler = Depends(get_db)):
+# un servicio recibe el handler y devuelve datos; lo usan la publicación (local_data) y los generadores de vectores
+def get_example(db: MongoDBHandler, collection: str):
     return MyService(db).get_data(collection)
 ```
-- **Endpoints de escritura** (borrar, ingerir, entrenar, persistir; hoy no queda ninguno): `dependencies=[Depends(require_admin)]` (`src/api/security.py`); si es solo cómputo, añádelo conscientemente a `PUBLIC_WRITE_ROUTES` en `tests/test_admin_auth.py`.
-- Operaciones largas: `BackgroundTasks`, nunca bloquear el event loop. Imports perezosos (`from src.services.x import X` dentro de la función) para dependencias pesadas opcionales.
+- **Sin servidor**: no hay endpoints (la API se retiró, #1199). Una escritura futura necesitará decidir antes el modelo de acceso (#591) y su clave (patrón en `docs/evaluaciones/2026-11-27_historia-operations.md`). Imports perezosos (`from src.services.x import X` dentro de la función) para dependencias pesadas opcionales.
 - **Memoria (servidor pequeño, 512 MB)**: un documento de partido ≈ 1 MB en RAM. Proyección siempre en colecciones de partidos; iterar cursores/generadores, no listas de documentos o tiros; 1 worker (ver docs/OPERATIONS.md).
 - **MongoDB**: NUNCA `list(col.find({}))` y filtrar en Python → filtra en BD / `AggregationPipelineBuilder`. Índices siempre `background=True` y registrados en `IndexManager`.
 - **Posesiones**: exactas del tracker único (`src/live_core/possessions.py`, FEB y FBCYL; un partido no fiable por su impacto —más del 10 % de los puntos de origen desconocido o recuento > 10 % de la estimación (`reliable` de `DERIVED`)— usa la estimación `FGA - ORB + TOV + 0.44*FTA`; las roturas de alternancia son solo informativas); ratings por 100 posesiones **reales**, ritmo por 40 min (lo único escalado), Talent por 40 min. Cada partido FEB guarda `DERIVED` (posesiones y rebotes/pérdidas validados) y los pipelines de temporada lo leen con respaldo al boxscore; rellenar lo antiguo con `run_backfill_derived.py` (OPERATIONS). Rebote ofensivo = rebota el equipo que falló, siempre (ver DATA_FORMATS).
@@ -125,13 +124,13 @@ def get_example(collection: str, db: MongoDBHandler = Depends(get_db)):
 | leer `min`/`sec` de FBCYL como tiempo transcurrido | es tiempo **restante** (#370) |
 
 ## Decisiones tomadas (no re-debatir; razón, fecha y excepciones en [docs/DECISIONS.md](docs/DECISIONS.md))
-Stack: MongoDB + aggregation pipelines (sin SQL ni ORM) · pymongo síncrono · FastAPI + React/Vite · fpdf2 + python-docx · matplotlib (precisión FIBA) · motor live en biblioteca estándar con Pyodide en la tablet · sin LLMs.
+Stack: MongoDB + aggregation pipelines (sin SQL ni ORM) · pymongo síncrono · React/Vite · fpdf2 + python-docx · matplotlib (precisión FIBA) · motor live en biblioteca estándar con Pyodide en la tablet · sin LLMs.
 - **App live**: release automática cada viernes por la mañana, el staff actualiza con el botón; acceso a paquetes por alcances (#410), `access.mode` `legacy` hasta la release que lee el índice v2; caminos no felices ya implementados (#219, #220), pendientes de tablet real.
-- **API** (#334): `src/api` y `run_api.py` se quedan para desarrollo, pruebas y e2e; **sin Render ni alojamiento** en el repositorio.
+- **API eliminada** (27/11/2026, #1199; antes #334): `src/api`, `run_api.py` y `?data=api` ya no existen; **sin Render ni alojamiento** en el repositorio.
 - **Competiciones** (#435, #724): un solo catálogo, `config/competitions.json`.
 - **Predictivo en el navegador** (épicas #841, #935): TS sobre `web-data`, siempre probabilidad condicional, nunca promesa; sin ascensos, descensos ni playoffs.
 - **BasketLab Talent** (épica #872): app aparte en la misma plataforma; identidad anclada al `idPlayer` de FEB; escritura del staff decidida en #895.
-- **Local-first** (#326): la web lee la rama `web-data` con `?data=local`; la API queda de respaldo.
+- **Local-first** (#326): la web lee la rama `web-data`; no hay API de respaldo (#1199).
 - **Producto** (26/10/2026): web multiusuario con niveles de acceso y app Android como cliente; el modelo se decide en #591 antes de cuentas (#153).
 
 ## Lógica de negocio
@@ -143,7 +142,6 @@ Stack: MongoDB + aggregation pipelines (sin SQL ni ORM) · pymongo síncrono · 
 ## Comandos
 ```bash
 python scripts/pre_pr.py              # checklist previa al PR (ruff, rebase, docs; avisa de rojo y árbol sucio)
-python run_api.py                    # API :8000 (BASKETLAB_DEV=1 → reload)
 cd frontend && npm run dev           # Vite :5173
 pytest -q --no-cov tests/test_x.py   # backend: solo lo afectado (tabla de Reglas de implementación); en paralelo: python -m pytest -n auto
 cd frontend && npm run lint && npm run type-check && npm run test:run && npm run build

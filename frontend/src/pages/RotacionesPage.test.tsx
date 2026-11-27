@@ -43,6 +43,6 @@ describe('RotacionesPage on the base components (issue #194)', () => {
     const working = await screen.findByRole('button', { name: /Analizando/ })
     expect(working).toHaveAttribute('aria-busy', 'true')
     expect(working).toBeDisabled()
-    expect(api.streamRotacionesAnalysis).toHaveBeenCalledWith('LF_CHALLENGE', '2', 'Bravo', expect.any(Function))
+    expect(api.streamRotacionesAnalysis).toHaveBeenCalledWith('LF_CHALLENGE', '2', expect.any(Function))
   })
 })

@@ -2,7 +2,6 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { DATA_FLAG_KEY } from '@/datasource/switch'
 
 const web = vi.hoisted(() => ({ loadWebImages: vi.fn() }))
 vi.mock('@/webdata/client', async importOriginal => ({ ...(await importOriginal<object>()), ...web }))
@@ -16,7 +15,7 @@ const wrapper = ({ children }: { children: ReactNode }) => (
 const person = (baja?: string | null) => ({ name: null, no: null, photo: null, birth_date: null, height: null, baja })
 const COLLECTION = 'PRIMERA_FEB_2026_2027_Liga_Regular_Unico'
 
-beforeEach(() => { localStorage.clear(); localStorage.setItem(DATA_FLAG_KEY, 'local'); web.loadWebImages.mockReset() })
+beforeEach(() => { localStorage.clear(); web.loadWebImages.mockReset() })
 afterEach(() => localStorage.clear())
 
 describe('useLeftPlayers', () => {
@@ -35,12 +34,6 @@ describe('useLeftPlayers', () => {
   ])('asks nothing and hides nobody: %s', (_name, collection, team) => {
     const { result } = renderHook(() => useLeftPlayers(collection, team), { wrapper })
     expect(result.current.size).toBe(0)
-    expect(web.loadWebImages).not.toHaveBeenCalled()
-  })
-
-  it('asks nothing when the web data is off (the API is the source)', () => {
-    localStorage.setItem(DATA_FLAG_KEY, 'api')
-    renderHook(() => useLeftPlayers(COLLECTION, '101'), { wrapper })
     expect(web.loadWebImages).not.toHaveBeenCalled()
   })
 

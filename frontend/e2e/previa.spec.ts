@@ -33,7 +33,7 @@ test('choose a team, see its calendar, choose the match and read the forecast, o
   const errors: string[] = []
   page.on('pageerror', e => errors.push(e.message))
   await page.setViewportSize({ width: 390, height: 800 })
-  await page.goto(`/${C}/previa?data=local`)
+  await page.goto(`/${C}/previa`)
   await expect(page.getByText('Elige tu equipo para ver sus próximos partidos.')).toBeVisible()
 
   await page.getByRole('combobox', { name: 'Equipo' }).selectOption({ label: 'ALPHA' })
@@ -55,7 +55,7 @@ test('choose a team, see its calendar, choose the match and read the forecast, o
 })
 
 test('the page is reloaded on the same match from its address', async ({ page }) => {
-  await page.goto(`/${C}/previa?data=local`)
+  await page.goto(`/${C}/previa`)
   await page.getByRole('combobox', { name: 'Equipo' }).selectOption({ label: 'ALPHA' })
   await page.getByTestId('fixture').nth(2).click()
   await expect(page.getByTestId('fixture').nth(2)).toHaveAttribute('aria-pressed', 'true')
@@ -68,7 +68,7 @@ for (const theme of ['light', 'dark'] as const) {
   test(`no accessibility violations: ${theme}, 390 px`, async ({ page }) => {
     await page.addInitScript(t => localStorage.setItem('basketlab-web-theme', t), theme)
     await page.setViewportSize({ width: 390, height: 800 })
-    await page.goto(`/${C}/previa?data=local`)
+    await page.goto(`/${C}/previa`)
     await page.getByRole('combobox', { name: 'Equipo' }).selectOption({ label: 'ALPHA' })
     await expect(page.getByRole('heading', { name: 'Pronóstico' })).toBeVisible()
     const result = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()

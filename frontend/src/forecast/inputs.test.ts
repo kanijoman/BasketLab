@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { DATA_FLAG_KEY } from '@/datasource/switch'
 import { resetLocalData } from '@/localdata/source'
 import { resetWebData, setDataBase } from '@/webdata/client'
 import { getForecastInputs } from '@/api/forecast'
@@ -57,8 +56,4 @@ describe('getForecastInputs', () => {
     await expect(getForecastInputs('NO_SUCH_COMPETITION')).rejects.toThrow(/no están disponibles/)
   })
 
-  it('says so with the API as the source too: the preview and the simulation only work with the published data', async () => {
-    localStorage.setItem(DATA_FLAG_KEY, 'api')
-    await expect(getForecastInputs(FEB)).rejects.toThrow('La previa y la simulación solo funcionan con los datos publicados.')
-  })
 })

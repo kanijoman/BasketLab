@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import Layout from './Layout'
@@ -71,29 +71,6 @@ describe('Layout shell (issue #191)', () => {
 })
 
 // Issues #327, #334: the header says when something comes from the API (the default is the published files), so a table from the API is not taken for a local one.
-describe('Layout API data tag (issues #327, #334)', () => {
-  it('shows nothing by default (everything is local) and «Datos de la API» when the API is forced', () => {
-    phone(false)
-    shell('/LF2/teams')
-    expect(screen.queryByText('Datos de la API')).toBeNull()
-    expect(screen.queryByText('Datos locales')).toBeNull()
-    cleanup()
-    localStorage.setItem('basketlab.data', 'api')
-    shell('/LF2/teams')
-    expect(screen.getByText('Datos de la API')).toBeInTheDocument()
-  })
-
-  // Issue #329: with only some datasets local, the tag says which ones still read the API.
-  it('says which datasets still read the API when only some are local', () => {
-    phone(false)
-    localStorage.setItem('basketlab.data', 'local:team-report')
-    shell('/LF2/team-report')
-    const title = screen.getByText('Datos de la API').getAttribute('title') ?? ''
-    expect(title).toContain('team-stats')
-    expect(title).not.toContain('team-report,')
-  })
-})
-
 // #884 (PR C): the notice of a stale external source sits under the header, above every page of an external competition, and only there.
 describe('Layout notice of a stale external source (#884)', () => {
   const failed = { source: 'ncaa', state: 'failed', ok: false, last_ok: '2026-11-17T07:00:00Z', finished: '2026-11-18T07:00:00Z', games: 13, unreliable: 12, published: 1 } as const

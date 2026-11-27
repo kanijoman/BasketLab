@@ -425,11 +425,11 @@ def build_fbcyl_pbp_vectors() -> dict:
     return _pbp_vectors(build_fbcyl_games(), "FBCYL_1ª_FASE-GRUPO_A-1_2026_")
 
 
-# Tiros (#685): the shots published for a competition and what the real endpoints answer for them (``get_shot_zones``, with and without the league, and ``get_shot_raw``).
+# Tiros (#685): the shots published for a competition and what the reference functions answer for them (``shot_zones``, with and without the league, and ``shot_raw``).
 def _shots_vectors(games: list, collection: str) -> dict:
     from unittest.mock import MagicMock
 
-    from src.api.routers.shots import get_shot_raw, get_shot_zones
+    from src.shotcharts.queries import shot_raw, shot_zones
     from src.local_data.shots_export import export_shots
 
     col = mongomock.MongoClient()["v"][collection]
@@ -444,9 +444,9 @@ def _shots_vectors(games: list, collection: str) -> dict:
     cases = []
     for flt in filters:
         for compare in (None, "league"):
-            zones = get_shot_zones(collection, flt.get("team_id"), flt.get("player"), compare, db)
+            zones = shot_zones(db, collection, flt.get("team_id"), flt.get("player"), compare)
             cases.append({"filter": flt, "compare": compare, "zones": json.loads(json.dumps(zones))})
-    raw = [{"filter": flt, "limit": limit, "shots": json.loads(json.dumps(get_shot_raw(collection, flt.get("team_id"), flt.get("player"), limit, db)))}
+    raw = [{"filter": flt, "limit": limit, "shots": json.loads(json.dumps(shot_raw(db, collection, flt.get("team_id"), flt.get("player"), limit)))}
            for flt in filters[:3] for limit in (5000, 7)]
     return {"payload": payload, "zones": cases, "raw": raw}
 
