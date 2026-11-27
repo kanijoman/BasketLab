@@ -2,7 +2,8 @@
 
 from typing import Dict, List, Set, Tuple, FrozenSet
 from collections import defaultdict
-from src.live_core.clock import GAME_SECONDS
+from src.live_core.clock import game_length
+from src.pbp.period_scheme import scheme_of
 from .playbyplay_analyzer import PlayByPlayAnalyzer
 
 
@@ -191,7 +192,8 @@ class LineupExtractor:
         Handles overtime if present.
         """
         # Check for overtime by examining play-by-play
-        max_quarter = 4
+        scheme = scheme_of(self.game_data)
+        max_quarter = scheme.periods
         
         if self.is_fbcyl:
             moves = self.game_data.get('moves', [])
@@ -209,14 +211,8 @@ class LineupExtractor:
                 except (ValueError, TypeError):
                     pass
         
-        # Each quarter is 600 seconds (10 minutes)
-        # Overtime periods are 300 seconds (5 minutes)
-        regulation_time = GAME_SECONDS  # 4 quarters
-        if max_quarter > 4:
-            overtime_periods = max_quarter - 4
-            return regulation_time + (overtime_periods * 300)
-        
-        return regulation_time
+        # the regulation is what the scheme of the game says (four quarters of 10, or NCAA men's two halves of 20: #1131); every overtime is 300 seconds
+        return game_length(max_quarter, scheme)
 
     def detect_starting_lineup(self, team_id: str) -> Set[str]:
         """

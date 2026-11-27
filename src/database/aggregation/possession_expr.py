@@ -20,8 +20,12 @@ def derived_or_box(derived_field: str, box_field: str, index: int) -> Dict:
 
 
 def game_minutes() -> Dict:
-    """40 minutes plus 5 per overtime period, from the quarters of the header."""
-    return {"$add": [40, {"$multiply": [{"$subtract": [{"$size": "$HEADER.QUARTERS.QUARTER"}, 4]}, 5]}]}
+    """The minutes of the game: its regulation plus 5 per overtime period, from the periods of the header. The regulation is ``HEADER.PERIODS`` (NCAA men: two halves of
+    20) or, as FEB's and FBCYL's documents have none, four quarters of 10 (#1131)."""
+    periods = {"$ifNull": ["$HEADER.PERIODS.regulation", 4]}
+    regulation = {"$multiply": [periods, {"$ifNull": ["$HEADER.PERIODS.minutes", 10]}]}
+    overtimes = {"$max": [0, {"$subtract": [{"$size": "$HEADER.QUARTERS.QUARTER"}, periods]}]}
+    return {"$add": [regulation, {"$multiply": [overtimes, 5]}]}
 
 
 def possessions_per_40(index: int, fga: Dict, fta: Dict, orb: Dict, tov: Dict) -> Dict:

@@ -184,7 +184,8 @@ def to_canonical(game: Dict[str, Any], entry: Dict[str, Any], conference_names: 
                              "conference_id": t["conference_id"], "conference": names.get(t["conference_id"] or ""), "division1": t["division1"]}
     header = {"CompID": f"{entry['competition']} {entry['season_value']}", "competition": entry["competition"], "round": None, "quarter": len(quarters), "time": "FINAL", "logo": None, "duration": None,
               "starttime": _starttime(game["date"]), "place": None, "field": None, "status": "3", "statusText": "FINISHED", "TEAM": [header_team(home), header_team(away)],
-              "QUARTERS": {"QUARTER": quarters}, "game_code": str(game["game_id"])}
+              "QUARTERS": {"QUARTER": quarters}, "game_code": str(game["game_id"]),
+              "PERIODS": {"regulation": scheme.periods, "minutes": scheme.minutes}}          # NCAA men: two halves of 20 (#1131)
     box = [_team_box(t, game["players"][t["id"]], game["totals"].get(t["id"], {}), t["score"] > other["score"], names) for t, other in ((home, away), (away, home))]
     return {"_id": source_id(SOURCE, game["game_id"]), "_league": SOURCE, "_season": str(entry["season_value"]), "HEADER": header,
             "PLAYBYPLAY": {"duration": None, "hasExtension": len(quarters) > scheme.periods, "LINES": _Lines(game, scheme.periods).build(game["plays"])},

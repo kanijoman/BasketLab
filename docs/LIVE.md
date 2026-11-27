@@ -16,7 +16,7 @@ Objetivo: durante un partido FEB, mostrar métricas y **alertas con propuestas**
 ## Módulos: src/pbp, src/live_core, src/live_prep (piezas del motor)
 
 ### src/pbp: parsers sin BD
-- `src/pbp` (`event_helpers` solo con el tiempo, `playbyplay_core`, `game_events` (eventos normalizados de un documento), `possession_core` (filas de posesiones a partir del tracker de `live_core`) y `possession_quality` (contadores del pbp para auditarlo contra el boxscore)): parsers sin BD; la lógica de posesiones y rebotes vive en `live_core`.
+- `src/pbp` (`event_helpers` solo con el tiempo, `playbyplay_core`, `game_events` (eventos normalizados de un documento), `period_scheme` (`scheme_of`: periodos del documento, `HEADER.PERIODS`; NCAA masculina 2×20, el resto 4×10; `live_core.clock.Scheme` con `period_length`/`period_start`/`elapsed_seconds` opcionales, #1131), `possession_core` (filas de posesiones a partir del tracker de `live_core`) y `possession_quality` (contadores del pbp para auditarlo contra el boxscore)): parsers sin BD; la lógica de posesiones y rebotes vive en `live_core`.
 
 ### src/live_core: entrada, análisis, paquete y pruebas (stdlib)
 - `src/live_core` (stdlib; test de frontera con `pymongo/numpy/requests…` bloqueados):

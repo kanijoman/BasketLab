@@ -6,6 +6,8 @@ from typing import Dict, List
 from src.live_core.events import Event, parse_line
 from src.live_core.events_fbcyl import parse_moves
 
+from .period_scheme import scheme_of
+
 
 def game_events(game_data: Dict, is_fbcyl: bool) -> List[Event]:
     """Events in the order of the document (the consumers sort them by clock)."""
@@ -15,7 +17,8 @@ def game_events(game_data: Dict, is_fbcyl: bool) -> List[Event]:
     # the real feed always has a line number; without one the position in the list is the order
     numbered = [line if line.get("num") not in (None, "") else {**line, "num": str(i + 1)} for i, line in enumerate(lines)]
     numbered = _without_repeats(numbered)
-    return [e for e in (parse_line(line) for line in numbered) if e is not None]
+    scheme = scheme_of(game_data)
+    return [e for e in (parse_line(line, scheme) for line in numbered) if e is not None]
 
 
 def _without_repeats(lines: List[Dict]) -> List[Dict]:

@@ -14,19 +14,19 @@
    ],
    "versions": {
     "shots": "75dea434a2291b9b",
-    "rotations": "44c1100ad2919461",
-    "matches": "16fa36683cc46fd0",
-    "possessions": "59a1f85b604e5db7",
-    "possession_csv": "59a1f85b604e5db7",
-    "lineups": "1afa1756da5af57a",
-    "inout": "08f81fec4ab3249d",
-    "consistency": "ee8dd7cb0797bc03",
-    "rival_adjusted": "9a181f2b98a47416",
-    "assist_connections": "69cb8986603a40fa"
+    "rotations": "d5399e8bedf06847",
+    "matches": "27a5fa5fc19d02f8",
+    "possessions": "cd59067f16bc38e1",
+    "possession_csv": "cd59067f16bc38e1",
+    "lineups": "5e38901b65b46271",
+    "inout": "9cb7d967ba9f650c",
+    "consistency": "6b1f7cb1d6970997",
+    "rival_adjusted": "ec3a251ad880fd3c",
+    "assist_connections": "40b1f4c11816ac28"
    }
   },
   "L_F_-2_2025_2026_Liga_Regular_B": {
-   "fingerprint": "576032d989bac41f8c824856397ab28f1c149d02a47f7ce868e9a999ce2dda3b",
+   "fingerprint": "88864c02182b5a7ed2d892fdef0c9e40b8cde97f264fb7733196b416e51a6d5e",
    "sections": [
     "derived",
     "shots",
@@ -40,15 +40,15 @@
    ],
    "versions": {
     "shots": "75dea434a2291b9b",
-    "rotations": "44c1100ad2919461",
-    "matches": "16fa36683cc46fd0",
-    "possessions": "59a1f85b604e5db7",
-    "possession_csv": "59a1f85b604e5db7",
-    "lineups": "1afa1756da5af57a",
-    "inout": "08f81fec4ab3249d",
-    "consistency": "ee8dd7cb0797bc03",
-    "rival_adjusted": "9a181f2b98a47416",
-    "assist_connections": "69cb8986603a40fa"
+    "rotations": "d5399e8bedf06847",
+    "matches": "27a5fa5fc19d02f8",
+    "possessions": "cd59067f16bc38e1",
+    "possession_csv": "cd59067f16bc38e1",
+    "lineups": "5e38901b65b46271",
+    "inout": "9cb7d967ba9f650c",
+    "consistency": "6b1f7cb1d6970997",
+    "rival_adjusted": "ec3a251ad880fd3c",
+    "assist_connections": "40b1f4c11816ac28"
    }
   }
  }
