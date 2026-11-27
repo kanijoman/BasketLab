@@ -5,8 +5,8 @@ A player with several passports is reported with ALL of them (decided 19/11/2026
 """
 from __future__ import annotations
 
-import unicodedata
 from typing import Dict, Iterable, List, Optional
+from src.utils.text import strip_accents
 
 FIBA_CODES: Dict[str, str] = {
     "AFG": "AFGANISTÁN", "ALB": "ALBANIA", "ALG": "ARGELIA", "AND": "ANDORRA", "ANG": "ANGOLA", "ARG": "ARGENTINA", "ARM": "ARMENIA", "ARU": "ARUBA", "AUS": "AUSTRALIA", "AUT": "AUSTRIA",
@@ -34,7 +34,7 @@ FIBA_CODES: Dict[str, str] = {
 
 def _plain(text: str) -> str:
     """Upper case without accents, with the blanks collapsed: what two writings of a country have in common."""
-    return " ".join("".join(c for c in unicodedata.normalize("NFKD", text.upper()) if not unicodedata.combining(c)).split())
+    return " ".join(strip_accents(text.upper()).split())
 
 
 _BY_NAME = {_plain(name): name for name in FIBA_CODES.values()}

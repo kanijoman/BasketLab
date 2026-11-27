@@ -10,21 +10,18 @@ depend on the order of the games.
 from __future__ import annotations
 
 import re
-import unicodedata
 from collections import Counter
 from dataclasses import dataclass, field
 from typing import Any, Dict, Iterable, List, Set
 
+from src.utils.text import strip_accents
+
 PREFIX = "feb:"
-
-
-def _strip(text: str) -> str:
-    return "".join(c for c in unicodedata.normalize("NFKD", text.upper()) if not unicodedata.combining(c))
 
 
 def name_key(name: str) -> str:
     """FEB writes ``X. SURNAME1 SURNAME2``: the key is the surnames, without accents, upper case and without the initial."""
-    words = _strip(name or "").replace(".", " ").split()
+    words = strip_accents((name or "").upper()).replace(".", " ").split()
     if words and len(words[0]) == 1:
         words = words[1:]
     return " ".join(words)

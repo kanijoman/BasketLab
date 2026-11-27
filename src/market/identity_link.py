@@ -13,32 +13,41 @@ Pure functions, no I/O. A person is its ``person_id`` (FEB rewrites the roster o
 from __future__ import annotations
 
 import re
-import unicodedata
+from collections import Counter
 from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
+
+from src.utils.text import plain_words
 
 MIN_SHARED = 2
 METHOD = "birth+name"
 _PARTICLES = frozenset({"DE", "DEL", "LA", "LAS", "LOS", "EL", "Y", "I", "DA", "DO", "DOS", "DAS", "DI", "VAN", "VON", "DER", "LE", "AL", "BEN", "BIN"})
 _MAX_CANDIDATES = 5
+_EXTERNAL_FIELDS = ("name", "birth", "full_name")
 
 
 def _words(name: Any) -> Set[str]:
-    """The words of a name that identify a person: without accents, upper case, hyphens and dots as spaces, no initials and no particles."""
-    text = "".join(c for c in unicodedata.normalize("NFKD", str(name or "").upper()) if not unicodedata.combining(c))
-    return {w for w in text.replace("-", " ").replace(".", " ").split() if len(w) > 1 and w not in _PARTICLES}
+    """The words of a name that identify a person: without accents, upper case, signs as spaces, no initials and no particles."""
+    return {w for w in plain_words(name) if len(w) > 1 and w not in _PARTICLES}
 
 
 def external_players(docs: Iterable[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """The players with minutes of canonical documents with a bio (``birth``), once each, sorted by id: ``{id, name, birth, nationality}`` and, where the source has it, ``full_name`` (ACB shows the name a player
     is known by and says the one of his papers, which is how FEB writes him: the link has the words of both, #886)."""
-    found: Dict[str, Dict[str, Any]] = {}
+    seen: Dict[str, Dict[str, Any]] = {}
     for doc in docs:
         for team in (doc.get("BOXSCORE") or {}).get("TEAM") or []:
             for player in team.get("PLAYER") or []:
-                pid = str(player.get("id"))
-                if pid not in found and player.get("birth") and player.get("name") and str(player.get("min") or "0") not in ("0", ""):
-                    found[pid] = {"id": pid, "name": player["name"], "birth": player["birth"], "nationality": player.get("nationality"), **({"full_name": player["full_name"]} if player.get("full_name") else {})}
-    return [found[k] for k in sorted(found)]
+                if player.get("birth") and player.get("name") and str(player.get("min") or "0") not in ("0", ""):
+                    entry = seen.setdefault(str(player.get("id")), {"nationality": player.get("nationality"), **{f: Counter() for f in _EXTERNAL_FIELDS}})
+                    for field in _EXTERNAL_FIELDS:
+                        if player.get(field):
+                            entry[field][player[field]] += 1
+    out = []
+    for pid in sorted(seen):
+        # the most said value, a tie to the smallest: a birth corrected in a later game wins and the order of the games does not matter
+        row = {f: sorted(c.items(), key=lambda kv: (-kv[1], str(kv[0])))[0][0] for f, c in seen[pid].items() if f in _EXTERNAL_FIELDS and c}
+        out.append({"id": pid, "name": row["name"], "birth": row["birth"], "nationality": seen[pid]["nationality"], **({"full_name": row["full_name"]} if "full_name" in row else {})})
+    return out
 
 
 def _persons_by_birth(rows: Iterable[Dict[str, Any]]) -> Dict[str, Dict[str, Set[str]]]:
@@ -82,8 +91,7 @@ CLUB_METHOD, BIRTH_METHOD, REVIEW_METHOD = "name+club", "name+birth", "name"
 
 def _plain(text: Any) -> List[str]:
     """Upper case words without accents; every sign that is not a letter or a digit (dots, hyphens, quotes, commas) separates words."""
-    stripped = "".join(c for c in unicodedata.normalize("NFKD", str(text or "").upper()) if not unicodedata.combining(c))
-    return "".join(c if c.isalnum() else " " for c in stripped).split()
+    return plain_words(text)
 
 
 def _name_words(name: Any) -> List[str]:

@@ -12,9 +12,9 @@ from __future__ import annotations
 
 import logging
 import re
-import unicodedata
 from datetime import date
 from typing import Any, Callable, Dict, Iterable, List, Optional, Union
+from src.utils.text import strip_accents
 
 from bs4 import BeautifulSoup
 
@@ -32,7 +32,7 @@ _FIELD_NAME = {"nombre": "name", "puesto": "position", "dorsal": "dorsal", "naci
 
 def _norm(text: str) -> str:
     """Lower case without accents: "Formación" -> "formacion"."""
-    return "".join(c for c in unicodedata.normalize("NFKD", text.lower()) if not unicodedata.combining(c)).strip()
+    return strip_accents(text.lower()).strip()
 
 
 def _field(tokens: Iterable[str]) -> Optional[str]:
