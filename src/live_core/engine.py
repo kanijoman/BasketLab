@@ -7,6 +7,9 @@ with no mark), so the result equals a fresh one-shot computation of the document
 correct lines while a match is on (a 3-pointer turned into a 2-pointer, a substitution "Entra"
 into "Sale"; seen in the first real recording).
 
+Lines are applied in game order (clock, then number), not in the order of their numbers: FEB logs some lines late, with an earlier clock, and possessions, lineups and minutes
+must be what ``track()`` says after the match (#1119).
+
 Two things are not a fresh computation of the document, on purpose: a document that is OLDER
 than what was applied (every line it lacks comes after the last one it has: a stale copy of
 the feed, an empty answer) is ignored (#1120), and of two lines with the same number in one
@@ -51,15 +54,21 @@ def _dorsals(doc: Dict[str, Any]) -> Dict[str, Dict[str, str]]:
             for team in (doc.get("BOXSCORE") or {}).get("TEAM", [])}
 
 
+def _order(event: Event) -> Tuple[int, int]:
+    return event.elapsed, event.num
+
+
 def _events(doc: Dict[str, Any]) -> List[Event]:
-    """The lines of the document in order, one per number: when a number shows up twice the last one of the document wins (#1121), so the result is the same at every poll."""
+    """The lines of the document in game order, one per number: by clock, then by number, as ``possessions.track`` (what DERIVED stores) reads them, so a line FEB logged late
+    (a higher number with an earlier clock) takes its place in the game (#1119). When a number shows up twice the last one of the document wins (#1121), so the result is the same
+    at every poll."""
     lines = ((doc.get("PLAYBYPLAY") or {}).get("LINES")) or []
     by_num: Dict[int, Event] = {}
     for line in lines:
         event = parse_line(line)
         if event is not None:
             by_num[event.num] = event
-    return [by_num[num] for num in sorted(by_num)]
+    return sorted(by_num.values(), key=_order)
 
 
 class LiveEngine:
@@ -72,6 +81,7 @@ class LiveEngine:
         self._team_ids: List[str] = []
         self._applied: Dict[int, int] = {}  # line number -> fingerprint of the content that was applied
         self._deleted: Set[int] = set()
+        self._last_order: Tuple[int, int] = (-1, -1)  # (clock, number) of the last line applied: a new line that belongs before it is a late one, the game is rebuilt in clock order
         self._box_dorsals: Dict[str, Dict[str, str]] = {}  # the jersey numbers of the box score of the last document that was followed
 
     def _is_stale(self, events: List[Event]) -> bool:
@@ -90,11 +100,10 @@ class LiveEngine:
         deleted_now = {e.num for e in events if e.deleted}
         live = [e for e in events if not e.deleted]
 
-        last_applied = self._game.last_num if self._game else 0
         history_changed = bool(
             (deleted_now - self._deleted) & self._applied.keys()
             or self._applied.keys() - {e.num for e in events}  # a line vanished from the middle with no mark: FEB took it back (#1120)
-            or any(e.num < last_applied and e.num not in self._applied for e in live)
+            or any(_order(e) < self._last_order and e.num not in self._applied for e in live)  # a line logged late, or one that arrives out of order
             or any(self._applied.get(e.num, hash(e)) != hash(e) for e in live)  # an applied line was corrected
         )
         if history_changed:
@@ -110,6 +119,7 @@ class LiveEngine:
             if event.num not in self._applied:
                 self._game.apply(event)
                 self._applied[event.num] = hash(event)
+                self._last_order = max(self._last_order, _order(event))
         self._box_dorsals = _dorsals(doc)
         self._sync_clock(doc)
         self._shots.update(doc.get("SHOTCHART"))

@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from .advice_types import Advice, RuleContext
 from .config import RuleConfig
 from .game_context import game_phase
+from .rules_fouls import FOUL_OUT
 from .rules_players import orb_dominant
 from .clock import clock_text, GAME_SECONDS, period_start
 from .windows import player_form, run_start, window_stats
@@ -107,6 +108,21 @@ def _stoppage_open(snap: Dict[str, Any]) -> bool:
     return any(len(e) > 2 and e[2] == "timeout" and e[0] == now for e in snap.get("log", []))
 
 
+def _can_play(player: Dict[str, Any]) -> bool:
+    """Not out of the game: fewer than five fouls and not disqualified (FIBA: two unsportsmanlike, two technical or one of each). An injury is not in the feed."""
+    return player["pf"] < FOUL_OUT and player.get("unsportsmanlike", 0) + player.get("technical", 0) < 2
+
+
+def _lineup_is_credible(snap: Dict[str, Any], team_id: str, on_court: int) -> bool:
+    """Five on court is a lineup that can be trusted. Six cannot happen. Fewer than five is a lost substitution, unless the team cannot field five (eight inscribed and the rest
+    fouled out, disqualified...: playing with four is legal and unusual, #1124): then it is what it looks like."""
+    if on_court == 5:
+        return True
+    if on_court > 5:
+        return False
+    return sum(1 for p in snap["players"].values() if p["team_id"] == team_id and (p["on_court"] or _can_play(p))) < 5
+
+
 def fatigue_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
     """Fatigue of the own players on court, escalated info -> warning -> critical (issue #241, R5).
 
@@ -116,9 +132,10 @@ def fatigue_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
     out = []
     if _stoppage_open(snap):
         return out   # not said yet, not lost: the key is only stored when the alert is emitted
-    for pid, p in snap["players"].items():
-        if p["team_id"] != ctx.own_team_id or not p["on_court"]:
-            continue
+    on_court = [(pid, p) for pid, p in snap["players"].items() if p["team_id"] == ctx.own_team_id and p["on_court"]]
+    if not _lineup_is_credible(snap, ctx.own_team_id, len(on_court)):
+        return out   # a substitution the feed lost (4 or 6 on court): who is tired cannot be said, and it is not stored, so it comes back with a valid five (#1124)
+    for pid, p in on_court:
         index, parts = fatigue_index(p["stint"], p["minutes"], snap["elapsed"],
                                      ctx.baselines.get(pid), ctx.config)
         level = _level(index + _decided_offset(snap, ctx), ctx.config, p["stint"])

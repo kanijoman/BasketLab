@@ -24,6 +24,7 @@ PLAYER_STAT_KEYS = ("fg2m", "fg2a", "fg3m", "fg3a", "ftm", "fta", "orb", "drb", 
 
 _PLAYER_KINDS = {"sub_in", "sub_out", "fg2", "fg3", "ft", "rebound", "turnover", "steal",
                  "assist", "block", "foul"}
+_PLAYS_ON_COURT = {"fg2", "fg3", "ft", "rebound", "turnover", "steal", "assist", "block"}   # what only someone on court does (not a foul, not a substitution)
 _TEAM_FOUL_TYPES = {"personal", "unsportsmanlike", "technical"}
 # What a box score shows of a player and can change with one action (``last_stat``, #593), in the order the keys are reported.
 _LAST_KEYS = ("pts",) + PLAYER_STAT_KEYS + ("pf", "on_court")
@@ -34,6 +35,7 @@ QUARTER_BREAK_CREDIT_S = 90   # the break is 2:00 for real; 60 until #930 (feedb
 # A timeout is a minute of rest for the players on court of BOTH teams (the clock stops for everybody): credited like the break, partly
 # (issue #316; provisional, to be tuned with the evaluator).
 TIMEOUT_CREDIT_S = 30
+REENTRY_GRACE_S = 10   # seconds after his ``sub_out`` in which an action of a player is not taken as proof that he is back on court (#1124)
 HALFTIME_PERIOD = 3
 
 
@@ -45,6 +47,7 @@ class _Player:
     on_court: bool = False
     stint_start: int = 0
     closed: int = 0
+    left_at: int = -1   # game-second of his last ``sub_out`` (a line logged late, with an earlier clock, does not bring him back, #1124)
     pf: int = 0
     pf_by_period: Dict[int, int] = field(default_factory=dict)
     unsports: int = 0   # unsportsmanlike fouls (FIBA: disqualified with two, or with one and a technical)
@@ -215,6 +218,8 @@ class LiveGame:
                 # on court since the tip-off, so the margin of his team so far is his plus/minus (the five of the start are not in the feed, #593)
                 other = self._other(ev.team_id)
                 player.pm = player.stint_pm = self.score.get(ev.team_id, 0) - (self.score.get(other, 0) if other else 0)
+        elif self._re_enters(player, ev):
+            player.on_court, player.stint_start, player.credit, player.stint_pm = True, ev.elapsed, 0, 0
         return player
 
     def _enter_period(self, period: int) -> None:
@@ -234,8 +239,15 @@ class LiveGame:
         if player and not player.on_court:
             player.on_court, player.stint_start, player.credit, player.stint_pm = True, ev.elapsed, 0, 0
 
+    def _re_enters(self, player: _Player, ev: Event) -> bool:
+        """A player who left and now plays (a shot, a rebound...) with no ``sub_in`` line: the feed lost it, he is on court. A foul says nothing about it (a bench technical), a line
+        logged late, from before he left, was written while he was on court, and the clock of a substitution is not exact: a shot a second after his ``sub_out`` (real games, the
+        +/- of the official box score) is the shot of someone who just left, so it takes a few seconds to tell a lost ``sub_in`` from that."""
+        return (not player.on_court and ev.kind in _PLAYS_ON_COURT and (player.closed > 0 or player.stint_start > 0) and ev.elapsed > player.left_at + REENTRY_GRACE_S)
+
     def _on_sub_out(self, ev: Event, player: Optional[_Player], team) -> None:
         if player and player.on_court:
+            player.left_at = ev.elapsed
             player.closed += max(0, ev.elapsed - player.stint_start)
             player.stints_done += 1
             player.stint_sum += max(0, ev.elapsed - player.stint_start - player.credit)
