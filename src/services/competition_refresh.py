@@ -18,7 +18,9 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
-from src.services.refresh_state import (CLOSED_AFTER_DAYS, MAX_ATTEMPTS, MIN_DAYS_BEFORE_UNAVAILABLE, RECHECK_CLOSED_EVERY_DAYS, REVIEW_UNAVAILABLE_EVERY_DAYS, is_closed, load_state,
+from src.scraper.web_client import FebServerError
+
+from src.services.refresh_state import (CLOSED_AFTER_DAYS, MAX_OUTAGE_RUNS, MAX_ATTEMPTS, MIN_DAYS_BEFORE_UNAVAILABLE, RECHECK_CLOSED_EVERY_DAYS, REVIEW_UNAVAILABLE_EVERY_DAYS, clear_outage, is_closed, load_state, record_outage,
                                         record_check, save_state)
 
 DEFAULT_CONFIG = "config/competitions.json"
@@ -231,8 +233,11 @@ def _refresh_one(db: Any, entry: RefreshEntry, scraper: Optional[Any], check: Ca
         _fill_derived(db, job["collection"])
         item["freshness"] = forgive_no_data(check(job["collection"]), job, now())
         state = load_state(db, job["collection"])
+        clear_outage(state)                                                    # FEB answered: no more memory of an outage (#1146)
         record_check(state, item["freshness"].get("up_to_date"), item["freshness"].get("last_game"), today)
         save_state(db, job["collection"], state)
+    except FebServerError as exc:
+        return _outage(db, [name], label, exc, today)                           # FEB is down, the page did not change: defer, count the runs (#1146)
     except Exception as exc:  # noqa: BLE001 - one failing competition must not block the others
         item["fatal"] = f"{type(exc).__name__}: {exc}"
     return item
@@ -251,6 +256,21 @@ def _refresh_fbcyl(db: Any, entry: RefreshEntry, scraper: Optional[Any], today: 
     except Exception as exc:  # noqa: BLE001 - one failing group must not block the others
         item["fatal"] = f"{type(exc).__name__}: {exc}"
     return item
+
+
+def _outage(db: Any, names: List[str], label: str, exc: Exception, today: Any) -> Dict[str, Any]:
+    """FEB answered 5xx (#1146): the competition is deferred, not failed; the next run asks again. The runs in a row are kept in the refresh state of its stored collections and
+    after ``MAX_OUTAGE_RUNS`` the deferral becomes an error, so that FEB down for good still shows. With no stored collection there is nowhere to count: it is an error as always."""
+    if not names:
+        return {"collection": label, "fatal": f"{type(exc).__name__}: {exc}", "job": None, "freshness": None}
+    runs = 0
+    for name in names:
+        state = load_state(db, name)
+        runs = max(runs, record_outage(state, today))
+        save_state(db, name, state)
+    if runs >= MAX_OUTAGE_RUNS:
+        return {"collection": label, "fatal": f"La FEB no responde desde hace {runs} refrescos seguidos: {exc}", "job": None, "freshness": None}
+    return {"collection": label, "fatal": None, "job": None, "freshness": None, "deferred": True, "reason": "feb_unavailable", "outage_runs": runs, "error": str(exc)}
 
 
 def _deferred(collection: str) -> Dict[str, Any]:
@@ -289,6 +309,9 @@ def refresh_all(db: Any, entries: List[RefreshEntry], scraper: Optional[Any] = N
                 continue
         try:
             concrete = expand_entries([entry], scraper)
+        except FebServerError as exc:
+            report.append(_outage(db, ingested_collections(db, [entry]), f"{entry.competition_label}/{entry.season_label}", exc, today))
+            continue
         except Exception as exc:  # noqa: BLE001 - a failed discovery is that competition's error only
             report.append({"collection": f"{entry.competition_label}/{entry.season_label}", "fatal": f"{type(exc).__name__}: {exc}",
                            "job": None, "freshness": None})
@@ -308,7 +331,11 @@ def to_markdown(report: List[Dict[str, Any]]) -> str:
     if closed:
         shown = ", ".join(closed[:10]) + (f" y {len(closed) - 10} más" if len(closed) > 10 else "")
         out += [f"## Colecciones cerradas: {len(closed)}", f"- Sin comprobar este refresco (último partido de hace más de {CLOSED_AFTER_DAYS} días y al día; se comprueban cada {RECHECK_CLOSED_EVERY_DAYS} días): {shown}", ""]
-    deferred = [r["collection"] for r in report if r.get("deferred")]
+    down = [r for r in report if r.get("deferred") and r.get("reason") == "feb_unavailable"]
+    if down:
+        out += [f"## Aplazadas porque la FEB no responde: {len(down)}",
+                *(f"- {r['collection']}: la FEB respondió con un error del servidor ({r.get('error')}); refresco {r.get('outage_runs')} de {MAX_OUTAGE_RUNS} seguidos. No es un error todavía: se vuelve a pedir en el siguiente refresco y, si sigue, pasa a error." for r in down), ""]
+    deferred = [r["collection"] for r in report if r.get("deferred") and r.get("reason") != "feb_unavailable"]
     if deferred:
         shown = ", ".join(deferred[:10]) + (f" y {len(deferred) - 10} más" if len(deferred) > 10 else "")
         out += [f"## Aplazadas por tiempo: {len(deferred)}", f"- El refresco llegó a su límite de tiempo y no empezó estas competiciones: {shown}. No es un error: se retoman en el siguiente refresco (lo ya guardado se salta).", ""]

@@ -22,6 +22,7 @@ RECHECK_CLOSED_EVERY_DAYS = 7
 MAX_ATTEMPTS = 6
 MIN_DAYS_BEFORE_UNAVAILABLE = 3
 REVIEW_UNAVAILABLE_EVERY_DAYS = 30
+MAX_OUTAGE_RUNS = 6                   # runs in a row in which FEB answered 5xx before the deferral becomes an error (about 3 days, as MIN_DAYS_BEFORE_UNAVAILABLE; #1146)
 _WHY = 120
 
 
@@ -87,6 +88,22 @@ def record_success(state: Dict[str, Any], code: Any) -> Dict[str, Any]:
     return state
 
 
+def record_outage(state: Dict[str, Any], today: date) -> int:
+    """FEB answered 5xx in this run (#1146): one more run in a row without being able to ask; returns how many (the days, never the times, as the rest of the state)."""
+    down = dict(state.get("feb_down") or {})
+    down["runs"] = int(down.get("runs") or 0) + 1
+    down.setdefault("first", today.isoformat())
+    down["last"] = today.isoformat()
+    state["feb_down"] = down
+    return down["runs"]
+
+
+def clear_outage(state: Dict[str, Any]) -> Dict[str, Any]:
+    """A run that could ask FEB: no more memory of the outage."""
+    state.pop("feb_down", None)
+    return state
+
+
 def unavailable_codes(state: Optional[Dict[str, Any]]) -> List[str]:
     return sorted(c for c, e in ((state or {}).get("failed") or {}).items() if e.get("unavailable"))
 
@@ -97,6 +114,9 @@ def _canonical(state: Dict[str, Any]) -> Dict[str, Any]:
     for key in ("checked", "last_game"):
         if state.get(key):
             out[key] = state[key]
+    down = state.get("feb_down") or {}
+    if down:
+        out["feb_down"] = {k: down[k] for k in ("runs", "first", "last") if k in down}
     failed = state.get("failed") or {}
     if failed:
         out["failed"] = {code: {k: failed[code][k] for k in ("n", "first", "last", "why", "unavailable") if k in failed[code]} for code in sorted(failed)}
