@@ -31,23 +31,7 @@ export default defineConfig(({ mode }) => ({
   },
   server: {
     port: 5173,
-    fs: { allow: ['..'] },
-    // Proxy /api requests to the FastAPI backend during development
-    proxy: {
-      '/api': {
-        target: 'http://localhost:8000',
-        changeOrigin: true,
-      },
-    },
-  },
-  // `vite preview` (smoke e2e, issue #111) proxies /api to the e2e API server instead of a real backend
-  preview: {
-    proxy: {
-      '/api': {
-        target: process.env.E2E_API_URL ?? 'http://localhost:8000',
-        changeOrigin: true,
-      },
-    },
+    fs: { allow: ['..'] }
   },
   build: {
     outDir: 'dist',

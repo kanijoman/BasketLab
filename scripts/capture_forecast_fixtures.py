@@ -29,11 +29,11 @@ def _write(name: str, payload: dict) -> None:
 
 
 def main() -> int:
-    from src.api import deps
+    from src.database.shared_handler import shared_handler
     from src.local_data.calendar_export import CalendarSource, export_calendar
     from src.local_data.export import export_collection
 
-    handler = deps._create_handler()
+    handler = shared_handler()
     db = handler.connection.client["BASKETBALL"]
     for file, collection, gender in COMPETITIONS:
         payload = export_collection(db[collection], collection)
