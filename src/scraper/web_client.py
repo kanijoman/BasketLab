@@ -5,7 +5,7 @@ from typing import Optional, Dict, Callable
 import re
 from urllib.parse import parse_qs, urlsplit
 
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception
 
 from .constants import DEFAULT_TIMEOUT, DEFAULT_HEADERS
 
@@ -43,12 +43,23 @@ def secure_url(url: str) -> str:
     return _feb_canonical(url) or secure_scheme(url)
 
 
-# Retry decorator for transient network failures: 3 attempts with 1s/2s/4s back-off
+class FebServerError(Exception):
+    """FEB's server answered 5xx (it is down, not that the page changed): the refresh defers the competition instead of failing the run (#1146)."""
+
+
+def _is_server_failure(exc: BaseException) -> bool:
+    """A connection or timeout failure, or an HTTP 5xx answer: worth asking again. A 4xx (404: «no data») is not."""
+    if isinstance(exc, (requests.ConnectionError, requests.Timeout)):
+        return True
+    return isinstance(exc, requests.HTTPError) and exc.response is not None and exc.response.status_code >= 500
+
+
+# Retry decorator for transient failures (network and server 5xx): 3 attempts with 1s/2s/4s back-off
 _retry_on_connection_error = retry(
-    retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)),
+    retry=retry_if_exception(_is_server_failure),
     stop=stop_after_attempt(3),
     wait=wait_exponential(multiplier=1, min=1, max=4),
-    reraise=False,
+    reraise=True,                                      # after the last attempt the request fails with its own error (the callers catch it), not with tenacity's RetryError
 )
 
 
@@ -64,6 +75,7 @@ class WebClient:
         """
         self.headers = headers or DEFAULT_HEADERS.copy()
         self.session = requests.Session()
+        self.last_status: Optional[int] = None          # the HTTP status of the last failed request (None after a good one or a failure without answer)
 
     def get(self, url: str, headers: Optional[Dict[str, str]] = None,
             timeout: int = DEFAULT_TIMEOUT) -> Optional[requests.Response]:
@@ -85,8 +97,11 @@ class WebClient:
             request_headers.update(headers)
 
         try:
-            return self._execute_get(url, request_headers, timeout)
+            response = self._execute_get(url, request_headers, timeout)
+            self.last_status = None
+            return response
         except requests.RequestException as e:
+            self.last_status = getattr(e.response, "status_code", None)
             print(f"[WebClient] GET request failed for {url}: {e}")
             return None
 
@@ -111,8 +126,11 @@ class WebClient:
             request_headers.update(headers)
 
         try:
-            return self._execute_post(url, data, request_headers, timeout)
+            response = self._execute_post(url, data, request_headers, timeout)
+            self.last_status = None
+            return response
         except requests.RequestException as e:
+            self.last_status = getattr(e.response, "status_code", None)
             print(f"[WebClient] POST request failed for {url}: {e}")
             return None
 

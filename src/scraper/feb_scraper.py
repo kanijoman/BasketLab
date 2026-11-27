@@ -11,7 +11,7 @@ from .constants import (
     BASE_URL, SEASON_DROPDOWN_ID, GROUP_DROPDOWN_ID,
     HIDDEN_FIELDS, EXTENDED_TIMEOUT
 )
-from .web_client import WebClient
+from .web_client import FebServerError, WebClient
 
 
 class GroupPage(NamedTuple):
@@ -71,7 +71,7 @@ class FEBWebScraper:
 
         response = self.web_client.get(url, timeout=EXTENDED_TIMEOUT)
         if not response:
-            raise Exception(f"Failed to fetch page for year {year}")
+            raise self._failure(f"Failed to fetch page for year {year}")
 
         soup = BeautifulSoup(response.content, "html.parser")
         return soup, self.web_client.get_session()
@@ -170,7 +170,7 @@ class FEBWebScraper:
             # option in the group dropdown to recover the proper group ID.
             response = self.web_client.get(competition_url, timeout=EXTENDED_TIMEOUT)
             if not response:
-                return []
+                return self._no_groups()
             calendar_soup = BeautifulSoup(response.content, "html.parser")
             hidden_fields = self.get_hidden_fields(calendar_soup)
             session = self.web_client.get_session()
@@ -184,8 +184,17 @@ class FEBWebScraper:
             if groups or extra:
                 self._build_series_cache(groups + extra, competition_url)
             return groups + extra
+        except FebServerError:
+            raise                                                  # FEB is down: not «no groups» (the refresh defers the competition, #1146)
         except Exception:
-            return []
+            return self._no_groups()
+
+    def _no_groups(self) -> List[Tuple[str, str]]:
+        """No group could be read: ``[]``, unless the last request was answered with a 5xx (FEB is down), which is ``FebServerError``."""
+        status = getattr(self.web_client, "last_status", None)
+        if isinstance(status, int) and status >= 500:
+            raise FebServerError(f"FEB answered {status} listing the groups")
+        return []
 
     def _build_series_cache(
         self, groups: List[Tuple[str, str]], calendar_url: str
@@ -532,12 +541,19 @@ class FEBWebScraper:
 
         response = self.web_client.post(url, data=form_data, timeout=EXTENDED_TIMEOUT)
         if not response:
-            raise Exception("Failed to select season")
+            raise self._failure("Failed to select season")
 
         soup = BeautifulSoup(response.content, "html.parser")
         updated_hidden_fields = self.get_hidden_fields(soup)
 
         return soup, updated_hidden_fields
+
+    def _failure(self, message: str) -> Exception:
+        """The exception of a discovery request that gave no response: ``FebServerError`` when FEB answered 5xx (it is down; the refresh defers, #1146), a plain one otherwise."""
+        status = getattr(self.web_client, "last_status", None)
+        if isinstance(status, int) and status >= 500:
+            return FebServerError(f"{message} (FEB answered {status})")
+        return Exception(message)
 
     def select_group(self, session: requests.Session, url: str, season_value: str,
                     group_value: str, hidden_fields: Dict[str, str]) -> BeautifulSoup:
@@ -568,7 +584,7 @@ class FEBWebScraper:
 
         response = self.web_client.post(url, data=form_data, timeout=EXTENDED_TIMEOUT)
         if not response:
-            raise Exception("Failed to select group")
+            raise self._failure("Failed to select group")
 
         return BeautifulSoup(response.content, "html.parser")
 
