@@ -121,14 +121,27 @@ def attach_bio(rows: Iterable[Mapping[str, Any]], roster: Iterable[Mapping[str, 
     """The rows with ``full_name`` and the bio of the FEB rosters (``roster_sweep``, every season) and of the linked external players (``external``, #979): birth date, height (cm), position, nationality(ies), formacion and shirt number.
 
     Each field is resolved on its own, by the closest season (``_bio_of``); what nobody says is None, never a guess (FBCYL has no roster). ``position_group`` (G/F/C) is the coarse position every source can say.
-    ``linked`` is ``{person id: FEB person id}`` of the ``linked`` identity links (#996): such a row says ``linked_to`` (its own ``person_id`` is not rewritten) and takes the bio of the FEB person."""
+    ``linked`` is ``{person id: FEB person id}`` of the ``linked`` identity links (#996): such a row says ``linked_to`` (its own ``person_id`` is not rewritten) and takes the bio of the FEB person; when two person ids of the rows share one FEB person none takes it and each lists the others in ``link_conflict``."""
     by_person: Dict[str, List[Mapping[str, Any]]] = {}
     for r in roster:
         by_person.setdefault(r["person_id"], []).append(r)
     external, linked = external or {}, linked or {}
+    rows = list(rows)
+    clashes = _link_clashes(rows, linked)
     out = []
     for row in rows:
-        feb = linked.get(row["person_id"])
+        clash = clashes.get(row["person_id"], [])
+        feb = None if clash else linked.get(row["person_id"])
         who = feb or row["person_id"]
-        out.append({**row, **_bio_of(row, by_person.get(who, []), str(season), list(external.get(who, [])), borrowed=feb is not None), "linked_to": feb})
+        out.append({**row, **_bio_of(row, by_person.get(who, []), str(season), list(external.get(who, [])), borrowed=feb is not None), "linked_to": feb, "link_conflict": clash})
     return out
+
+
+def _link_clashes(rows: Iterable[Mapping[str, Any]], linked: Mapping[str, str]) -> Dict[str, List[str]]:
+    """``{person id: the other person ids linked to the same FEB person}`` among the rows of one competition and season (#1129): two FBCYL uuids of the same category and season are two people (they may
+    even share a game), so none of them takes the link; it waits in the review queue. A transfer is one person id in two rows, not a clash."""
+    by_feb: Dict[str, set] = {}
+    for pid in {r["person_id"] for r in rows}:
+        if linked.get(pid):
+            by_feb.setdefault(linked[pid], set()).add(pid)
+    return {pid: sorted(group - {pid}) for group in by_feb.values() if len(group) > 1 for pid in group}
