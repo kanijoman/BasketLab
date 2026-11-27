@@ -33,6 +33,17 @@ def no_sleep(monkeypatch):
     monkeypatch.setattr("tenacity.nap.time.sleep", lambda seconds: None)
 
 
+def _real_scraper(status):
+    """The REAL scraper (and web client) over a fake HTTP boundary: every page answers ``status``."""
+    from src.scraper import FEBWebScraper
+
+    scraper = FEBWebScraper()
+    scraper.web_client.session = MagicMock()
+    scraper.web_client.session.get.side_effect = lambda *a, **k: _response(status)
+    scraper.web_client.session.post.side_effect = lambda *a, **k: _response(status)
+    return scraper
+
+
 class TestTheWebClientRetriesTheServer:
     def _client(self, *statuses):
         client = WebClient()
@@ -114,11 +125,53 @@ class TestAnOutageIsDeferredNotAnError:
 
         assert report[0]["fatal"] and not report[0].get("deferred") and needs_attention(report)
 
-    def test_a_discovery_that_fails_with_a_5xx_defers_the_stored_collections_of_the_entry(self, monkeypatch):
+    def test_a_5xx_while_listing_the_groups_defers_the_stored_collections_with_the_real_scraper_regression(self):
+        """CodeRabbit (#1197): the discovery is the REAL scraper over a fake HTTP boundary (a 500 from every page), not a replaced ``expand_entries``: ``get_groups_for_season`` used to swallow
+        the error and return ``[]``, which ended as «FEB no lista grupos» and a red run."""
         db = _db()
-        self._run(db, _scraper(["1"]))                                                         # the collection exists
-        monkeypatch.setattr(cr, "expand_entries", MagicMock(side_effect=FebServerError("500 on the calendar")))
-        monkeypatch.setattr(cr, "is_closed", lambda *a, **k: False)
-        report = self._run(db, _scraper(["1"]))
+        self._run(db, _scraper(["1"]))                                                         # the collection of the competition exists
+        entry = RefreshEntry(**{**ENTRY, "groups": "all", "group_label": "", "group_value": ""})
 
-        assert report[0]["deferred"] and report[0]["reason"] == "feb_unavailable" and load_state(db, NAME)["feb_down"]["runs"] == 1
+        report = refresh_all(db, [entry], scraper=_real_scraper(500), now=lambda: NOW)
+
+        assert report[0]["deferred"] and report[0]["reason"] == "feb_unavailable" and not needs_attention(report)
+        assert load_state(db, NAME)["feb_down"]["runs"] == 1
+
+    def test_a_404_while_listing_the_groups_is_not_an_outage(self):
+        db = _db()
+        self._run(db, _scraper(["1"]))
+        entry = RefreshEntry(**{**ENTRY, "groups": "all", "group_label": "", "group_value": ""})
+
+        report = refresh_all(db, [entry], scraper=_real_scraper(404), now=lambda: NOW)
+
+        assert report[0]["fatal"] and not report[0].get("deferred") and "feb_down" not in load_state(db, NAME)
+
+
+class TestTheRealScraperSaysWhenItWasTheServer:
+    URL = "https://baloncestoenvivo.feb.es/calendario/lfendesa/4/2026"
+
+    @pytest.mark.parametrize("call", [
+        lambda scraper: scraper.get_page_content("2026"),
+        lambda scraper: scraper.get_groups_for_season(TestTheRealScraperSaysWhenItWasTheServer.URL, "2026"),
+    ])
+    def test_a_5xx_is_a_feb_server_error(self, call):
+        with pytest.raises(FebServerError):
+            call(_real_scraper(503).web_scraper)
+
+    def test_a_4xx_is_not(self):
+        assert _real_scraper(404).web_scraper.get_groups_for_season(self.URL, "2026") == []
+
+
+class TestAFailureWhilePersistingTheOutageDoesNotStopTheRun:
+    def test_a_mongo_error_saving_the_counter_is_that_competitions_error_only_regression(self, monkeypatch):
+        """CodeRabbit (#1197): ``_outage`` runs inside an ``except`` and its own failure escaped ``refresh_all``: the rest of the competitions were never refreshed."""
+        db = _db()
+        scraper = _scraper(["1"])
+        scraper.get_matches.side_effect = [FebServerError("500"), ["1"]]
+        monkeypatch.setattr(cr, "save_state", MagicMock(side_effect=RuntimeError("mongo down")))
+        entries = [RefreshEntry(**{**ENTRY, "group_label": "A"}), RefreshEntry(**{**ENTRY, "group_label": "B", "group_value": "8"})]
+
+        report = refresh_all(db, entries, scraper=scraper, freshness=lambda c: {"collection": c, "up_to_date": True, "missing_codes": [], "games_in_db": 1, "calendar_results": 1,
+                             "last_game": "2026-11-20T12:00", "warning": None}, now=lambda: NOW)
+
+        assert len(report) == 2 and report[0]["fatal"] and "mongo down" in report[0]["fatal"] and report[1]["job"] is not None

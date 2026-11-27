@@ -170,7 +170,7 @@ class FEBWebScraper:
             # option in the group dropdown to recover the proper group ID.
             response = self.web_client.get(competition_url, timeout=EXTENDED_TIMEOUT)
             if not response:
-                return []
+                return self._no_groups()
             calendar_soup = BeautifulSoup(response.content, "html.parser")
             hidden_fields = self.get_hidden_fields(calendar_soup)
             session = self.web_client.get_session()
@@ -184,8 +184,17 @@ class FEBWebScraper:
             if groups or extra:
                 self._build_series_cache(groups + extra, competition_url)
             return groups + extra
+        except FebServerError:
+            raise                                                  # FEB is down: not «no groups» (the refresh defers the competition, #1146)
         except Exception:
-            return []
+            return self._no_groups()
+
+    def _no_groups(self) -> List[Tuple[str, str]]:
+        """No group could be read: ``[]``, unless the last request was answered with a 5xx (FEB is down), which is ``FebServerError``."""
+        status = getattr(self.web_client, "last_status", None)
+        if isinstance(status, int) and status >= 500:
+            raise FebServerError(f"FEB answered {status} listing the groups")
+        return []
 
     def _build_series_cache(
         self, groups: List[Tuple[str, str]], calendar_url: str

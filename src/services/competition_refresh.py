@@ -264,10 +264,13 @@ def _outage(db: Any, names: List[str], label: str, exc: Exception, today: Any) -
     if not names:
         return {"collection": label, "fatal": f"{type(exc).__name__}: {exc}", "job": None, "freshness": None}
     runs = 0
-    for name in names:
-        state = load_state(db, name)
-        runs = max(runs, record_outage(state, today))
-        save_state(db, name, state)
+    try:
+        for name in names:
+            state = load_state(db, name)
+            runs = max(runs, record_outage(state, today))
+            save_state(db, name, state)
+    except Exception as failure:  # noqa: BLE001 - this runs inside an ``except``: its own failure is that competition's error, never the run's
+        return {"collection": label, "fatal": f"No se pudo guardar el contador de la caída de la FEB ({type(failure).__name__}: {failure}); error original: {exc}", "job": None, "freshness": None}
     if runs >= MAX_OUTAGE_RUNS:
         return {"collection": label, "fatal": f"La FEB no responde desde hace {runs} refrescos seguidos: {exc}", "job": None, "freshness": None}
     return {"collection": label, "fatal": None, "job": None, "freshness": None, "deferred": True, "reason": "feb_unavailable", "outage_runs": runs, "error": str(exc)}
@@ -310,7 +313,12 @@ def refresh_all(db: Any, entries: List[RefreshEntry], scraper: Optional[Any] = N
         try:
             concrete = expand_entries([entry], scraper)
         except FebServerError as exc:
-            report.append(_outage(db, ingested_collections(db, [entry]), f"{entry.competition_label}/{entry.season_label}", exc, today))
+            try:
+                known = ingested_collections(db, [entry])
+            except Exception as failure:  # noqa: BLE001 - reading the stored collections is not worth stopping the run
+                known = []
+                exc = Exception(f"{exc}; tampoco se pudieron leer las colecciones guardadas ({type(failure).__name__}: {failure})")
+            report.append(_outage(db, known, f"{entry.competition_label}/{entry.season_label}", exc, today))
             continue
         except Exception as exc:  # noqa: BLE001 - a failed discovery is that competition's error only
             report.append({"collection": f"{entry.competition_label}/{entry.season_label}", "fatal": f"{type(exc).__name__}: {exc}",
