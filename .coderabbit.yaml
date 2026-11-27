@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+# CodeRabbit (plan de código abierto): revisión SOLO bajo demanda, para no gastar el cupo por hora (docs/OPERATIONS.md, «CodeRabbit»).
+# Se lanza con un único comentario `@coderabbitai review` en los PRs que tocan código; los de solo documentación no se revisan.
+language: es-ES
+early_access: false
+
+reviews:
+  profile: chill
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: true
+  auto_review:
+    enabled: false          # con >= 10 estrellas el plan revisaría solo cada push: aquí se desactiva
+    drafts: false
+  path_filters:
+    - "!docs/**"
+    - "!**/*.md"
+    - "!tests/local_vectors/**"
+    - "!tests/live_vectors/**"
+    - "!tests/fixtures/**"
+    - "!tests/recordings/**"
+    - "!**/*.gz"
+    - "!**/package-lock.json"
+    - "!apps/live-android/**/vectors.json"
+  path_instructions:
+    - path: "src/**/*.py"
+      instructions: |
+        Python 3.11. Código y comentarios en inglés. Siempre FEB y FBCYL (`is_fbcyl`: FEB `points`, FBCYL `PTS`; en FBCYL `min`/`sec` es tiempo restante).
+        MongoDB: nunca `list(col.find({}))` ni filtrar en Python (usa agregaciones); proyección en colecciones de partidos; índices con `background=True`.
+        Posesiones del tracker (`src/live_core/possessions.py`); rebote ofensivo = rebota el equipo que falló. Sin LLMs externos.
+    - path: "src/live_core/**"
+      instructions: |
+        Biblioteca estándar solamente (corre en Pyodide en la tablet). Debe ser determinista y no depender del orden de los datos.
+        Cualquier cambio de comportamiento exige regenerar los vectores y revisar su diff.
+    - path: "src/api/**"
+      instructions: |
+        FastAPI con `Depends(get_db)`. Un endpoint de escritura necesita `require_admin`. Operaciones largas en `BackgroundTasks`.
+    - path: "frontend/src/**"
+      instructions: |
+        React 18 + TypeScript. Textos de UI en español. Sin colores sueltos (`#hex`, `gray-500`, `dark:`): vocabulario del preset de `design/`; gráficos con `useChartTheme`.
+        Sin `<button>`, `<select>`, `<input>` ni `<h1>` a mano: componentes de `components/ui`.
+    - path: "apps/live-android/**"
+      instructions: |
+        App táctil de tablet: comprueba que nada sale de la pantalla a 412 y 320 px con nombres largos.
+    - path: "tests/**"
+      instructions: |
+        TDD: un bugfix lleva su test de regresión, construido con `tests/builders.py` (`Match`) o con un partido real, no con un dict inventado.
+        Sin tests de constantes sueltas ni mocks fuera de las fronteras (red, Mongo).
+
+chat:
+  auto_reply: true
+
+knowledge_base:
+  opt_out: false

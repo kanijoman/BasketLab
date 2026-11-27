@@ -70,7 +70,7 @@ El usuario añade ahí necesidades y bugs de pruebas manuales. **Antes de propon
 3. No mezcles naturalezas: un bug urgente que bloquea o un cambio de CI van aparte; un cambio de reglas de trabajo o de docs viaja **dentro** del PR del bloque, como un commit más.
 4. Si hay que dividir, no abras el siguiente mientras haya PRs pendientes que toquen los mismos ficheros (sobre todo `docs/*` y `CLAUDE.md`): encadena o espera a la integración.
 5. **Checklist previa al PR**: `python scripts/pre_pr.py`. Bloquea: rama = main, sin rebase sobre `origin/main`, `ruff check` con errores (el CI rechaza imports sin usar), `test_docs_consistency` en rojo. Avisa: cambios sin commit y prueba de rojo sin rojo. Si el rebase trajo cambios, repite los tests afectados. Que se ejecute solo ante `gh pr create` requiere el hook de docs/TESTING.md («Antes del PR»), que activa el usuario.
-6. **Commit, push y PR sin preguntar si no hay ningún PR abierto** (`gh pr list`); con uno abierto, esperar a que se integre o a que se pida. Pie de commit: `Co-Authored-By: Claude …`.
+6. **Commit, push y PR sin preguntar si no hay ningún PR abierto** (`gh pr list`); con uno abierto, esperar a que se integre o a que se pida. Pie de commit: `Co-Authored-By: Claude …`. PR con código (algo fuera de `docs/` y `*.md`): un solo `@coderabbitai review` (OPERATIONS); nunca en PRs solo de docs.
 7. Fallo del CI ajeno al código (Chromium, Maven 429, red del runner): `gh run rerun --failed` y una línea al usuario; ni issue ni PR de endurecimiento. Un fallo real se arregla en el mismo PR. Ver [docs/TESTING.md](docs/TESTING.md) para CI.
 
 ## Tras integrar un PR: limpieza obligatoria (antes de seguir con nada más)

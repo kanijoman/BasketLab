@@ -9,6 +9,7 @@ Léelo cuando toques Vercel, variables de entorno, veas un 401/503 en Admin/scra
 - Fuentes externas -> ¿cómo funcionan ACB, FIBA, NCAA y Euroliga (catálogos, run_external_refresh.py, enlaces, workflows)?
 - Histórico y formación de FEB -> ¿cómo se cargan las tandas (run_catalogue_activate.py) y qué horizonte de datos hay?
 - Rellenar DERIVED, HISTORICAL/ELASTICITIES, Evaluar las reglas de alerta -> ¿cómo relleno DERIVED o evalúo reglas (rule-evaluation.yml)?
+- CodeRabbit -> ¿cuándo y cómo se lanza la revisión automática de un PR?
 - Refrescar el archivo, Coste del refresco, Purgar -> ¿cómo corre archive-refresh.yml, qué cuesta, cómo se borra una competición (archive-purge.yml)?
 - Publicar los datos de la web, Publicar Talent, Archivo privado -> ¿cómo publican web-data.yml, talent-data.yml y talent-rosters.yml, y cómo se pone en marcha el archivo?
 - Publicar los paquetes live, Protocolo de despliegue -> ¿cómo se publican y se cifran los paquetes (alcances, clave abierta) y en qué orden se despliega?
@@ -608,6 +609,14 @@ Dos cosas se despliegan por separado: **la web** (Vercel, al integrar el PR) y *
 3. **Nada se publica a medias**: `Web data` y `Live packages` escriben su rama con un único commit forzado. `Web data` publica **solo si la construcción terminó** (`steps.build.conclusion == 'success'`, #789: el manifiesto se escribe el último, así que los lectores no los veían); un run rojo deja lo anterior en pie. `Live packages` publica **a propósito** lo que salió bien aunque falle algún partido (el run queda rojo y el error sale en el resumen). Tras un fallo: PR de arreglo aparte (un bug que bloquea no espera al bloque), y relanzar a mano.
 4. **Una release de la app y el modo de los paquetes se cambian juntos** mientras haya dispositivos con la app antigua; con un solo dispositivo (como el 06/11/2026) basta avisar.
 5. Tras integrar un PR que toca datos: mirar el run de `Web data` (se lanza solo) y confirmar la sección; es parte de la limpieza posterior a integrar.
+
+## CodeRabbit: revisión de PRs bajo demanda (`.coderabbit.yaml`)
+- GitHub App instalada solo en este repositorio (plan de código abierto, sin coste). Cupo: de 1 a 10 revisiones por desarrollador y hora según las estrellas; **con menos de 10 estrellas la revisión es siempre manual**. Cada push o comentario de revisión gasta una.
+- `reviews.auto_review.enabled: false`: nunca revisa solo (tampoco al pasar de 10 estrellas). Se pide con un comentario `@coderabbitai review` en el PR; `@coderabbitai rate limit` dice cuánto cupo queda.
+- **Solo PRs de código**: `gh pr diff <N> --name-only`; si todos los ficheros están en `docs/` o son `*.md` (incluido `CLAUDE.md`), no se pide. Si hay código, **un único** comentario al abrir el PR (con el PR ya completo: un push posterior no relanza, hay que volver a pedirlo y gasta otra).
+- `path_filters` excluye documentación, vectores generados, fixtures, grabaciones y `.gz`; `path_instructions` recoge las reglas de CLAUDE.md por carpeta (FEB y FBCYL, Mongo, Pyodide, UI en español).
+- Sin cupo, CodeRabbit comenta y deja un check «Review rate limited» que **pasa**: no bloquea el merge. Sus hallazgos se tratan como los de `/code-review`: los reales se arreglan en el mismo PR.
+- El esquema del yaml es el oficial (`https://coderabbit.ai/integrations/schema.v2.json`); cualquier clave nueva se valida contra él.
 
 ## Dependencias y seguridad (#525)
 ### Dependabot y avisos de seguridad
