@@ -427,8 +427,9 @@ class EvolutionService:
 
         fga = fg2a + fg3a
         opp_fga = opp_fg2a + opp_fg3a
-        poss     = row.get("poss") or max(fga     + FT_POSSESSION_COST * fta     + tov     - orb,     1.0)
-        opp_poss = row.get("opp_poss") or max(opp_fga + FT_POSSESSION_COST * opp_fta + opp_tov - opp_orb, 1.0)
+        # the stored exact count, else the estimate of the box; with no floor: a game without possessions has no rate (the registry says None, as the consistency does, #1153)
+        poss     = row.get("poss") or (fga     + FT_POSSESSION_COST * fta     + tov     - orb)
+        opp_poss = row.get("opp_poss") or (opp_fga + FT_POSSESSION_COST * opp_fta + opp_tov - opp_orb)
 
         # every rate of the game with the formulas of the registry (config/formulas.json, #1153); None when its denominator is 0
         rates = evaluate_all({"points": pts, "points_against": opp_pts, "fg2m": fg2m, "fg2a": fg2a, "fg3m": fg3m, "fg3a": fg3a, "fta": fta, "ast": ast, "stl": stl, "blk": blk,
@@ -456,7 +457,7 @@ class EvolutionService:
             "fg3_percentage":    (fg3m / fg3a * 100) if fg3a > 0 else None,
             "ft_percentage":     (ftm  / fta  * 100) if fta  > 0 else None,
             # Advanced
-            "possessions":       float(poss),
+            "possessions":       float(poss) if poss > 0 else None,
             "offensive_rating":  rates["offensive_rating"],
             "defensive_rating":  rates["defensive_rating"],
             "net_rating":        rates["net_rating"],

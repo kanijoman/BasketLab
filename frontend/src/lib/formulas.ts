@@ -21,7 +21,7 @@ function combo(terms: Terms, counters: Counters): number {
   return total
 }
 
-/** The value of the formula `name` for `counters`, or `null` when a denominator is 0 (Python's `evaluate`, term by term in the same order). */
+/** The value of the formula `name` for `counters`, or `null` when a denominator is 0 or negative (Python's `evaluate`, term by term in the same order). */
 export function evaluate(name: string, counters: Counters): number | null {
   const formula = FORMULAS[name]
   if (formula.minus) {
@@ -29,7 +29,7 @@ export function evaluate(name: string, counters: Counters): number | null {
     return left === null || right === null ? null : left - right
   }
   const denominator = combo(formula.den as Terms, counters)
-  if (denominator === 0) return null
+  if (denominator <= 0) return null                         // empty, or negative (an estimated count of possessions can be below 0)
   return (combo(formula.num as Terms, counters) / denominator) * (formula.scale as number)
 }
 

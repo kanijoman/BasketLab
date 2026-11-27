@@ -13,7 +13,7 @@ def textbook(c):
     fgm = c["fg2m"] + c["fg3m"]
 
     def div(n, d, scale=100):
-        return None if d == 0 else n / d * scale
+        return None if d <= 0 else n / d * scale                      # an empty or NEGATIVE denominator (an estimated count of possessions can be below 0) has no value
 
     ortg, drtg = div(c["points"], c["poss"]), div(c["points_against"], c["opp_poss"])
     return {
@@ -41,6 +41,8 @@ CASES = {
                                                       opp_orb=0, opp_drb=0, poss=0, opp_poss=0),
     "no rival possessions": dict(points=50, points_against=0, fg2m=10, fg2a=20, fg3m=5, fg3a=15, fta=10, ast=8, stl=4, blk=2, tov=6, orb=5, drb=15,
                                  opp_orb=6, opp_drb=14, poss=55.5, opp_poss=0),
+    "a game whose estimated possessions are negative": dict(points=4, points_against=2, fg2m=0, fg2a=0, fg3m=0, fg3a=0, fta=2, ast=0, stl=1, blk=0, tov=0, orb=1, drb=3,
+                                                            opp_orb=0, opp_drb=0, poss=-0.12, opp_poss=-0.12),
     "the rebounds of a team without rival misses": dict(points=70, points_against=60, fg2m=20, fg2a=35, fg3m=6, fg3a=20, fta=12, ast=14, stl=7, blk=4, tov=11, orb=0, drb=0,
                                                          opp_orb=0, opp_drb=0, poss=70.0, opp_poss=68.0),
 }

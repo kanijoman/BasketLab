@@ -154,6 +154,44 @@
   },
   {
    "counters": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 3,
+    "fg2a": 0,
+    "fg2m": 0,
+    "fg3a": 0,
+    "fg3m": 0,
+    "fta": 2,
+    "opp_drb": 0,
+    "opp_orb": 0,
+    "opp_poss": -0.12,
+    "orb": 1,
+    "points": 4,
+    "points_against": 2,
+    "poss": -0.12,
+    "stl": 1,
+    "tov": 0
+   },
+   "expected": {
+    "assist_fg_rate": null,
+    "assist_rate": null,
+    "block_rate": null,
+    "defensive_rating": null,
+    "defensive_rebound_rate": 100.0,
+    "efg_percentage": null,
+    "free_throw_rate": null,
+    "net_rating": null,
+    "offensive_rating": null,
+    "offensive_rebound_rate": 100.0,
+    "steal_rate": null,
+    "three_point_rate": null,
+    "true_shooting": 227.27272727272728,
+    "turnover_rate": 0.0
+   },
+   "name": "a game whose estimated possessions are negative"
+  },
+  {
+   "counters": {
     "ast": 14,
     "blk": 4,
     "drb": 0,

@@ -24,13 +24,13 @@ def _combo(terms: Mapping[str, float], counters: Mapping[str, float]) -> float:
 
 
 def evaluate(name: str, counters: Mapping[str, float]) -> Optional[float]:
-    """The value of the formula ``name`` for ``counters``; ``None`` when a denominator is 0."""
+    """The value of the formula ``name`` for ``counters``; ``None`` when a denominator is 0 or negative."""
     formula = FORMULAS[name]
     if "minus" in formula:
         left, right = (evaluate(part, counters) for part in formula["minus"])
         return None if left is None or right is None else left - right
     denominator = _combo(formula["den"], counters)
-    if denominator == 0:
+    if denominator <= 0:                                            # empty, or negative: an estimated count of possessions can be below 0 and has no rate
         return None
     return _combo(formula["num"], counters) / denominator * formula["scale"]
 
@@ -50,10 +50,10 @@ def mongo_expression(name: str, fields: Mapping[str, Any], empty: Any = 0) -> Di
     formula = FORMULAS[name]
     if "minus" in formula:
         left, right = formula["minus"]
-        ready = {"$and": [{"$ne": [_denominator(part, fields), 0]} for part in formula["minus"]]}
+        ready = {"$and": [{"$gt": [_denominator(part, fields), 0]} for part in formula["minus"]]}
         return {"$cond": [ready, {"$subtract": [mongo_expression(left, fields, empty), mongo_expression(right, fields, empty)]}, empty]}
     denominator = _mongo_combo(formula["den"], fields)
-    return {"$cond": [{"$eq": [denominator, 0]}, empty, {"$multiply": [{"$divide": [_mongo_combo(formula["num"], fields), denominator]}, formula["scale"]]}]}
+    return {"$cond": [{"$lte": [denominator, 0]}, empty, {"$multiply": [{"$divide": [_mongo_combo(formula["num"], fields), denominator]}, formula["scale"]]}]}
 
 
 def _denominator(name: str, fields: Mapping[str, Any]) -> Any:

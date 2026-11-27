@@ -22,7 +22,7 @@ const whole = (value: unknown): number => (typeof value === 'number' && Number.i
 /** Python's `a / b * 100` when `b > 0`, else `null` (the ratio stats have no value without a denominator). */
 const ratio = (n: number, d: number): number | null => (d > 0 ? (n / d) * 100 : null)
 
-const estimate = (box: { fga: number; fta: number; tov: number; orb: number }) => Math.max(box.fga + 0.44 * box.fta + box.tov - box.orb, 1)
+const estimate = (box: { fga: number; fta: number; tov: number; orb: number }) => box.fga + 0.44 * box.fta + box.tov - box.orb          // no floor: a game without possessions has no rate (#1153)
 
 /**
  * The possessions the service counts in a game: FEB's stored exact count (`DERIVED`) or, if the game has none, the box-score estimate; the published row holds them
@@ -51,7 +51,7 @@ export function gameValue(row: GameRow, stat: string): number | null {
     points: pts, points_allowed: oppPts, fg2_made: fg2m, fg2_attempts: fg2a, fg3_made: fg3m, fg3_attempts: fg3a, ft_made: ftm, ft_attempts: fta,
     rebounds: orb + drb, def_rebounds: drb, off_rebounds: orb, assists: ast, steals: stl, turnovers: tov, blocks: blk,
     fg2_percentage: ratio(fg2m, fg2a), fg3_percentage: ratio(fg3m, fg3a), ft_percentage: ratio(ftm, fta),
-    possessions: poss, offensive_rating: rate.offensive_rating, defensive_rating: rate.defensive_rating, net_rating: rate.net_rating,
+    possessions: poss > 0 ? poss : null, offensive_rating: rate.offensive_rating, defensive_rating: rate.defensive_rating, net_rating: rate.net_rating,
     efg_percentage: rate.efg_percentage, true_shooting: rate.true_shooting,
     three_point_rate: rate.three_point_rate, free_throw_rate: rate.free_throw_rate, assist_fg_rate: rate.assist_fg_rate,
     assist_rate: rate.assist_rate, turnover_rate: rate.turnover_rate, steal_rate: rate.steal_rate, block_rate: rate.block_rate,
