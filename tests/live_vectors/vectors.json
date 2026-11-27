@@ -54,7 +54,7 @@
      "digests": {
       "alerts": "c082e7c8ba9320b1941f39395c651f5bb45a1897016fb4e7b5659d2faddda419",
       "analysis": "59f66f589b31416835df1a21af182440a1efc9d343327af3f9925c12dc5c5828",
-      "snapshot": "c0148411a2559fd1276c92de5b191e3da809496ae9be0aa537add527f41cfc10"
+      "snapshot": "841985f2ad183a5bbf346051a05dc7bc13207987e78a2ac65c580dffbaf54fda"
      },
      "elapsed": 300,
      "lever": "ftr",
@@ -75,7 +75,7 @@
      "digests": {
       "alerts": "0237a2a09773f226b7b707dffda9b3f4554a4841416bbf93fd58c56fc3f7b32f",
       "analysis": "71f24c7582a2c963f79726736addfb86c7b24a4927f979bf96fde42267bce477",
-      "snapshot": "14ec79d6f646a6212b53c981453d3f2578d4fa5afdf304214d58f34097200bb2"
+      "snapshot": "c46536f909c820a01b288652b05ca69af44afe020a3d46cc42c27698319007b9"
      },
      "elapsed": 600,
      "lever": "ftr",
@@ -93,7 +93,7 @@
      "digests": {
       "alerts": "980e4e892794d5215941a9cc3b939660ac8e16f0c8501fcf5f4a4f51ce6f54b9",
       "analysis": "68bcb4631dfea4fa6d405fcdf8d587d0757b83e5fe95e9b1434b74dd5a91304c",
-      "snapshot": "d55d4eebb6e28c248b356221b82faf1fa7a5a0e0cb19cd33a229ede6a07511bb"
+      "snapshot": "0a430e5a74ae289d8f7724a8ac049c9f93f701040d5a26383dec13b2046dcd63"
      },
      "elapsed": 900,
      "lever": "ftr",
@@ -120,7 +120,7 @@
      "digests": {
       "alerts": "0408c06e4d2c23ce657406b4249cc4fd75b7102ac088347db77e1dc6b6cf413b",
       "analysis": "f2e48487ace680336104e2c6f89184ae9e17625837ec6be1f44bffe0c371b2f4",
-      "snapshot": "dbbf6d1c92373f40b053be4ad002ad116fa1acbbdfb5ed55128ac50c6c9eb798"
+      "snapshot": "49be7e332eb2e9ba22e55c269e72f9319e8d1eb6816a97c98e855f2d84181840"
      },
      "elapsed": 1200,
      "lever": "ftr",
@@ -136,7 +136,7 @@
      "digests": {
       "alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
       "analysis": "21dad39f19799d50a14946a610c6b43bc3bce3de09a91ee2da2f416db42b87c7",
-      "snapshot": "062612c1dde016cf56766ff1d7e99732bc94590a5bb9e8bd51234c96a7df5ed3"
+      "snapshot": "755199240eecc1ca54280360e676a9044a33745c82478710b79360b4e9ae0878"
      },
      "elapsed": 1350,
      "lever": "ftr",
@@ -158,7 +158,7 @@
      "digests": {
       "alerts": "59b68f6534757c9c3c41ac44689e46d054de270a8309f8d9679e387339a6b127",
       "analysis": "6c1f3696fff0f53427bfbf5eea5d8692079f347f50686e0f35b4fdf1a6da8ed6",
-      "snapshot": "81b7f058ad2c8029182c2f823640647f6f706d640cb76b2cd35c40eb96109572"
+      "snapshot": "00f0b2afb69a4bd9264b436af2a0ed31caebbbc39eff4985a2da9bff20ea0cd4"
      },
      "elapsed": 1800,
      "lever": "ftr",
@@ -174,7 +174,7 @@
      "digests": {
       "alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
       "analysis": "e4a773814553348de0eaf24baaa5f8d09f34b208ace67688b2764462ccf1dd4a",
-      "snapshot": "21751b6049b6f208a8e855ec54d3e101d0913042987a9a63e6293f4e6ee8433b"
+      "snapshot": "d16e690a26f7e6df54a3af1cb51618a8088b7a3f7a75e5851dca598f4589c5cd"
      },
      "elapsed": 1800,
      "lever": "ftr",
@@ -194,7 +194,7 @@
      "digests": {
       "alerts": "fc2e3727f8fee5aaa113b3719387d9d342bfaef56a3889def3257e6bf8cb46ec",
       "analysis": "fcf057a7566de3f3c1e5a696f9b1bf17ee1a7f6e7e2ad790617fcf53598386ac",
-      "snapshot": "1e3e137f3ecfed2208223ae5a27b3319df0379b0c67b60ff25653a625af6f535"
+      "snapshot": "468ebecc842c22860cff5ed343475a0d6892b3fddaf1f03e87a16f3730ccca4f"
      },
      "elapsed": 2100,
      "lever": "ftr",
@@ -213,7 +213,7 @@
      "digests": {
       "alerts": "ba8374941a4f4a29df0f48481c911cb648251080bcc5a9ad844dbeb0e503ba27",
       "analysis": "387b4a539cdf0fd5d1135164e04a75c94e1eec1b67cf288af36a77106bb873f1",
-      "snapshot": "d9473872cfbc126a93dd7e5c43fbcb48461fec949b46c1003fa649877ec07583"
+      "snapshot": "27e199c36d075bb9fffdaf8375283bba78bb02bdba49301dab05c0c183369e91"
      },
      "elapsed": 2340,
      "lever": "tov",
@@ -234,7 +234,7 @@
      "digests": {
       "alerts": "a186e1c54d6141741f3cbefdfea551398ccab7462db7d53e4ebf6629c8cebb4e",
       "analysis": "65d893a49f8b0ae36f906be28e4c17d7a1e5321f4e414e043cf0d21e0ea3898d",
-      "snapshot": "b1972dd2d5708ff8d06e9d1753f5a21ddd38f60ec12b5c8936f689bfb5a2b73d"
+      "snapshot": "9a39c4458f54ba9c050b03c99189eed0c10fb5befa2dcfad7ce403f1b1b0e33a"
      },
      "elapsed": 2400,
      "lever": "tov",
@@ -21698,6 +21698,46 @@
       "log": [],
       "period": 2,
       "players": {
+       "f0": {
+        "minutes": 300,
+        "name": "F0",
+        "on_court": true,
+        "pf": 0,
+        "pf_by_period": {},
+        "pts": 0,
+        "stint": 60,
+        "team_id": "T1"
+       },
+       "f1": {
+        "minutes": 300,
+        "name": "F1",
+        "on_court": true,
+        "pf": 0,
+        "pf_by_period": {},
+        "pts": 0,
+        "stint": 60,
+        "team_id": "T1"
+       },
+       "f2": {
+        "minutes": 300,
+        "name": "F2",
+        "on_court": true,
+        "pf": 0,
+        "pf_by_period": {},
+        "pts": 0,
+        "stint": 60,
+        "team_id": "T1"
+       },
+       "f3": {
+        "minutes": 300,
+        "name": "F3",
+        "on_court": true,
+        "pf": 0,
+        "pf_by_period": {},
+        "pts": 0,
+        "stint": 60,
+        "team_id": "T1"
+       },
        "p": {
         "minutes": 1100,
         "name": "Ana",
@@ -21718,6 +21758,46 @@
       "log": [],
       "period": 2,
       "players": {
+       "f0": {
+        "minutes": 300,
+        "name": "F0",
+        "on_court": true,
+        "pf": 0,
+        "pf_by_period": {},
+        "pts": 0,
+        "stint": 60,
+        "team_id": "T1"
+       },
+       "f1": {
+        "minutes": 300,
+        "name": "F1",
+        "on_court": true,
+        "pf": 0,
+        "pf_by_period": {},
+        "pts": 0,
+        "stint": 60,
+        "team_id": "T1"
+       },
+       "f2": {
+        "minutes": 300,
+        "name": "F2",
+        "on_court": true,
+        "pf": 0,
+        "pf_by_period": {},
+        "pts": 0,
+        "stint": 60,
+        "team_id": "T1"
+       },
+       "f3": {
+        "minutes": 300,
+        "name": "F3",
+        "on_court": true,
+        "pf": 0,
+        "pf_by_period": {},
+        "pts": 0,
+        "stint": 60,
+        "team_id": "T1"
+       },
        "p": {
         "minutes": 1110,
         "name": "Ana",
@@ -21738,6 +21818,46 @@
       "log": [],
       "period": 2,
       "players": {
+       "f0": {
+        "minutes": 300,
+        "name": "F0",
+        "on_court": true,
+        "pf": 0,
+        "pf_by_period": {},
+        "pts": 0,
+        "stint": 60,
+        "team_id": "T1"
+       },
+       "f1": {
+        "minutes": 300,
+        "name": "F1",
+        "on_court": true,
+        "pf": 0,
+        "pf_by_period": {},
+        "pts": 0,
+        "stint": 60,
+        "team_id": "T1"
+       },
+       "f2": {
+        "minutes": 300,
+        "name": "F2",
+        "on_court": true,
+        "pf": 0,
+        "pf_by_period": {},
+        "pts": 0,
+        "stint": 60,
+        "team_id": "T1"
+       },
+       "f3": {
+        "minutes": 300,
+        "name": "F3",
+        "on_court": true,
+        "pf": 0,
+        "pf_by_period": {},
+        "pts": 0,
+        "stint": 60,
+        "team_id": "T1"
+       },
        "p": {
         "minutes": 1400,
         "name": "Ana",
@@ -21758,6 +21878,46 @@
       "log": [],
       "period": 2,
       "players": {
+       "f0": {
+        "minutes": 300,
+        "name": "F0",
+        "on_court": true,
+        "pf": 0,
+        "pf_by_period": {},
+        "pts": 0,
+        "stint": 60,
+        "team_id": "T1"
+       },
+       "f1": {
+        "minutes": 300,
+        "name": "F1",
+        "on_court": true,
+        "pf": 0,
+        "pf_by_period": {},
+        "pts": 0,
+        "stint": 60,
+        "team_id": "T1"
+       },
+       "f2": {
+        "minutes": 300,
+        "name": "F2",
+        "on_court": true,
+        "pf": 0,
+        "pf_by_period": {},
+        "pts": 0,
+        "stint": 60,
+        "team_id": "T1"
+       },
+       "f3": {
+        "minutes": 300,
+        "name": "F3",
+        "on_court": true,
+        "pf": 0,
+        "pf_by_period": {},
+        "pts": 0,
+        "stint": 60,
+        "team_id": "T1"
+       },
        "p": {
         "minutes": 1420,
         "name": "Ana",
