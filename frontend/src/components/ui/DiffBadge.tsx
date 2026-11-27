@@ -3,8 +3,11 @@
  *
  * It replaces the arrows of trend (⇈ ↑ ≈ ↓ ⇊): an arrow said «a lot or a little» by a threshold of percentage; the difference says how much. For a figure that is
  * already a percentage it is in percentage points. Green when it is good (up; down for «less is better» columns: pass ``reverse``), red when it is bad, grey when it is nothing.
+ * It is the pill of its tone (`TONE_PILL`, AA over every surface, #856) over an opaque surface of its own: the cells it sits in are painted with the colour of their quartile, and green
+ * or red text straight on them does not reach WCAG AA (#1199).
  */
 import { cn } from '@/lib/utils'
+import { TONE_PILL } from './tone'
 
 /** ``+2.1`` / ``-2.55`` / ``0.0`` (a difference that rounds to nothing has no sign); null when a figure is missing. */
 export function formatDiff(recent: number | null | undefined, reference: number | null | undefined, decimals = 1): string | null {
@@ -32,11 +35,13 @@ export default function DiffBadge({ recent, season, reverse = false, decimals = 
   const none = Number(text) === 0
   const good = (diff > 0) !== reverse
   return (
-    <span
-      className={cn('inline-flex items-center text-xs font-semibold tabular-nums', none ? 'text-ink-muted' : good ? 'text-ok' : 'text-bad', className)}
-      title={`${(recent as number).toFixed(decimals)} frente a ${(season as number).toFixed(decimals)}`}
-    >
-      {text}
+    <span className={cn('inline-flex rounded bg-surface text-xs font-semibold tabular-nums', className)}>
+      <span
+        className={cn('inline-flex items-center rounded px-1', TONE_PILL[none ? 'neutral' : good ? 'ok' : 'bad'])}
+        title={`${(recent as number).toFixed(decimals)} frente a ${(season as number).toFixed(decimals)}`}
+      >
+        {text}
+      </span>
     </span>
   )
 }

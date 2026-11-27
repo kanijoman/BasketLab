@@ -62,9 +62,9 @@ function buildColumns(defs: ColDef[], byName: Record<string, ComparisonRow>, riv
         const teamRow = byName[row.original.team_name]
         const other = (teamRow?.a ? teamRow.b?.[key] : null) as number | null | undefined      // a team with one group only has nothing to compare with
         return (
-          <span className="inline-flex items-center gap-1.5">      {/* the cell has the colour of its quartile: green or red text on it does not reach the contrast of WCAG AA, so the difference is in ink and the sign says up or down (#1199 e2e on real data) */}
+          <span className="inline-flex items-center gap-1.5">
             <span>{pct ? fmtPct(v) : fmt(v, decimals)}</span>
-            <DiffBadge recent={v} season={other} reverse={reverse !== rivals} decimals={decimals} className="text-[10px] text-ink" />
+            <DiffBadge recent={v} season={other} reverse={reverse !== rivals} decimals={decimals} className="text-[10px]" />
           </span>
         )
       },
