@@ -270,3 +270,28 @@ def test_minibasket_and_infantil_players_have_an_upper_age_like_cadete_and_junio
     from src.market.identity_link import _age_fits
 
     assert _age_fits({"age_groups": [group], "seasons": [2026]}, [born]) is fits
+
+
+class TestTheCategoryAndTheSeasonGoTogether:
+    """#1125: categories and seasons were two sets and the age fitted if ANY pair did: a U16 who also plays senior was linked to her 22-year-old sister."""
+
+    SENIOR = next(c for c, g in AGES.items() if g == "senior")
+
+    def both_categories(self, doc):
+        young, adult = copy.deepcopy(doc), copy.deepcopy(doc)
+        young["_competition"], adult["_competition"] = CADETE, self.SENIOR
+        return full_form(fbcyl_players([young, adult], AGES))[0]
+
+    def test_a_u16_who_also_plays_senior_is_not_her_adult_sister_regression(self, doc, sample):
+        player = self.both_categories(doc)
+        persons = feb_persons([feb_game(sample, [(100, feb_name(player), player["clubs"][0])])], rosters=[roster(100, player["name"] + " MAYOR", "2004-02-01")], genders=GENDERS)
+
+        assert {"U16", "senior"} <= set(player["age_groups"])
+        assert link_of(persons, player) is None
+
+    def test_a_young_player_who_plays_up_keeps_her_link(self, doc, sample):
+        """Born in 2011 she is a cadete and can play senior: every pair fits."""
+        player = self.both_categories(doc)
+        persons = feb_persons([feb_game(sample, [(100, feb_name(player), player["clubs"][0])])], rosters=[roster(100, player["name"], "2011-09-09")], genders=GENDERS)
+
+        assert link_of(persons, player)["status"] == "linked"

@@ -210,7 +210,7 @@ def _season(value: Any) -> Optional[int]:
 
 def fbcyl_players(docs: Iterable[Dict[str, Any]], age_groups: Optional[Dict[str, str]] = None) -> List[Dict[str, Any]]:
     """The persons of FBCYL games (``stats.teams[].players[]``), one per ``uuid`` (the ``actorId`` changes in every game), sorted by id: ``{id: fbcyl:<uuid>, uuid, name, names, clubs, genders, age_groups,
-    seasons}`` over every game (``age_groups``: ``fbcyl_age_groups`` of the catalogue). A player without ``uuid`` is left out."""
+    seasons, periods}`` over every game (``periods``: the real ``[age group, season]`` pairs) (``age_groups``: ``fbcyl_age_groups`` of the catalogue). A player without ``uuid`` is left out."""
     found: Dict[str, Dict[str, Set[Any]]] = {}
     for doc in docs:
         group, season, gender = (age_groups or {}).get(str(_unwrapped(doc.get("_competition")))), _season(doc.get("_season")), doc.get("_gender")
@@ -219,11 +219,14 @@ def fbcyl_players(docs: Iterable[Dict[str, Any]], age_groups: Optional[Dict[str,
                 if not player.get("uuid") or not player.get("name"):
                     continue
                 person = found.setdefault(str(player["uuid"]), {"names": set(), "clubs": set(), "genders": set(), "age_groups": set(), "seasons": set()})
+                person.setdefault("periods", set())
                 person["names"].add(" ".join(str(player["name"]).split()))
                 for key, value in (("clubs", str(team.get("name") or "").strip()), ("genders", gender if gender in ("F", "M") else None), ("age_groups", group), ("seasons", season)):
                     if value:
                         person[key].add(value)
-    return [{"id": f"fbcyl:{uuid}", "uuid": uuid, "name": sorted(p["names"])[0], **{k: sorted(v) for k, v in p.items()}} for uuid, p in sorted(found.items())]
+                if group and season:
+                    person["periods"].add((group, season))
+    return [{"id": f"fbcyl:{uuid}", "uuid": uuid, "name": sorted(p["names"])[0], **{k: sorted(v) for k, v in p.items() if k != "periods"}, "periods": [list(x) for x in sorted(p["periods"])]} for uuid, p in sorted(found.items())]
 
 
 def feb_persons(games: Iterable[Dict[str, Any]], rosters: Iterable[Dict[str, Any]] = (), genders: Optional[Dict[str, str]] = None) -> Dict[str, Dict[str, List[str]]]:
@@ -257,10 +260,13 @@ def feb_persons(games: Iterable[Dict[str, Any]], rosters: Iterable[Dict[str, Any
 def _age_fits(player: Dict[str, Any], births: Iterable[str]) -> Optional[bool]:
     """Whether a birth of the FEB person fits a category the player plays in a season (``None`` when the birth or the category is unknown): a youth category has an upper age by regulation, a senior one a minimum."""
     years = {int(b[:4]) for b in births if str(b)[:4].isdigit()}
-    checks = [(group, season) for group in player.get("age_groups", []) for season in player.get("seasons", []) if group in AGE_LIMITS or group == "senior"]
+    if "periods" in player:
+        checks = [(g, s) for g, s in player["periods"] if g in AGE_LIMITS or g == "senior"]
+    else:                                                                       # a player without the pairs: every category with every season
+        checks = [(group, season) for group in player.get("age_groups", []) for season in player.get("seasons", []) if group in AGE_LIMITS or group == "senior"]
     if not years or not checks:
         return None
-    return any(any(y >= s - AGE_LIMITS[g] for y in years) if g in AGE_LIMITS else any(y <= s - SENIOR_MIN_AGE for y in years) for g, s in checks)
+    return all(any(y >= s - AGE_LIMITS[g] for y in years) if g in AGE_LIMITS else any(y <= s - SENIOR_MIN_AGE for y in years) for g, s in checks)
 
 
 def _could_be(player: Dict[str, Any], person: Dict[str, List[str]]) -> bool:
