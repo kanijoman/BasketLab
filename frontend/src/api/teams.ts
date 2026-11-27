@@ -12,7 +12,7 @@ export interface TeamFilters {
   team?: string
 }
 
-// With the dataset `team-stats` on (`?data=local`, issues #327, #329) the tables are computed from the exported files; if they cannot answer, a clear error (`DataNotAvailable`, #334), never the API.
+// From the publication (issues #327, #329) the tables are computed from the exported files; if they cannot answer, a clear error (`DataNotAvailable`, #334), never the API.
 export const getTeamStats = (collection: string, params?: TeamFilters) =>
   fromSource(
     'team-stats',
@@ -53,7 +53,7 @@ export type CVMap = Record<string, Record<string, CVEntry>>
 /** Response from the team consistency endpoint: own stats + rival (opponent) stats */
 export interface TeamConsistencyResponse { own: CVMap; rival: CVMap }
 
-// With the dataset `possessions` on (`?data=local`, issue #679) the consistency comes from the same published file as the possessions table.
+// From the publication (issue #679) the consistency comes from the same published file as the possessions table.
 export const getTeamConsistency = (collection: string) =>
   fromSource(
     'possessions',

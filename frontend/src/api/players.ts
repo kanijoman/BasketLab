@@ -14,7 +14,7 @@ export const getPlayerStats = (collection: string, params?: TeamFilters) =>
 export const getPlayerQuartiles = (collection: string) =>
   fromSource('player-stats', () => localPlayerQuartiles(collection))
 
-// With the dataset `inout` on (`?data=local`, issue #678) the analysis was computed when the competition was published (FEB): there at once; FBCYL and unpublished ones, the API.
+// From the publication (issue #678) the analysis was computed when the competition was published (FEB): there at once; FBCYL and unpublished ones get the clear error of `fromSource`.
 export const getInOutAnalysis = (collection: string, playerId: string) =>
   fromSource(
     'inout',

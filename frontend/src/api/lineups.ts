@@ -56,7 +56,7 @@ const localLineupTable = (
  * Stream lineup analysis via SSE.
  * Calls `onProgress(pct, current, total)` for each progress event,
  * then resolves with the full LineupRow[] once the done event arrives.
- * With the dataset `lineups` on (`?data=local`, issue #686) the table is merged on the device from the counters of the publication: it is there at once, no stream.
+ * From the publication (issue #686) the table is merged on the device from the counters of the publication: it is there at once, no stream.
  */
 export function streamLineupAnalysis(
   collection: string,

@@ -13,7 +13,7 @@ Léelo cuando toques Vercel, variables de entorno, o vayas a compilar/publicar/i
 - Refrescar el archivo, Coste del refresco, Purgar -> ¿cómo corre archive-refresh.yml, qué cuesta, cómo se borra una competición (archive-purge.yml)?
 - Publicar los datos de la web, Publicar Talent, Archivo privado -> ¿cómo publican web-data.yml, talent-data.yml y talent-rosters.yml, y cómo se pone en marcha el archivo?
 - Publicar los paquetes live, Protocolo de despliegue -> ¿cómo se publican y se cifran los paquetes (alcances, clave abierta) y en qué orden se despliega?
-- Dependencias y seguridad, Memoria -> ¿Dependabot, npm audit, límites de RAM (LOG_MEMORY)?
+- Dependencias y seguridad, Memoria -> ¿Dependabot, npm audit, límites de RAM?
 - App Android, Google Play, Clave de firma propia, Futuro -> ¿cómo publico, firmo e instalo el APK/AAB y qué hacer si se pierde la clave?
 
 ## Sin servidor de API (retirada en #1199)
@@ -22,7 +22,7 @@ Léelo cuando toques Vercel, variables de entorno, o vayas a compilar/publicar/i
 - **Atlas pausado** por inactividad: hay que reanudarlo en Atlas; los jobs lo dicen como `unreachable` (clasificación en `src/database/db_health.py`, con pista accionable) y el refresco falla con ese motivo.
 
 ## Variables de entorno (resumen)
-Jobs y scripts: `MONGODB_CONNECTION_STRING` (o `src/database/db_credentials.txt`), `ENVIRONMENT`, `MALLOC_ARENA_MAX`, `LOG_MEMORY`. Frontend (Vercel): `VITE_DATA_BASE` (anfitrión de los ficheros publicados). Plantilla: `.env.example`.
+Jobs y scripts: `MONGODB_CONNECTION_STRING` (o `src/database/db_credentials.txt`), `ENVIRONMENT`. Frontend (Vercel): `VITE_DATA_BASE` (anfitrión de los ficheros publicados). Plantilla: `.env.example`.
 
 ## Despliegue de la web (Vercel) y CI (ci.yml)
 La web se despliega sola en Vercel (integración nativa de GitHub, con una vista previa por PR).
@@ -589,9 +589,7 @@ Dos cosas se despliegan por separado: **la web** (Vercel, al integrar el PR) y *
 
 ## Memoria (runner y equipos pequeños, 512 MB)
 Un documento de partido pesa ≈ 1 MB en memoria de Python: la publicación y el refresco corren en el runner de Actions y en máquinas pequeñas (desde #1199 no hay servidor). Medidas vigentes (issue #163):
-- `MALLOC_ARENA_MAX=2` (menos fragmentación) y `pip install --no-cache-dir` al instalar.
 - Listado de partidos con **proyección** (no cargar documentos completos) y zonas de liga **en streaming**.
-- **Diagnóstico**: `LOG_MEMORY=1` en los jobs que lo usen.
 - Regla de código: nunca `find({})` sin proyección sobre colecciones de partidos; iterar cursores/generadores en vez de materializar listas de documentos o tiros.
 Si aun así se supera el límite: más memoria.
 

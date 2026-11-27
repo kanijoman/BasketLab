@@ -631,7 +631,7 @@ Sección -> pregunta que responde (`grep -n '^#'` da el índice completo):
 - Frontend en Vercel (`vercel.json`: rewrite SPA). CI (`.github/workflows/ci.yml`): solo tests (backend repartido, web, e2e sobre la publicación real, sin servidor), sin despliegue.
 
 ### Variables de entorno (backend y frontend)
-- Env (jobs y scripts): `MONGODB_CONNECTION_STRING`, `MALLOC_ARENA_MAX`, `LOG_MEMORY` (ver [OPERATIONS.md](OPERATIONS.md#memoria-servidor-pequeño-512-mb)), `ENVIRONMENT`. Frontend: `VITE_DATA_BASE` (anfitrión de los ficheros publicados). Ejemplo en `.env.example`.
+- Env (jobs y scripts): `MONGODB_CONNECTION_STRING` (o `src/database/db_credentials.txt`) y `ENVIRONMENT` (`db_config`). Frontend: `VITE_DATA_BASE` (anfitrión de los ficheros publicados). Ejemplo en `.env.example`.
 
 ## Rutas de import
 Usa siempre `src.…`. Los parsers PBP viven en `src/pbp` (sin BD); los antiguos shims se eliminaron (`tests/test_pbp_isolation.py` lo vigila). `tests/conftest.py` limpia cachés bajo ambos alias por compatibilidad con tests antiguos.

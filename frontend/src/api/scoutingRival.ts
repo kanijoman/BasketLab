@@ -62,7 +62,7 @@ export interface ScoutingReport {
   /** `F` / `M` of the competition (the words agree with it, #495); absent or empty = masculine. */
   gender?: string
   sample_games: number
-  /** Which games it counts (published scouting only; the one of the API is the league's). */
+  /** Which games it counts (published scouting only). */
   scope?: ScoutingScope
   games: ScoutingGame[]
   low_sample: boolean
@@ -86,13 +86,13 @@ export async function downloadScoutingPdf(report: ScoutingReport): Promise<Blob>
 }
 
 /**
- * The scopes the scouting of a team is published for (`liga`, `copa`, `todo`), with the dataset `scouting` on (`?data=local`, issue #638); none when it is
+ * The scopes the scouting of a team is published for (`liga`, `copa`, `todo`) (issue #638); none when it is
  * off or the publication cannot say, so that the page keeps its job-based flow. An access error (no key) reaches the page.
  */
 export const getScoutingScopes = (collection: string, teamId: string): Promise<ScoutingScope[]> =>
   fromSource<ScoutingScope[]>('scouting', () => loadScoutingScopes(collection, teamId), () => [])
 
-/** The published scouting of a team for a scope, or `null` when it is off or cannot be had (with the API asked for on purpose, the page generates it as always). */
+/** The published scouting of a team for a scope, or `null` when it is off or cannot be had. */
 export const getPublishedScouting = (collection: string, teamId: string, scope: ScoutingScope): Promise<ScoutingReport | null> =>
   fromSource<ScoutingReport | null>('scouting', () => loadWebScouting(collection, teamId, scope), () => null)
 

@@ -92,7 +92,7 @@ export interface TimeoutRow {
   rival: TimeoutGroup
 }
 
-// With the dataset `pbp` on (`?data=local`, issue #676) the tables are summed on the device from the published DERIVED; if it cannot answer, a clear error (#334), never the API.
+// From the publication (issue #676) the tables are summed on the device from the published DERIVED; if it cannot answer, a clear error (#334), never the API.
 export const getPointsByOrigin = (collection: string) => fromSource('pbp', () => localPointsByOrigin(collection))
 export const getByPeriod = (collection: string) => fromSource('pbp', () => localByPeriod(collection))
 export const getSituations = (collection: string) => fromSource('pbp', () => localSituations(collection))

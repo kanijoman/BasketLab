@@ -33,7 +33,7 @@ export interface MatchAnalysis {
   comparison: MatchComparisonRow[]
 }
 
-// With the dataset `matches` on (`?data=local`, issue #677) the list and the analysis of a match are the ones computed when the competition was published.
+// From the publication (issue #677) the list and the analysis of a match are the ones computed when the competition was published.
 export const getMatchList = (collection: string) =>
   fromSource(
     'matches',

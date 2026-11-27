@@ -13,7 +13,7 @@ export const getPossessionStats = (collection: string) =>
 /** The BOM Excel needs to read a CSV as UTF-8: once, at the start of the file. */
 const BOM = '﻿'
 
-/** A CSV the page offers as a download: made here from the published text, or the API's file. */
+/** A CSV the page offers as a download: made here from the published text. */
 async function possessionCsv(collection: string, kind: 'possessions' | 'quality'): Promise<Blob> {
   return fromSource(
     'possessions',

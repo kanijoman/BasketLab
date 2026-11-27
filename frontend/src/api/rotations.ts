@@ -57,7 +57,7 @@ export function streamRotacionesAnalysis(
   teamId: string,
   onProgress?: (pct: number, current: number, total: number) => void,
 ): Promise<RotationResult> {
-  // With the dataset `rotations` on (`?data=local`, issue #684) the analysis was computed when the competition was published: it is there at once, no stream.
+  // From the publication (issue #684) the analysis was computed when the competition was published: it is there at once, no stream.
   return fromSource(
     'rotations',
     async () => {
