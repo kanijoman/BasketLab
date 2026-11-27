@@ -1,8 +1,8 @@
 # Operaciones: despliegue y clave de administración
-Léelo cuando toques Vercel, variables de entorno, veas un 401/503 en Admin/scrape/ingesta/entrenamiento, o vayas a compilar/publicar/instalar la app Android. Arquitectura general: [ARCHITECTURE.md](ARCHITECTURE.md).
+Léelo cuando toques Vercel, variables de entorno, o vayas a compilar/publicar/instalar la app Android. Arquitectura general: [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Mapa del documento
-- Estado actual, Clave ADMIN_API_KEY, Variables de entorno -> ¿se escribe algo en el servidor?, ¿qué significa un 401/503/CORS?, ¿qué variables hacen falta?
+- Sin servidor de API, Variables de entorno -> ¿hay servidor?, ¿qué variables hacen falta?
 - Despliegue de la web (Vercel) y CI -> ¿qué se despliega solo y qué hace ci.yml?
 - Grabar partidos en directo -> ¿cómo grabo un partido de FEB o FBCYL (feb-record.yml, fbcyl-record.yml)?
 - Catálogo de competiciones -> ¿cómo doy de alta, pauso o amplío una competición en config/competitions.json?
@@ -16,56 +16,13 @@ Léelo cuando toques Vercel, variables de entorno, veas un 401/503 en Admin/scra
 - Dependencias y seguridad, Memoria -> ¿Dependabot, npm audit, límites de RAM (LOG_MEMORY)?
 - App Android, Google Play, Clave de firma propia, Futuro -> ¿cómo publico, firmo e instalo el APK/AAB y qué hacer si se pierde la clave?
 
-## Estado actual: servidor sin escrituras y ADMIN_API_KEY sin uso (#724)
-- **El servidor ya no recibe escrituras de la web (#724).**
-  - Se retiraron la página Administración, `DELETE /collections/{name}`, `POST /scrape/*`, `POST /historical/ingest*` y el servicio `basketlab-scraper`.
-  - **Cargar datos** es el refresco programado del archivo (*Archive refresh*, abajo) y **retirar una competición** es la purga (*Archive purge*).
-- `ADMIN_API_KEY` **no está definida en producción**, a propósito, y **ninguna ruta la usa hoy**: el entrenamiento del predictivo antiguo (`/analysis/elasticity/train`) se retiró con él (#853, el análisis predictivo vive ahora en el navegador y no escribe nada en el servidor).
-- La guarda (`require_admin`, `src/api/security.py`) se conserva como patrón para la próxima ruta de escritura y se prueba sobre una aplicación pequeña (`tests/test_admin_auth.py`); `tests/test_server_writes_retired.py` exige que no quede ninguna ruta que la pida.
-- En producción (`ENVIRONMENT=production`; este repositorio no aloja ninguna API, ver *Sin servidor alojado*) todas las lecturas y el cómputo sin persistir (informe de equipo, export PDF, informe semanal) funcionan; una ruta de escritura futura con la guarda respondería **503** («ADMIN_API_KEY no está configurada en el servidor») hasta que se defina la clave, y en **local** (sin `ENVIRONMENT=production`) estaría abierta.
-
-Para cargar o refrescar datos en local: `python run_archive.py pull` + `load` sobre un Mongo local y `python run_refresh.py --config config/competitions.json` contra él (ver *Refrescar el archivo sin Atlas*); ya no hay página ni ruta de servidor para ello.
-
-### Sin servidor alojado: la API solo sirve para desarrollo, pruebas y e2e (#334)
-- **BasketLab no depende de ninguna plataforma de alojamiento de la API ni se integra con ella** (Render se retiró del proyecto el 05/11/2026): no hay `render.yaml`, ni job de despliegue en CI, ni comprobación posterior, y `GET /api/v1/health` informa del commit solo si el entorno define `GIT_COMMIT`.
-- La web publicada lee los ficheros de `web-data` (el valor por defecto desde #745) y la API (`python run_api.py`) **se conserva a propósito para desarrollo local, pruebas y el e2e** (decisión del 05/11/2026; eliminarla es una decisión aparte: el rework del predictivo, #641, se resolvió sin ella en #841).
-- Quien aloje la API necesita las variables de abajo y `VITE_API_BASE` en la web para que su respaldo la use.
-- **Fuera del repositorio** (a mano, GitHub → *Settings → Secrets and variables → Actions*): borrar la variable `RENDER_API_URL` si existe (nada la lee ya) y, si alguna vez se definieron, los secretos `RENDER_DEPLOY_HOOK_URL` y `RENDER_SCRAPER_DEPLOY_HOOK_URL` (a 05/11/2026 no hay ninguno).
-
-## Clave de administración ADMIN_API_KEY: activar, rotar y diagnosticar
-
-### Activar la clave (paso a paso)
-Hoy ninguna ruta la usa. Hacerlo cuando exista una ruta de escritura con `Depends(require_admin)` y se quiera usarla en producción.
-
-1. **Generar una clave larga y aleatoria** (en cualquier terminal; no la pegues en el chat ni la commitees):
-   - PowerShell: `[Convert]::ToBase64String((1..32 | ForEach-Object { Get-Random -Maximum 256 }))`
-   - o Python: `python -c "import secrets; print(secrets.token_urlsafe(32))"`
-   Guárdala en un gestor de contraseñas.
-2. **Entorno del servidor de la API**: añadir `ADMIN_API_KEY` = la clave.
-3. (El servicio `basketlab-scraper` se retiró en #724: solo la API tiene la clave; el frontend la envía en `X-Admin-Key`.)
-4. **Reiniciar** el servicio para que lea la variable.
-5. **Introducir la clave en la app**: la web ya no tiene ningún campo para ella (la página Admin se retiró en #724 y el entrenamiento del predictivo en #852); por `curl` basta la cabecera `X-Admin-Key`.
-6. **Comprobar** con la ruta nueva: sin la cabecera `X-Admin-Key` responde **401**; con la clave correcta pasa la guarda (cualquier otro código, pero ya no 401 ni 503). Usa una petición que no destruya nada al probar.
-
-### Rotar o retirar la clave
-- **Rotar**: cambiar el valor en el entorno del servidor, reiniciar y volver a guardarla donde se use. Las claves antiguas dejan de valer al instante (se lee en cada petición).
-- **Retirar** (volver al estado actual): borrar la variable y reiniciar → las rutas con guarda vuelven a responder 503.
-
-### Diagnóstico: 401, 503 y CORS (tabla de síntomas)
-| Síntoma | Causa | Solución |
-|---|---|---|
-| 503 "ADMIN_API_KEY no está configurada" | variable sin definir en ese servicio (producción) | Estado actual esperado; pasos de arriba para activarla |
-| 401 "Clave de administración requerida o incorrecta" | sin la cabecera `X-Admin-Key` o clave distinta | Enviar la clave correcta |
-| 503 "Base de datos no disponible: …" (o 500 en versiones antiguas) en cualquier endpoint con datos | `MONGODB_CONNECTION_STRING` sin definir, credenciales de Atlas rechazadas, usuario sin permisos o IP no permitida | Abrir `/api/v1/health/db` (detalle debajo de la tabla) |
-| CORS / `OPTIONS` bloqueado | `ALLOWED_ORIGINS` no incluye la URL de Vercel | Ajustar `ALLOWED_ORIGINS` (la cabecera `X-Admin-Key` está permitida) |
-| Funciona en local pero no en producción | en local no hay guarda (sin `ENVIRONMENT=production`) | Esperado |
-
-Base de datos no disponible (503 «Base de datos no disponible: …»):
-- Abrir `/api/v1/health/db`: `error` = `missing_config` / `auth_failed` / `not_authorized` / `unreachable` / `invalid_config` y `hint`.
-- Revisar las variables de entorno del servicio y Atlas → Database Access / Network Access (`0.0.0.0/0` para Render free).
+## Sin servidor de API (retirada en #1199)
+- **No hay servidor**: la API (`src/api`, `run_api.py`) se eliminó el 27/11/2026 (épica #1199; mediciones en [la evaluación](evaluaciones/2026-11-27_eliminar-la-api.md)). La web publicada lee los ficheros de `web-data` y los jobs de GitHub Actions publican datos y paquetes; no hay variables de servidor, claves de administración ni códigos 401/503/CORS que diagnosticar.
+- **Escrituras**: ninguna desde la web (#724): los datos los carga el refresco programado del archivo (`archive-refresh.yml`) y se retiran con la purga (`archive-purge.yml`). `ADMIN_API_KEY` y su guía (activar, rotar, tabla de 401/503) quedaron en [la historia de operaciones](evaluaciones/2026-11-27_historia-operations.md); si algún día vuelve una escritura, el modelo de acceso se decide antes (#591, #153).
+- **Atlas pausado** por inactividad: hay que reanudarlo en Atlas; los jobs lo dicen como `unreachable` (clasificación en `src/database/db_health.py`, con pista accionable) y el refresco falla con ese motivo.
 
 ## Variables de entorno (resumen)
-Backend (si se aloja): `ENVIRONMENT=production`, `MONGODB_CONNECTION_STRING`, `ALLOWED_ORIGINS`, `ADMIN_API_KEY` (opcional: ninguna ruta la usa hoy). Frontend (Vercel): `VITE_API_BASE` (solo para el respaldo de la API). Plantilla: `.env.example`.
+Jobs y scripts: `MONGODB_CONNECTION_STRING` (o `src/database/db_credentials.txt`), `ENVIRONMENT`, `MALLOC_ARENA_MAX`, `LOG_MEMORY`. Frontend (Vercel): `VITE_DATA_BASE` (anfitrión de los ficheros publicados). Plantilla: `.env.example`.
 
 ## Despliegue de la web (Vercel) y CI (ci.yml)
 La web se despliega sola en Vercel (integración nativa de GitHub, con una vista previa por PR).
@@ -136,7 +93,7 @@ La web se despliega sola en Vercel (integración nativa de GitHub, con una vista
 - Se añaden con `python run_fbcyl_catalogue.py --season 2026 --paused 2025 --paused 2024` (pregunta al sitio a un segundo por petición, o `--combos FICHERO` con una respuesta guardada): **2026 entra activa y 2025 y 2024 pausadas** (se cargan por tandas: se pasa `active: true` a una temporada cada vez, empezando por 2025), no toca nunca un grupo que ya está y avisa de las categorías que no reconoce (no se adivinan).
 - Cada entrada lleva `category` (`formacion` o sénior), `age_group` (`U16` cadete, `U18` júnior), `label` (el nombre de la categoría: «1ª División cadete femenino») y `group_label` (el grupo tal como lo escribe el sitio); su `competition` termina en `G<id del grupo>` porque el texto de un grupo no es único (todas las categorías tienen «3ª FASE - TÍTULO») y la colección se nombra con él.
 - **La primera carga de 2026 son unos 40 grupos nuevos: vigilar el tiempo del primer *Archive refresh*.** (se descubren con `FBCYLWebScraper.fetch_competitions_ajax`, como en Admin).
-- El refresco baja solo los partidos que faltan (`fbcyl_match_ingest`, el mismo servicio que el scrape de la API), rellena su `DERIVED` y **no compara con ningún calendario** (FBCYL no lo tiene).
+- El refresco baja solo los partidos que faltan (`fbcyl_match_ingest`, el mismo servicio de ingesta), rellena su `DERIVED` y **no compara con ningún calendario** (FBCYL no lo tiene).
 - Para añadir otro grupo: una entrada más.
 
 ### Pausar una competición: `active: false`
@@ -158,7 +115,7 @@ La web se despliega sola en Vercel (integración nativa de GitHub, con una vista
 - La primera ejecución tras añadir un grupo carga **toda la temporada** de ese grupo (≈ 0,5 s por partido) y las siguientes solo lo nuevo, así que no pesa sobre el límite de 30 min del job; tras integrar el cambio, lanzar el workflow a mano una vez.
 - Grupos mantenidos hoy (2026/27, #437): LF Challenge (Liga Regular Único), **2ª FEB** Liga Regular «A» y «B», **3ª FEB** Liga Regular «A-B» (las colecciones se llaman `SEGUNDA_FEB_2026_2027_Liga_Regular_A`, `…_B` y `TERCERA_FEB_2026_2027_Liga_Regular_A-B`).
 - Cada grupo nuevo es una colección más en `live-packages` (una jornada por colección).
-- Si Atlas estuvo **pausado** por inactividad, hay que reanudarlo en Atlas (los síntomas son `unreachable` en `/api/v1/health/db`).
+- Si Atlas estuvo **pausado** por inactividad, hay que reanudarlo en Atlas (el síntoma es `unreachable`).
 ## Fuentes externas (ACB, FIBA, NCAA, Euroliga): catálogo, refresco y publicación (#884)
 
 ### Catálogo: entradas con `league` acb, fiba o ncaa (#884, épica #872)
@@ -488,7 +445,7 @@ Tras cada refresco del archivo (*Archive refresh*, arriba), `web-data.yml` ejecu
 - Secretos: `ARCHIVE_DEPLOY_KEY` y `PACKAGE_MASTER_KEY` (o `PACKAGE_PASSWORD`, ≥ 8 caracteres; los mismos de los paquetes live).
 - Sin el secreto el run falla (código 2).
 - **Mientras dure la beta** se envuelve también para el alcance `abierto` y el manifiesto publica su clave; cerrarla es `--closed` (y se corta rotando el alcance, como en los paquetes).
-- **Lo lee la web (#639)**: con `?data=local` (se recuerda en el navegador; `?data=api` lo apaga) el *Informe de equipo* se abre en el navegador desde `raw.githubusercontent.com` (CORS abierto), sin servidor; `VITE_DATA_BASE` (Vercel) cambia el anfitrión.
+- **Lo lee la web (#639)**: el *Informe de equipo* se abre en el navegador desde `raw.githubusercontent.com` (CORS abierto), sin servidor; `VITE_DATA_BASE` (Vercel) cambia el anfitrión.
 - Mientras la beta esté abierta usa la clave abierta del manifiesto, sin pedir nada.
 - Con `--closed` la página pide una **invitación**: el enlace `https://<web>/#invite=bl1.<clave>` (la misma `bl1.…` que genera `src.live_prep.invite`) la guarda en ese navegador y la quita de la dirección.
 - Una clave de club abre el análisis de su equipo y el scouting de todos; la de la competición, todo lo de ella.
@@ -499,7 +456,7 @@ Tras cada refresco del archivo (*Archive refresh*, arriba), `web-data.yml` ejecu
 ### talent-data.yml: rama talent-data (#878)
 
 - **Publicación de Talent (`talent-data.yml`, #878)**: rama propia `talent-data` (raw de GitHub) con un fichero sellado por competición y temporada (una fila por jugador, temporada, competición y equipo) y su `index.json`; sellado para el alcance `talent` y, durante la beta, también para `abierto` (la clave abierta va en el manifiesto; `--closed` la quita, como en `web-data`).
-- Corre tras cada *Archive refresh* o *Archive purge* (aunque sea rojo; si se cancela, no), al integrar un cambio de `src/` (menos `src/api`), `run_talent_data.py` o `config/competitions.json`, y a mano; **grupo de concurrencia propio**, así que no espera a `web-data` ni la retrasa.
+- Corre tras cada *Archive refresh* o *Archive purge* (aunque sea rojo; si se cancela, no), al integrar un cambio de `src/`, `run_talent_data.py` o `config/competitions.json`, y a mano; **grupo de concurrencia propio**, así que no espera a `web-data` ni la retrasa.
 - Restaura el archivo con `ARCHIVE_DEPLOY_KEY` (solo lectura) y **lee las plantillas** de la carpeta `rosters/` del repositorio privado `basketlab-archive-ext` con **`ARCHIVE_EXT_DEPLOY_KEY`** (clave de despliegue de lectura y escritura; aquí solo se lee: el único escritor de `rosters/` es el barrido, #905).
 - Mientras ese repositorio esté vacío se publica sin biografía (sin fecha de nacimiento, altura ni posición) y el run sale en verde.
 - Un fichero de plantillas ilegible o de otro formato **rompe el run** (publicar a todos sin fecha de nacimiento sin que nadie lo note es peor), y solo se publica si el build salió bien.
@@ -599,7 +556,7 @@ Dos cosas se despliegan por separado: **la web** (Vercel, al integrar el PR) y *
 | Tipo de cambio | Qué se despliega y cuándo | Quién lo dispara | Cómo se comprueba | Si sale mal |
 |---|---|---|---|---|
 | **Solo frontend** (páginas con datos ya publicados) | Vercel, al integrar | automático | vista previa del PR; tras integrar, la página abre | revertir el PR |
-| **Servicio o exportador** que da forma a un fichero de `web-data` (`src/` salvo `src/api`, `run_web_data.py`, `config/competitions.json`) | `Web data` al integrar (#781) y tras cada *Archive refresh*; calcula solo las secciones cuyo código cambió (#783) | automático (también a mano: *Run workflow*) | el run en verde y la sección en `index.json` de la rama `web-data`; el run dice qué secciones reutiliza | el run rojo **no publica nada a medias** (la rama conserva lo anterior): arreglo en un PR aparte, urgente, y relanzar |
+| **Servicio o exportador** que da forma a un fichero de `web-data` (`src/`, `run_web_data.py`, `config/competitions.json`) | `Web data` al integrar (#781) y tras cada *Archive refresh*; calcula solo las secciones cuyo código cambió (#783) | automático (también a mano: *Run workflow*) | el run en verde y la sección en `index.json` de la rama `web-data`; el run dice qué secciones reutiliza | el run rojo **no publica nada a medias** (la rama conserva lo anterior): arreglo en un PR aparte, urgente, y relanzar |
 | **Página nueva que lee una sección nueva** | Vercel al integrar, los datos después | automático | la entrada del menú, la tarjeta del resumen y la ruta **aparecen solas** cuando la competición tiene la sección en el manifiesto (`NavItem.requires`, `RequirePublished`, #780); antes están ocultas, sin «próximamente» | nada que revertir: mientras no haya datos, no se ve |
 | **Formato de los paquetes live** o de lo que lee la app | `Live packages` y la release de la app (viernes, `live-android-release.yml`) | a mano la primera vez | la lista de partidos de la app abre sin error | el modo vuelve a `legacy` mientras la app antigua siga en uso |
 | **Catálogo de competiciones** (`config/competitions.json`) | *Archive refresh* (primera carga con `only`), después `Web data` y `Live packages` | a mano la primera vez | la competición en el manifiesto y en la lista de la app | `"active": false` (no borra datos) |
@@ -630,12 +587,11 @@ Dos cosas se despliegan por separado: **la web** (Vercel, al integrar el PR) y *
 
 - **Comprobar a mano**: `cd frontend && npm audit --omit=dev` (la app live: `cd apps/live-android && npm audit --omit=dev`). (#526). Con una vulnerabilidad `high` o `critical` en producción se actualiza ya, sin esperar a Dependabot.
 
-## Memoria (servidor pequeño, 512 MB)
-Un documento de partido pesa ≈ 1 MB en memoria de Python y la app completa ≈ 170 MB en reposo (más: matplotlib +45, pandas +50). Medidas tomadas (issue #163), vigentes si alguien aloja la API en un servidor con poca RAM:
-- **Un solo worker** de uvicorn por defecto (`src/api/runtime.uvicorn_workers`; `WEB_CONCURRENCY` lo sube, tope 4).
+## Memoria (runner y equipos pequeños, 512 MB)
+Un documento de partido pesa ≈ 1 MB en memoria de Python: la publicación y el refresco corren en el runner de Actions y en máquinas pequeñas (desde #1199 no hay servidor). Medidas vigentes (issue #163):
 - `MALLOC_ARENA_MAX=2` (menos fragmentación) y `pip install --no-cache-dir` al instalar.
-- Listado de partidos con **proyección** (no cargar documentos completos), zonas de liga **en streaming** y caducidad (15 min) de los ZIP del informe semanal sin descargar.
-- **Diagnóstico**: poner `LOG_MEMORY=1` en el servicio; los logs mostrarán `WARNING basketlab.memory GET /ruta rss 412 MB (+90 MB)` para peticiones que suben ≥ 25 MB (`LOG_MEMORY_DELTA_MB`) o dejan el RSS ≥ 350 MB (`LOG_MEMORY_HIGH_MB`).
+- Listado de partidos con **proyección** (no cargar documentos completos) y zonas de liga **en streaming**.
+- **Diagnóstico**: `LOG_MEMORY=1` en los jobs que lo usen.
 - Regla de código: nunca `find({})` sin proyección sobre colecciones de partidos; iterar cursores/generadores en vez de materializar listas de documentos o tiros.
 Si aun así se supera el límite: más memoria.
 

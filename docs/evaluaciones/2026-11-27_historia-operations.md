@@ -101,3 +101,65 @@ Pasajes movidos tal cual de [OPERATIONS.md](../OPERATIONS.md) el 27/11/2026: cas
 ## Google Play: el keystore se creyó perdido (11/11/2026)
 
 - (el 11/11/2026 se creyó perdido: estaba solo en un Drive)
+
+# Servidor de la API, clave de administración y memoria del servidor (retirados en #1199, 27/11/2026)
+Lo que decía `docs/OPERATIONS.md` antes de eliminar la API, tal cual estaba (el estado actual está en OPERATIONS.md, «Sin servidor de API»).
+
+### Estado actual: servidor sin escrituras y ADMIN_API_KEY sin uso (#724)
+- **El servidor ya no recibe escrituras de la web (#724).**
+  - Se retiraron la página Administración, `DELETE /collections/{name}`, `POST /scrape/*`, `POST /historical/ingest*` y el servicio `basketlab-scraper`.
+  - **Cargar datos** es el refresco programado del archivo (*Archive refresh*, abajo) y **retirar una competición** es la purga (*Archive purge*).
+- `ADMIN_API_KEY` **no está definida en producción**, a propósito, y **ninguna ruta la usa hoy**: el entrenamiento del predictivo antiguo (`/analysis/elasticity/train`) se retiró con él (#853, el análisis predictivo vive ahora en el navegador y no escribe nada en el servidor).
+- La guarda (`require_admin`, `src/api/security.py`) se conserva como patrón para la próxima ruta de escritura y se prueba sobre una aplicación pequeña (`tests/test_admin_auth.py`); `tests/test_server_writes_retired.py` exige que no quede ninguna ruta que la pida.
+- En producción (`ENVIRONMENT=production`; este repositorio no aloja ninguna API, ver *Sin servidor alojado*) todas las lecturas y el cómputo sin persistir (informe de equipo, export PDF, informe semanal) funcionan; una ruta de escritura futura con la guarda respondería **503** («ADMIN_API_KEY no está configurada en el servidor») hasta que se defina la clave, y en **local** (sin `ENVIRONMENT=production`) estaría abierta.
+
+Para cargar o refrescar datos en local: `python run_archive.py pull` + `load` sobre un Mongo local y `python run_refresh.py --config config/competitions.json` contra él (ver *Refrescar el archivo sin Atlas*); ya no hay página ni ruta de servidor para ello.
+
+### Sin servidor alojado: la API solo sirve para desarrollo, pruebas y e2e (#334)
+- **BasketLab no depende de ninguna plataforma de alojamiento de la API ni se integra con ella** (Render se retiró del proyecto el 05/11/2026): no hay `render.yaml`, ni job de despliegue en CI, ni comprobación posterior, y `GET /api/v1/health` informa del commit solo si el entorno define `GIT_COMMIT`.
+- La web publicada lee los ficheros de `web-data` (el valor por defecto desde #745) y la API (`python run_api.py`) **se conserva a propósito para desarrollo local, pruebas y el e2e** (decisión del 05/11/2026; eliminarla es una decisión aparte: el rework del predictivo, #641, se resolvió sin ella en #841).
+- Quien aloje la API necesita las variables de abajo y `VITE_API_BASE` en la web para que su respaldo la use.
+- **Fuera del repositorio** (a mano, GitHub → *Settings → Secrets and variables → Actions*): borrar la variable `RENDER_API_URL` si existe (nada la lee ya) y, si alguna vez se definieron, los secretos `RENDER_DEPLOY_HOOK_URL` y `RENDER_SCRAPER_DEPLOY_HOOK_URL` (a 05/11/2026 no hay ninguno).
+
+### Clave de administración ADMIN_API_KEY: activar, rotar y diagnosticar
+
+### Activar la clave (paso a paso)
+Hoy ninguna ruta la usa. Hacerlo cuando exista una ruta de escritura con `Depends(require_admin)` y se quiera usarla en producción.
+
+1. **Generar una clave larga y aleatoria** (en cualquier terminal; no la pegues en el chat ni la commitees):
+   - PowerShell: `[Convert]::ToBase64String((1..32 | ForEach-Object { Get-Random -Maximum 256 }))`
+   - o Python: `python -c "import secrets; print(secrets.token_urlsafe(32))"`
+   Guárdala en un gestor de contraseñas.
+2. **Entorno del servidor de la API**: añadir `ADMIN_API_KEY` = la clave.
+3. (El servicio `basketlab-scraper` se retiró en #724: solo la API tiene la clave; el frontend la envía en `X-Admin-Key`.)
+4. **Reiniciar** el servicio para que lea la variable.
+5. **Introducir la clave en la app**: la web ya no tiene ningún campo para ella (la página Admin se retiró en #724 y el entrenamiento del predictivo en #852); por `curl` basta la cabecera `X-Admin-Key`.
+6. **Comprobar** con la ruta nueva: sin la cabecera `X-Admin-Key` responde **401**; con la clave correcta pasa la guarda (cualquier otro código, pero ya no 401 ni 503). Usa una petición que no destruya nada al probar.
+
+### Rotar o retirar la clave
+- **Rotar**: cambiar el valor en el entorno del servidor, reiniciar y volver a guardarla donde se use. Las claves antiguas dejan de valer al instante (se lee en cada petición).
+- **Retirar** (volver al estado actual): borrar la variable y reiniciar → las rutas con guarda vuelven a responder 503.
+
+### Diagnóstico: 401, 503 y CORS (tabla de síntomas)
+| Síntoma | Causa | Solución |
+|---|---|---|
+| 503 "ADMIN_API_KEY no está configurada" | variable sin definir en ese servicio (producción) | Estado actual esperado; pasos de arriba para activarla |
+| 401 "Clave de administración requerida o incorrecta" | sin la cabecera `X-Admin-Key` o clave distinta | Enviar la clave correcta |
+| 503 "Base de datos no disponible: …" (o 500 en versiones antiguas) en cualquier endpoint con datos | `MONGODB_CONNECTION_STRING` sin definir, credenciales de Atlas rechazadas, usuario sin permisos o IP no permitida | Abrir `/api/v1/health/db` (detalle debajo de la tabla) |
+| CORS / `OPTIONS` bloqueado | `ALLOWED_ORIGINS` no incluye la URL de Vercel | Ajustar `ALLOWED_ORIGINS` (la cabecera `X-Admin-Key` está permitida) |
+| Funciona en local pero no en producción | en local no hay guarda (sin `ENVIRONMENT=production`) | Esperado |
+
+Base de datos no disponible (503 «Base de datos no disponible: …»):
+- Abrir `/api/v1/health/db`: `error` = `missing_config` / `auth_failed` / `not_authorized` / `unreachable` / `invalid_config` y `hint`.
+- Revisar las variables de entorno del servicio y Atlas → Database Access / Network Access (`0.0.0.0/0` para Render free).
+
+
+### Memoria (servidor pequeño, 512 MB)
+Un documento de partido pesa ≈ 1 MB en memoria de Python y la app completa ≈ 170 MB en reposo (más: matplotlib +45, pandas +50). Medidas tomadas (issue #163), vigentes si alguien aloja la API en un servidor con poca RAM:
+- **Un solo worker** de uvicorn por defecto (`src/api/runtime.uvicorn_workers`; `WEB_CONCURRENCY` lo sube, tope 4).
+- `MALLOC_ARENA_MAX=2` (menos fragmentación) y `pip install --no-cache-dir` al instalar.
+- Listado de partidos con **proyección** (no cargar documentos completos), zonas de liga **en streaming** y caducidad (15 min) de los ZIP del informe semanal sin descargar.
+- **Diagnóstico**: poner `LOG_MEMORY=1` en el servicio; los logs mostrarán `WARNING basketlab.memory GET /ruta rss 412 MB (+90 MB)` para peticiones que suben ≥ 25 MB (`LOG_MEMORY_DELTA_MB`) o dejan el RSS ≥ 350 MB (`LOG_MEMORY_HIGH_MB`).
+- Regla de código: nunca `find({})` sin proyección sobre colecciones de partidos; iterar cursores/generadores en vez de materializar listas de documentos o tiros.
+Si aun así se supera el límite: más memoria.
+

@@ -4,7 +4,7 @@ Actualizar al cerrar cada entrega (regla de [CLAUDE.md](../CLAUDE.md)). Estado d
 ## Mapa del documento
 - `## Pendiente (fases abiertas)` -> qué fases quedan por hacer o cerrar (live, app, reglas, Talent, UI, predictivo, diferidos)
 - `## Complejidad` -> qué funciones de `src/` superan el umbral de complejidad y por qué no se tocan
-- `## Deuda técnica` -> ficheros >500 líneas, duplicación, límites de la API
+- `## Deuda técnica` -> ficheros >500 líneas, duplicación, límites conocidos
 - `## Límites conocidos` -> qué no cubre el sistema (datos, FBCYL, baja/racha, Talent)
 - `## Backlog` -> dónde está la lista de tareas
 - `## Hecho (resumen)` -> una línea por fase terminada y enlace a la historia detallada
@@ -103,8 +103,8 @@ Actualizar al cerrar cada entrega (regla de [CLAUDE.md](../CLAUDE.md)). Estado d
 - **Casos que antes caían a la API y ahora son error** (huecos de capacidad del lado local, candidatos a cubrir al publicar): IN/OUT de FBCYL y de una jugadora que no está en la publicación, comparación por tramo sin fecha, ventana de evolución fuera de 2-15 partidos, multifase con alguna fase sin publicar, partido sin análisis publicado y competición exportada sin filas de jugadoras.
 - **#447 queda sin objeto** (activar `ADMIN_API_KEY` para dar de alta colecciones desde la web) y #157–#159 siguen aparcadas.
 
-### 9d. Retirar la API (épica #1199, decidido el 27/11/2026)
-- **Se elimina `src/api`, `run_api.py` y el modo `?data=api`** en un PR de cinco commits (#1200 web, #1201 e2e y fixtures, #1202 borrar la API con auditoría de cobertura, #1203 servicios huérfanos, #1204 docs). Mediciones, riesgos y alcance en [la evaluación](evaluaciones/2026-11-27_eliminar-la-api.md): ≈ −25 % del tiempo de la suite, ≈ 3.300 líneas de producción y 7.700 de tests, `fastapi` y `uvicorn`.
+### 9d. API retirada (épica #1199, hecho el 27/11/2026)
+- Se eliminaron `src/api`, `run_api.py` y el modo `?data=api` (web sin conmutadores, e2e sobre la publicación real, 32 ficheros de tests tras auditar la cobertura única —60 líneas, cubiertas con tests directos— y 9 módulos huérfanos): −12.000 líneas de producción y tests, `fastapi`/`uvicorn`/`httpx` fuera. Mediciones y alcance en [la evaluación](evaluaciones/2026-11-27_eliminar-la-api.md).
 - **Queda fuera**: el oráculo Python de los vectores (≈ 2.137 líneas) y que TS sea canónico con vectores congelados como golden files (#641).
 
 ### 10. Dependencias y seguridad (#525)
@@ -113,8 +113,8 @@ Actualizar al cerrar cada entrega (regla de [CLAUDE.md](../CLAUDE.md)). Estado d
 ## Complejidad (#202, 10/11/2026)
 - Con un contador propio de complejidad ciclomática hay **9 funciones de `src/` por encima de 25** (eran 14; 31 por encima de 20).
 - Partidas en #202: `publish_web_data`/`_publish_sections`, `scout_team_scopes`, `get_rotation_analysis` y `group_page`.
-- Quedan: las de la API de desarrollo (`_recompute_derived`, `calculate_stat_value`, `_extract_shots` del informe semanal, `court_zones.plot_zones`;
-- no se tocan mientras la API se conserve, #334/#641), `fbcyl_adapter._lines` (motor live: tras la release del viernes) y dos funciones cortas y planas cuya complejidad la dan las comprensiones de lista (`team_points_by_origin`, 26 líneas; `recording_report.summarize`, 27), que no se trocean para bajar un número.
+- Quedan las de los servicios que alimentan los vectores y la publicación (`_recompute_derived`, `court_zones.plot_zones`;
+- se revisan con el oráculo Python, #641), `fbcyl_adapter._lines` (motor live: tras la release del viernes) y dos funciones cortas y planas cuya complejidad la dan las comprensiones de lista (`team_points_by_origin`, 26 líneas; `recording_report.summarize`, 27), que no se trocean para bajar un número.
 
 ## Deuda técnica (>500 líneas; dividir al tocarlos)
 - La lista al día la da el informe del CI (`scripts/duplicate_code.py`, sección «Tamaño», #452/#112): el 10/11/2026 son 13 ficheros —Python: `database/aggregation/fbcyl_pipeline.py` 1252 (#203, datos declarativos) `scraper/feb_scraper.py` 856 `services/rotation_service.py` 730 `shotcharts/court_zones.py` 663 `_weekly_report_helpers.py` 651 `shotcharts/detailed_zones.py` 630
@@ -126,7 +126,7 @@ Actualizar al cerrar cada entrega (regla de [CLAUDE.md](../CLAUDE.md)). Estado d
 - IN/OUT y quintetos (bloque 6, #200: `pbp_stat_counters`; `inout_calculator` 259 líneas y `lineup_stats_calculator` 451, cobertura 95 % y 87 %; `repository_inout` 595 → 384 líneas con `get_player_in_out_stats` partido en `_inout_game_lookup`, cobertura 9 → 49 %;
 - el análisis «dos jugadoras juntas» y el de una jugadora con una compañera, sin ningún consumidor, se borraron con el endpoint `/together`, el mixin de ayudas y el ayudante del repositorio que solo ellos usaban (≈ 1.160 líneas con sus tests), y `repository_inout` quedó en 148;
 - #818 arregló el IN/OUT de FBCYL, que dejaba a cero el lado «con la jugadora en pista») y `GAME_SECONDS` escrito una sola vez fuera de `live_core`, vigilado por `test_game_seconds_single_source.py`; los literales de `live_core/boxscore.py` y `lineups.py` esperan a la release del viernes y la lista del test solo puede encogerse). #452 se cierra con el informe de tamaño en el CI.
-- Otros: la API solo tiene una clave de administración (sin usuarios/roles ni protección de lecturas; #115)
+- Otros: no hay cuentas ni roles (el modelo de acceso es #591/#153); la API se eliminó (#1199)
 
 ## Límites conocidos
 - Esquinas casi vacías en el sistema de 10 zonas (dato de origen) FBCYL en directo hecho (#446, 9/11/2026: motor, paquetes y app; cerrado el 26/11/2026 por decisión del usuario, que seguirá partidos reales y dará feedback en issues nuevos;
