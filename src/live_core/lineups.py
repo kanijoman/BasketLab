@@ -3,7 +3,8 @@
 ``LiveGame`` owns a ``LineupTracker`` and calls it as it applies the events: ``tick`` credits the game-seconds that pass to the
 quintet each team has on court (only while it has exactly five), ``points`` gives a made basket to the scorer's quintet (for) and
 the rival's (against) and to the +/- of every player on court (his team's points minus the rival's), and ``refresh`` notices when the
-five on court change and starts the stint of the new quintet.
+five on court change and starts the stint of the new quintet. The game-seconds a team spends with 4 or 6 players on court (the feed lost a
+substitution) credit no quintet: they are counted in ``lineup_gap`` so that a gap is visible instead of silent (#1124).
 
 The snapshot carries, per team, every quintet with its ``seconds``, ``pts_for``, ``pts_against`` and ``stints`` (the most played
 first) and the quintet on court now with the same numbers of ITS CURRENT STINT plus ``since`` (the game-second it went on court).
@@ -29,6 +30,7 @@ class LineupTracker:
         self._teams = list(team_ids)
         self._lineups: Dict[str, Dict[Key, Dict[str, int]]] = {tid: {} for tid in self._teams}
         self._now: Dict[str, Optional[Dict[str, Any]]] = {tid: None for tid in self._teams}
+        self._gap: Dict[str, int] = {tid: 0 for tid in self._teams}   # game-seconds with no valid five on court (a substitution FEB did not write, #1124)
 
     def _on_court(self, players: Dict[str, Any], team_id: str) -> Key:
         return tuple(sorted(pid for pid, p in players.items() if p.on_court and p.team_id == team_id))
@@ -51,9 +53,13 @@ class LineupTracker:
         """``seconds`` of game time have passed with the quintets as they are."""
         for tid in self._teams:
             current = self._now[tid]
-            if current is not None and seconds > 0:
-                current["seconds"] += seconds
-                self._lineups[tid][current["key"]]["seconds"] += seconds
+            if seconds <= 0:
+                continue
+            if current is None:
+                self._gap[tid] += seconds
+                continue
+            current["seconds"] += seconds
+            self._lineups[tid][current["key"]]["seconds"] += seconds
 
     def points(self, players: Dict[str, Any], scorer: str, value: int) -> None:
         """A basket of ``value`` points by ``scorer``'s team."""
@@ -78,7 +84,7 @@ class LineupTracker:
         now = {tid: ({"players": list(c["key"]), "since": c["since"], "seconds": c["seconds"],
                       "pts_for": c["pts_for"], "pts_against": c["pts_against"]} if c else None)
                for tid, c in self._now.items()}
-        return {"lineups": lineups, "lineup_now": now}
+        return {"lineups": lineups, "lineup_now": now, "lineup_gap": dict(self._gap)}
 
 
 def lineup_key(players: Sequence[str]) -> str:

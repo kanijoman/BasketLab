@@ -116,9 +116,10 @@ def fatigue_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
     out = []
     if _stoppage_open(snap):
         return out   # not said yet, not lost: the key is only stored when the alert is emitted
-    for pid, p in snap["players"].items():
-        if p["team_id"] != ctx.own_team_id or not p["on_court"]:
-            continue
+    on_court = [(pid, p) for pid, p in snap["players"].items() if p["team_id"] == ctx.own_team_id and p["on_court"]]
+    if len(on_court) != 5:
+        return out   # a substitution the feed lost (4 or 6 on court): who is tired cannot be said, and it is not stored, so it comes back with a valid five (#1124)
+    for pid, p in on_court:
         index, parts = fatigue_index(p["stint"], p["minutes"], snap["elapsed"],
                                      ctx.baselines.get(pid), ctx.config)
         level = _level(index + _decided_offset(snap, ctx), ctx.config, p["stint"])

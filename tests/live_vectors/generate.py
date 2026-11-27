@@ -188,6 +188,8 @@ def advice_sequences():
              for e, s, m in [(1200, 720, 1100), (1210, 730, 1110), (1440, 960, 1400), (1500, 20, 1420)]]
     for s in tired:
         s["players"]["p"].update(name="Ana", team_id=OWN)
+        for i in range(4):      # fatigue needs the five of the own team on court (#1124): the other four are fresh
+            s["players"][f"f{i}"] = {**player("g1", True, stint=60, minutes=300), "name": f"F{i}", "team_id": OWN}
     out.append(case("advice.sequence", {"own": OWN, "rival": RIVAL, "snapshots": tired,
                                         "baselines": {"p": {"avg_stint": 360, "avg_min": 1500, "p90_min": 2000}}}))
 

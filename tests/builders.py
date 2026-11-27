@@ -27,15 +27,27 @@ def _player(name, team, pf=0, on_court=True, minutes=0, stint=0, pf_by_period=No
             "stint": stint, "pf": pf, "pts": 0, "pf_by_period": pf_by_period or {}}
 
 
+def _with_a_valid_five(players):
+    """A snapshot that names some own players on court describes a game whose own five is valid (the engine does not say who is tired of a team with 4 or 6 on court, #1124): the
+    missing ones are fresh players of the own team. One that names none, or already has five or more, is left as it is."""
+    players = dict(players or {})
+    own = [p for p in players.values() if p["team_id"] == OWN and p["on_court"]]
+    if own and len(own) < 5:
+        for i in range(5 - len(own)):
+            players[f"_fresh{i}"] = _player(f"Fresh{i}", OWN, minutes=0, stint=0)
+    return players
+
+
 def snap(elapsed=600, period=1, players=None, fouls_by_period=None, log=None):
     fouls_by_period = fouls_by_period or {}
+    players = _with_a_valid_five(players)
     return {
         "period": period, "remaining": 300, "elapsed": elapsed, "last_num": 1,
         "score": {OWN: 0, RIVAL: 0},
         "teams": {tid: {"name": tid, "fouls_game": sum(fouls_by_period.get(tid, {}).values()),
                         "timeouts": [], "fouls_by_period": fouls_by_period.get(tid, {}),
                         "stats": {}} for tid in (OWN, RIVAL)},
-        "players": players or {}, "log": log or [],
+        "players": players, "log": log or [],
     }
 
 

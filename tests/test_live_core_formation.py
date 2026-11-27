@@ -78,6 +78,8 @@ def test_the_minimum_or_more_is_legal(marks):
 
 def test_fewer_than_five_on_court_is_a_substitution_in_progress_not_a_violation():
     s, roster = board([NO, NO, NO, NO])          # the 5th has not entered yet
+    for pid in [k for k in s["players"] if k.startswith("_fresh")]:      # ``snap`` completes a short five: here the four are the point
+        del s["players"][pid]
     eng = engine(roster)
     assert formation_alerts(eng, s) == [] and formation_alerts(eng, s) == []
 
