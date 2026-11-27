@@ -14,7 +14,7 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 HISTORY = ("docs/evaluaciones/",)
 # the docs that RECORD the decision and explain how to clean up outside the repository may name the platform in prose; code, workflows and configuration may not
-DECISION_DOCS = {"CLAUDE.md", "README.md", "docs/ARCHITECTURE.md", "docs/OPERATIONS.md", "docs/ROADMAP.md", "docs/TESTING.md"}
+DECISION_DOCS = {"CLAUDE.md", "README.md", "docs/DECISIONS.md", "docs/ARCHITECTURE.md", "docs/OPERATIONS.md", "docs/ROADMAP.md", "docs/TESTING.md"}
 SKIP = {"tests/test_no_render.py", ".test_durations"}
 # «render» as the verb or the type of the code (an HTML report, a React `Render` type, a `// Render` section), not the platform
 VERB = {"src/api/routers/reports.py", "frontend/src/lib/weeklyReport.ts", "frontend/src/pages/LineupsPage.tsx", "frontend/src/pages/RotacionesPage.tsx"}

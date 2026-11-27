@@ -59,6 +59,7 @@ def test_paths_quoted_in_the_docs_exist():
 def test_claude_md_is_compact_and_has_the_definition_of_done():
     text = _text(CLAUDE)
     assert len(text.splitlines()) <= 170, "CLAUDE.md must stay compact: move detail to docs/"
+    assert len(text.encode("utf-8")) <= 19_000, "CLAUDE.md is loaded in every session: its budget is bytes (~4.7k tokens), not lines; move detail to docs/"
     assert "Definición de hecho" in text
     for name in CORE_DOCS:
         assert f"docs/{name}" in text, f"CLAUDE.md must point to docs/{name}"
