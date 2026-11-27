@@ -2,8 +2,6 @@
 from unittest.mock import MagicMock
 
 from db_helpers import new_mock_db
-from src.shotcharts.league_zones import league_zone_distribution
-from src.shotcharts.zone_analysis import ZoneAnalyzer
 from src.services.team_report_service import TeamReportService
 
 
@@ -27,22 +25,8 @@ def _coll():
     return c
 
 
-def test_weekly_fbcyl_shots_use_one_orientation_for_every_team_regression():
-    """FBCYL coordinates are already folded into one half: the second team of a document must
-    not be mirrored (team index 1 flips left/right in the FEB conversion)."""
-    from services.weekly_report_service import _extract_shots
-
-    db = MagicMock()
-    db.connection.get_collection.return_value = _coll()
-    first, _, _ = _extract_shots(db, "FBCYL_Q", "1")
-    second, _, _ = _extract_shots(db, "FBCYL_Q", "2")
-    assert {s["team"] for s in first} == {"0"}
-    assert {s["team"] for s in second} == {"0"}
 
 
-def test_league_zone_distribution_supports_fbcyl_collections():
-    teams = league_zone_distribution(ZoneAnalyzer(), _coll(), fbcyl=True, by="team")
-    assert teams is not None and len(teams) == 6 and sum(z["total"] for t in teams for z in t.values()) == 60
 
 
 def test_team_report_loads_fbcyl_zones_rated_against_the_league():

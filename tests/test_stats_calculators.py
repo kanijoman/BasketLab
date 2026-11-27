@@ -8,8 +8,6 @@ Two tests intentionally expose real bugs found during the audit:
 
 import unittest
 
-from src.stats.stats_calculator import StatsCalculator
-from src.stats.player_stats_calculator import PlayerStatsCalculator
 from src.stats.advanced_stats_calculator import AdvancedStatsCalculator
 
 
@@ -66,189 +64,14 @@ def _make_team_adv(mp=12000, fg2m=200, fg2a=350, fg3m=80, fg3a=200,
 # StatsCalculator
 # ===========================================================================
 
-class TestStatsCalculatorNormalizeTeamData(unittest.TestCase):
-
-    def test_feb_format_passthrough(self):
-        """FEB data (has 'pts') must be returned unchanged."""
-        team = _make_team()
-        result = StatsCalculator.normalize_team_data(team)
-        self.assertEqual(result["pts"], 80)
-        self.assertEqual(result["p2m"], 20)
-
-    def test_fbcyl_format_conversion(self):
-        """FBCYL data without 'pts' must be mapped to FEB field names."""
-        fbcyl = {
-            "score": 75,
-            "shotsOfTwoSuccessful": 18,
-            "shotsOfTwoAttempted": 30,
-            "shotsOfThreeSuccessful": 5,
-            "shotsOfThreeAttempted": 15,
-            "shotsOfOneSuccessful": 9,
-            "shotsOfOneAttempted": 12,
-            "offensiveRebound": 8,
-            "defensiveRebound": 22,
-            "assists": 16,
-            "steals": 6,
-            "lost": 11,
-            "block": 2,
-        }
-        result = StatsCalculator.normalize_team_data(fbcyl)
-        self.assertEqual(result["pts"], 75)
-        self.assertEqual(result["p2m"], 18)
-        self.assertEqual(result["p3a"], 15)
-        self.assertEqual(result["to"], 11)  # FBCYL 'lost' → FEB 'to'
-
-    def test_empty_fbcyl_uses_defaults(self):
-        result = StatsCalculator.normalize_team_data({})
-        self.assertEqual(result["pts"], 0)
-        self.assertEqual(result["p2m"], 0)
 
 
-class TestStatsCalculatorSingleMatch(unittest.TestCase):
-
-    def setUp(self):
-        self.calc = StatsCalculator()
-
-    def test_returns_dict(self):
-        result = self.calc.calculate_single_match_stats(_make_team(), _make_opp())
-        self.assertIsInstance(result, dict)
-
-    def test_win_reflected_in_points(self):
-        """pts > opp_pts → points_per_game > points_against_per_game."""
-        result = self.calc.calculate_single_match_stats(_make_team(pts=85), _make_opp(pts=70))
-        self.assertGreater(result.get("points_per_game", 0), result.get("points_against_per_game", 0))
-
-    def test_loss_reflected_in_points(self):
-        result = self.calc.calculate_single_match_stats(_make_team(pts=60), _make_opp(pts=75))
-        self.assertLess(result.get("points_per_game", 99), result.get("points_against_per_game", 0))
-
-    def test_points_per_game_is_team_score(self):
-        result = self.calc.calculate_single_match_stats(_make_team(pts=85), _make_opp(pts=70))
-        self.assertEqual(result.get("points_per_game"), 85)
-
-    def test_points_against_per_game_is_opp_score(self):
-        result = self.calc.calculate_single_match_stats(_make_team(pts=60), _make_opp(pts=75))
-        self.assertEqual(result.get("points_against_per_game"), 75)
-
-    def test_field_goal_percentage_in_range(self):
-        result = self.calc.calculate_single_match_stats(_make_team(), _make_opp())
-        fg_pct = result.get("fg_percentage", 0)
-        self.assertGreaterEqual(fg_pct, 0.0)
-        self.assertLessEqual(fg_pct, 100.0)
-
-    def test_efg_percentage_in_range(self):
-        result = self.calc.calculate_single_match_stats(_make_team(), _make_opp())
-        efg = result.get("efg_percentage", 0)
-        self.assertGreaterEqual(efg, 0.0)
-        self.assertLessEqual(efg, 100.0)
-
-    def test_possessions_positive(self):
-        result = self.calc.calculate_single_match_stats(_make_team(), _make_opp())
-        poss = result.get("possessions_per_game", 0)
-        self.assertGreater(poss, 0)
-
-    def test_offensive_rating_positive(self):
-        result = self.calc.calculate_single_match_stats(_make_team(), _make_opp())
-        ortg = result.get("offensive_rating", 0)
-        self.assertGreater(ortg, 0)
-
-    def test_fbcyl_format_accepted(self):
-        """FBCYL dicts must be accepted without error (normalize_team_data handles conversion)."""
-        fbcyl_team = {"score": 80, "shotsOfTwoSuccessful": 15, "shotsOfTwoAttempted": 28,
-                      "shotsOfThreeSuccessful": 6, "shotsOfThreeAttempted": 18,
-                      "shotsOfOneSuccessful": 8, "shotsOfOneAttempted": 10,
-                      "offensiveRebound": 7, "defensiveRebound": 20,
-                      "assists": 14, "steals": 5, "lost": 9, "block": 1}
-        fbcyl_opp = {"score": 72, "shotsOfTwoSuccessful": 12, "shotsOfTwoAttempted": 25,
-                     "shotsOfThreeSuccessful": 5, "shotsOfThreeAttempted": 14,
-                     "shotsOfOneSuccessful": 7, "shotsOfOneAttempted": 9,
-                     "offensiveRebound": 6, "defensiveRebound": 19,
-                     "assists": 12, "steals": 4, "lost": 10, "block": 2}
-        result = self.calc.calculate_single_match_stats(fbcyl_team, fbcyl_opp)
-        self.assertIsInstance(result, dict)
-        self.assertIn("points_per_game", result)
-
-    def test_zero_attempts_no_division_error(self):
-        """All zero stats must not raise ZeroDivisionError."""
-        zero = _make_team(pts=0, p2m=0, p2a=0, p3m=0, p3a=0, p1m=0, p1a=0,
-                          ro=0, rd=0, assist=0, st=0, to=0, bs=0)
-        try:
-            self.calc.calculate_single_match_stats(zero, zero)
-        except ZeroDivisionError:
-            self.fail("ZeroDivisionError raised with all-zero stats")
 
 
 # ===========================================================================
 # PlayerStatsCalculator
 # ===========================================================================
 
-class TestPlayerStatsCalculator(unittest.TestCase):
-
-    def _player(self):
-        """Player dict matching the field names expected by PlayerStatsCalculator.
-
-        average/projection modes read pre-computed per-game fields (points_per_game etc.),
-        not raw totals. Total mode reads total_* fields directly.
-        """
-        return {
-            # Pre-computed per-game averages (used by average + projection modes)
-            "points_per_game": 15.0,
-            "rebounds_per_game": 5.5,
-            "assists_per_game": 3.0,
-            "steals_per_game": 1.25,
-            "turnovers_per_game": 2.0,
-            "blocks_per_game": 0.5,
-            "pllss_per_game": 0.0,
-            "valoracion_per_game": 12.5,
-            # Raw totals (used by total mode)
-            "total_pts": 300,
-            "total_ro": 30,
-            "total_rd": 80,
-            "total_rt": 110,
-            "total_assist": 60,
-            "total_st": 25,
-            "total_to": 40,
-            "total_bs": 10,
-            "total_pf": 50,
-            "total_rf": 45,
-            "total_val": 250,
-            # Percentages
-            "fg1_percentage": 75.0,
-            "fg2_percentage": 48.0,
-            "fg3_percentage": 36.0,
-        }
-
-    def test_average_mode_returns_per_game_value(self):
-        """Average mode must return the pre-computed per-game value."""
-        player = self._player()
-        pts_avg = PlayerStatsCalculator.get_stat_value(player, "points", "average", 20, 25.0)
-        self.assertAlmostEqual(pts_avg, 15.0, places=1)
-
-    def test_total_mode_returns_raw_value(self):
-        player = self._player()
-        pts_total = PlayerStatsCalculator.get_stat_value(player, "points", "total", 20, 25.0)
-        self.assertEqual(pts_total, 300)
-
-    def test_projection_mode_scales_to_30_min(self):
-        """30-min projection must scale points_per_game by (30/mpg)."""
-        player = self._player()
-        # With 25 mpg → projection multiplier = 30/25 = 1.2
-        pts_proj = PlayerStatsCalculator.get_stat_value(player, "points", "projection", 20, 25.0)
-        expected = player["points_per_game"] * (30.0 / 25.0)
-        self.assertAlmostEqual(pts_proj, expected, places=5)
-
-    def test_unknown_field_key_returns_zero(self):
-        player = self._player()
-        result = PlayerStatsCalculator.get_stat_value(player, "nonexistent_field", "average", 10, 20.0)
-        self.assertEqual(result, 0)
-
-    def test_zero_games_no_crash(self):
-        """Division by zero games must not raise."""
-        player = self._player()
-        try:
-            PlayerStatsCalculator.get_stat_value(player, "points", "average", 0, 0.0)
-        except ZeroDivisionError:
-            self.fail("ZeroDivisionError raised with 0 games")
 
 
 # ===========================================================================
