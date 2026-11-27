@@ -8,6 +8,7 @@ Doc solo para Claude. Lo decidido y no re-debatible, con su razón, fecha y exce
 
 ## Producto y plataforma (con fecha o issue)
 
+- **ratings con posesiones reales, ritmo por 40 minutos (26/11/2026, #1154, #1157): ORtg/DRtg y las tasas por posesión dividen entre la cuenta real del partido; solo el ritmo (`pace_possessions`) se escala a 40 minutos; Talent usa estadísticas por 40 minutos. Antes una prórroga inflaba ORtg/DRtg un 12,5 %.**
 - **app live: release cada viernes por la mañana (puede haber partidos viernes tarde/noche) con todo lo integrado, automática (`live-android-release.yml`); el staff actualiza con el botón de la app** (ver OPERATIONS)
 - **acceso a los paquetes live por alcances (#410): abierto en la beta, clave después sin recifrar; `access.mode` queda en `legacy` hasta la release de la app que lee el índice v2 y entonces pasa a `scoped` (OPERATIONS)**
 - **API conservada para desarrollo y pruebas (05/11/2026, #334): `src/api` y `run_api.py` se quedan (tests, e2e, `?data=api`) sin alojamiento; eliminarla es una decisión aparte (el rework del predictivo se resolvió sin ella, #841, y ya no la retiene)**
