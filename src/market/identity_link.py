@@ -146,13 +146,38 @@ def club_words(club: Any) -> Set[str]:
     return {w for w in _plain(club) if len(w) > 1 and w not in _PARTICLES and w not in _GENERIC_CLUB_WORDS}
 
 
+_BASKETBALL_WORDS = frozenset({"CB", "BC", "BALONCESTO", "BASKET", "BASQUET", "BASKETBALL"})
+
+
+def _club_kind(club: Any) -> Set[str]:
+    """The kind of club its name says (``CB`` / ``BALONCESTO`` are one: basketball; ``C.D.``, ``U.D.``... another), with the initials written apart (``C.D.``) put together."""
+    kinds, run = set(), ""
+    for word in [*_plain(club), ""]:
+        if len(word) == 1:
+            run += word
+            continue
+        for token in (run, word):
+            if token in _GENERIC_CLUB_WORDS:
+                kinds.add("BASKETBALL" if token in _BASKETBALL_WORDS else token)
+        run = ""
+    return kinds
+
+
+def _same_kind(mine: Any, theirs: Any) -> bool:
+    """A name that says its kind cannot be the club of another kind: the kinds, when both have one, must have something in common."""
+    a, b = _club_kind(mine), _club_kind(theirs)
+    return not a or not b or bool(a & b)
+
+
 def _club_match(mine: Iterable[str], theirs: Iterable[str]) -> List[str]:
     """The words that corroborate the club, of the pair of clubs with most: ``CLUB_MIN_SHARED`` in common, or every distinctive word of one of the two names in the other (``BALONCESTO LA FLECHA``); empty if none."""
     best: Set[str] = set()
-    for a in map(club_words, mine):
-        for b in map(club_words, theirs):
+    for mine_name in mine:
+        for theirs_name in theirs:
+            a, b = club_words(mine_name), club_words(theirs_name)
             shared = a & b
-            if shared and (len(shared) >= CLUB_MIN_SHARED or shared in (a, b)) and len(shared) > len(best):
+            enough = len(shared) >= CLUB_MIN_SHARED or (shared in (a, b) and _same_kind(mine_name, theirs_name))
+            if shared and enough and len(shared) > len(best):
                 best = shared
     return sorted(best)
 
