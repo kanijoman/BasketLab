@@ -5,7 +5,7 @@ from typing import Optional, Dict, Callable
 import re
 from urllib.parse import parse_qs, urlsplit
 
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception, retry_if_exception_type
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception
 
 from .constants import DEFAULT_TIMEOUT, DEFAULT_HEADERS
 
