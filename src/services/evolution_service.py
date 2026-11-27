@@ -14,6 +14,7 @@ if TYPE_CHECKING:
     from database import MongoDBHandler
 
 from src.database.aggregation.fbcyl_date_expr import parse_day_stages
+from src.database.aggregation.fbcyl_possession_expr import team_possessions
 from src.database.aggregation.pipeline_team_stats import TeamStatsPipelineMixin
 from utils.collection_utils import is_fbcyl as _is_fbcyl
 from src.live_core.four_factors import FT_POSSESSION_COST
@@ -390,6 +391,9 @@ class EvolutionService:
                     "opp_stl":  {"$cond": [{"$eq": ["$teamIndex", 0]}, "$t1_entry.data.steals",                  "$t0_entry.data.steals"]},
                     "opp_tov":  {"$cond": [{"$eq": ["$teamIndex", 0]}, "$t1_entry.data.lost",                    "$t0_entry.data.lost"]},
                     "opp_blk":  {"$cond": [{"$eq": ["$teamIndex", 0]}, "$t1_entry.data.block",                   "$t0_entry.data.block"]},
+                    # Exact possessions of the game, as the season tables read them (#432): ``DERIVED`` or, without it, the estimate of the box (#1155)
+                    "poss":     team_possessions("$teamIndex", "$stats.teams"),
+                    "opp_poss": {"$cond": [{"$eq": ["$teamIndex", 0]}, team_possessions(1, "$t1_entry"), team_possessions(0, "$t0_entry")]},
                 }
             },
             {"$sort": {"game_date": 1}},

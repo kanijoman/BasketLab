@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildGames, buildRatings, gamePace, gamesOf, matchupPace } from './gameLog'
+import { buildGames, buildRatings, gamePace, gamePossessions, gamesOf, matchupPace } from './gameLog'
 import { TeamRatings } from './teamRatings'
 import { fbcyl, lfChallenge, lfChallengeCalendar, primera } from '@/test/forecastFixtures'
 import type { GameRow } from '@/localdata/aggregateTeams'
@@ -60,6 +60,16 @@ describe('the awkward matches', () => {
     }
     expect(gamePace(bare)).toBeCloseTo((estimate(bare, 'own') + estimate(bare, 'opp')) / 2, 9)
     expect(gamePace(row)).toBeCloseTo((row.possessions + row.opponent_possessions) / 2, 9)
+  })
+})
+
+describe('an FBCYL game of four quarters of 8 minutes (#1155)', () => {
+  it('has its pace per 40 minutes and its possessions back as the real count', () => {
+    const row = { ...fbcyl().team_rows[0], possessions: 64, opponent_possessions: 60, game_minutes: 32 }
+    const [game] = buildGames([row, { ...row, team_id: 'other', is_local: !row.is_local, possessions: 60, opponent_possessions: 64 }])
+    expect(gamePace(row)).toBeCloseTo(62 * (40 / 32), 9)
+    expect(game.pace).toBeCloseTo(77.5, 9)
+    expect(gamePossessions(game, row)).toBeCloseTo(62, 9)
   })
 })
 

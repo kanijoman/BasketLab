@@ -18,7 +18,7 @@ export interface GameRow {
   def_rebounds: number; off_rebounds: number
   assists: number; steals: number; turnovers: number; blocks: number
   possessions: number
-  /** FEB: 40 plus 5 per overtime; the stored possessions are scaled to 40 minutes by it (rows published before #672 have none: 40) */
+  /** FEB: 40 plus 5 per overtime; the stored possessions are scaled to 40 minutes by it (rows published before #672 have none: 40). FBCYL: the minutes of its regulation (4 x 10, a minibasket 4 x 8); its possessions are real (#1155) */
   game_minutes?: number
   opponent_fg2_made: number; opponent_fg2_attempts: number; opponent_fg3_made: number; opponent_fg3_attempts: number
   opponent_ft_made: number; opponent_ft_attempts: number
@@ -60,15 +60,21 @@ interface Side {
   reb: number; fouls: number
 }
 
-/** The real possessions of a game from the per-40 figure of its row (FEB: 40 plus 5 per overtime; FBCYL rows are already real). Python multiplies in this order. */
-const real = (r: GameRow, per40: number) => per40 * ((r.game_minutes ?? 40) / 40)
+/** FBCYL rows (only they carry fouls) hold the REAL possessions and the minutes of their regulation; FEB rows hold them per 40 minutes (#1155). */
+const isFbcyl = (r: GameRow) => r.fouls !== undefined
+
+/** The real possessions of a game from the figure of its row (FEB: per 40 minutes, so 40 plus 5 per overtime brings them back; FBCYL: already real). Python multiplies in this order. */
+const real = (r: GameRow, stored: number) => (isFbcyl(r) ? stored : stored * ((r.game_minutes ?? 40) / 40))
+
+/** The pace figure of a game: its possessions per 40 minutes (FEB rows are; FBCYL's real count is scaled by the minutes of its regulation). */
+const perFortyOf = (r: GameRow, stored: number) => (isFbcyl(r) ? stored * (40 / (r.game_minutes ?? 40)) : stored)
 
 const own = (r: GameRow): Side => ({
   points: r.points, received: r.opponent_points,
   fg2m: r.fg2_made, fg2a: r.fg2_attempts, fg3m: r.fg3_made, fg3a: r.fg3_attempts, ftm: r.ft_made, fta: r.ft_attempts,
   def: r.def_rebounds, off: r.off_rebounds, oppDef: r.opponent_def_rebounds, oppOff: r.opponent_off_rebounds,
   assists: r.assists, steals: r.steals, turnovers: r.turnovers, blocks: r.blocks,
-  possessions: real(r, r.possessions), oppPossessions: real(r, r.opponent_possessions), pace: r.possessions,
+  possessions: real(r, r.possessions), oppPossessions: real(r, r.opponent_possessions), pace: perFortyOf(r, r.possessions),
   reb: r.total_rebounds ?? 0, fouls: r.fouls ?? 0,
 })
 
@@ -79,7 +85,7 @@ const rival = (r: GameRow): Side => ({
   ftm: r.opponent_ft_made, fta: r.opponent_ft_attempts,
   def: r.opponent_def_rebounds, off: r.opponent_off_rebounds, oppDef: r.def_rebounds, oppOff: r.off_rebounds,
   assists: r.opponent_assists, steals: r.opponent_steals, turnovers: r.opponent_turnovers, blocks: r.opponent_blocks,
-  possessions: real(r, r.opponent_possessions), oppPossessions: real(r, r.possessions), pace: r.opponent_possessions,
+  possessions: real(r, r.opponent_possessions), oppPossessions: real(r, r.possessions), pace: perFortyOf(r, r.opponent_possessions),
   reb: r.opponent_total_rebounds ?? 0, fouls: r.opponent_fouls ?? 0,
 })
 

@@ -212,7 +212,8 @@ export function consistencyRows(own: CVTable): TableRows {
   if (!names.length) return { texts: [], tones: [] }
   const cvOf = (stats: CVTable[string], key: string): number | null | undefined => stats[key]?.cv
   const quartiles = Object.fromEntries(CONSISTENCY_KEYS.map(([, key]) => [key, calcQuartiles(names.map(n => cvOf(own[n], key)))]))
-  const sorted = [...names].sort((a, b) => (cvOf(own[a], 'net_rating') || 9999) - (cvOf(own[b], 'net_rating') || 9999))          // `cv or 9999`: a zero or a missing one goes last
+  // `cv or 9999`: a zero or a missing one goes last; the teams with the same CV go by name, never by the order of the keys (as Python)
+  const sorted = [...names].sort((a, b) => (cvOf(own[a], 'net_rating') || 9999) - (cvOf(own[b], 'net_rating') || 9999) || (a < b ? -1 : a > b ? 1 : 0))
   return collect(sorted.map((name): [string[], Tone[]] => {
     const texts = [name], tones: Tone[] = ['plain']
     for (const [, key, less] of CONSISTENCY_KEYS) {

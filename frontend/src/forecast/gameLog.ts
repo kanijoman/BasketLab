@@ -31,14 +31,16 @@ export interface GameResult {
 
 /** The pace of a game from the row of one side: the mean possessions of both sides (FEB rows carry them per 40 minutes), or the estimate FGA - ORB + TOV + 0.44 FTA when the row has none. */
 export function gamePace(row: GameRow): number | null {
-  if (row.possessions > 0 && row.opponent_possessions > 0) return (row.possessions + row.opponent_possessions) / 2
+  // FBCYL rows (they carry fouls) hold the REAL count: per 40 minutes of their regulation (a minibasket game has 4 x 8) it is scaled here, as FEB's rows already are (#1155)
+  const scale = row.fouls !== undefined ? 40 / (row.game_minutes ?? 40) : 1
+  if (row.possessions > 0 && row.opponent_possessions > 0) return ((row.possessions + row.opponent_possessions) / 2) * scale
   const estimate = (possessions(boxOf(row, 'own')) + possessions(boxOf(row, 'opp'))) / 2
-  return estimate > 0 ? estimate : null
+  return estimate > 0 ? estimate * scale : null
 }
 
 /**
- * The minutes of a game over 40 (#936). FEB rows give them (40 plus 5 per overtime) because they scale their possessions to 40 minutes, so pace × minutes is the possessions the game had.
- * FBCYL rows, and FEB rows published before #672, have none: their possessions are already the real ones, so they count as 1.
+ * The minutes of a game over 40 (#936). Rows give them (FEB: 40 plus 5 per overtime; FBCYL: its regulation, #1155) and the pace is per 40 minutes, so pace × minutes is the possessions the game had.
+ * FEB rows published before #672 have none: they count as 1.
  */
 export const gameMinutes = (row: GameRow): number => (row.game_minutes ?? 40) / 40
 

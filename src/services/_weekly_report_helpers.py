@@ -549,10 +549,10 @@ def build_consistency_rows(
 
     quartiles = {sk: calc_quartiles(col_values[sk]) for _, sk, _ in _CONSISTENCY_KEYS}
 
-    # Sort teams by net_rating CV ascending (most consistent first)
+    # Sort teams by net_rating CV ascending (most consistent first); the teams with the same CV (a zero or a missing one goes last) by name, never by the order of the dict
     sorted_teams = sorted(
         own_map.items(),
-        key=lambda kv: (kv[1].get("net_rating") or {}).get("cv") or 9999,
+        key=lambda kv: ((kv[1].get("net_rating") or {}).get("cv") or 9999, kv[0]),
     )
 
     texts:  List[List[str]] = []

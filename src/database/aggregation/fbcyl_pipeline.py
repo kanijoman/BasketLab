@@ -21,7 +21,7 @@ from typing import List, Dict
 from datetime import datetime, time
 
 from .fbcyl_date_expr import parse_day_stages
-from .fbcyl_possession_expr import team_possessions
+from .fbcyl_possession_expr import game_minutes, per_40, team_possessions
 from src.live_core.four_factors import FT_POSSESSION_COST
 
 
@@ -164,6 +164,7 @@ class FBCYLPipelineBuilder:
                 "team_id": "$teams.teamIdExtern",
                 "is_home": {"$eq": ["$teamIndex", 0]},
                 "team_score": "$teams.data.score",
+                "game_minutes": game_minutes(),          # the regulation: the pace is per 40 minutes (#1155)
                 # Get opponent score by checking the other team in the original array
                 "opponent_score": {
                     "$cond": {
@@ -275,7 +276,7 @@ class FBCYLPipelineBuilder:
 
                 # Possessions: the exact count stored in DERIVED, else the box estimate (#432)
                 "total_possessions": {"$sum": team_possessions("$teamIndex", "$teams")},
-                "pace_possessions": {"$sum": team_possessions("$teamIndex", "$teams")},          # FBCYL rows are not scaled (#1155): the pace is still per game
+                "pace_possessions": {"$sum": per_40(team_possessions("$teamIndex", "$teams"))},          # the real count per 40 minutes of the regulation (#1155)
                 "opponent_possessions": {"$sum": team_possessions({"$subtract": [1, "$teamIndex"]}, "$opponent_score")},
             }
         })
@@ -287,7 +288,7 @@ class FBCYLPipelineBuilder:
                 "points_per_game": {"$divide": ["$points_scored", "$games_played"]},
                 "points_against_per_game": {"$divide": ["$points_received", "$games_played"]},
                 "points_allowed_per_game": {"$divide": ["$points_received", "$games_played"]},  # Alias
-                "possessions_per_game": {"$divide": ["$total_possessions", "$games_played"]},
+                "possessions_per_game": {"$divide": ["$pace_possessions", "$games_played"]},
                 "rebounds_per_game": {"$divide": ["$total_rebounds", "$games_played"]},
                 "def_rebounds_per_game": {"$divide": ["$rebounds_def", "$games_played"]},
                 "off_rebounds_per_game": {"$divide": ["$rebounds_off", "$games_played"]},
@@ -398,8 +399,8 @@ class FBCYLPipelineBuilder:
                         }
                     ]
                 },
-                # Pace (possessions per 40 minutes) - simplified to possessions per game
-                "pace": {"$divide": ["$total_possessions", "$games_played"]},
+                # Pace: possessions per 40 minutes of the regulation (#1155)
+                "pace": {"$divide": ["$pace_possessions", "$games_played"]},
 
                 # Four Factors (with standard names)
                 "turnover_rate": {

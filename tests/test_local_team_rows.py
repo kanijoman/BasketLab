@@ -82,3 +82,15 @@ def test_ratings_divide_the_points_by_the_real_possessions_and_only_the_pace_is_
         assert team["offensive_rating"] == pytest.approx(team["points_scored"] / real * 100)
         assert team["defensive_rating"] == pytest.approx(team["points_received"] / real_opp * 100)
         assert team["possessions_per_game"] == pytest.approx(sum(r["possessions"] for r in mine) / len(mine))
+
+
+def test_the_per_game_rates_divide_by_the_real_possessions_of_the_game_regression(collection):
+    """#1154: the per-game ORtg/DRtg (the consistency of a team, CV%) divided by the possessions scaled to 40 minutes, the season ones by the real count: they must agree."""
+    rows = list(collection.aggregate(AggregationPipelineBuilder.build_season_rows_pipeline()))
+    per_game = list(collection.aggregate(AggregationPipelineBuilder.build_per_game_raw_pipeline()))
+    assert any(r["game_minutes"] > 40 for r in rows) and len(per_game) == len(rows)
+    real = sorted(round(r["possessions"] * r["game_minutes"] / 40, 6) for r in rows)
+    assert sorted(round(g["real_poss"], 6) for g in per_game) == real
+    for g in per_game:
+        assert g["oer_game"] == pytest.approx(g["points"] / g["real_poss"] * 100)
+        assert g["der_game"] == pytest.approx(g["opponent_points"] / g["real_poss"] * 100)

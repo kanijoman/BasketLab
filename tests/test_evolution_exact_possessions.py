@@ -37,3 +37,14 @@ def test_possession_stats_use_the_exact_count_and_fall_back_to_the_estimate_with
     assert service._compute_stat(exact, "defensive_rating") == pytest.approx(70 / 72.0 * 100)
     assert plain["poss"] is None
     assert service._compute_stat(plain, "possessions") == pytest.approx(55 - 8 + 10 + 0.44 * 20)
+
+
+def test_the_fbcyl_pipeline_reads_the_exact_possessions_too_regression():
+    """#1155: Evolución FBCYL ignored ``DERIVED`` and always estimated, while the season tables of the same team read it (#432): the two pages disagreed."""
+    coll = MagicMock()
+    coll.aggregate.return_value = []
+    EvolutionService(MagicMock())._evolution_fbcyl(coll, "1")
+    pipeline = coll.aggregate.call_args[0][0]
+    proj = next(stage["$project"] for stage in pipeline if "$project" in stage and "pts" in stage["$project"])
+
+    assert "DERIVED.TEAM.possessions" in str(proj["poss"]) and "DERIVED.TEAM.possessions" in str(proj["opp_poss"])
