@@ -7,8 +7,8 @@ field-by-field idea to the rosters of FEB (other teams and seasons of the same p
 from __future__ import annotations
 
 import re
-import unicodedata
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Tuple
+from src.utils.text import strip_accents
 
 SOURCE_PRIORITY = ("feb", "fiba", "acb", "euroleague", "ncaa")        # the first source that says a field wins; FEB is the one the identity is anchored to
 HEIGHT_CONFLICT_CM = 3                                  # two sources further apart than this are flagged
@@ -56,8 +56,7 @@ def normalize_height(value: Any) -> Optional[int]:
 def _key(text: Any) -> str:
     if not isinstance(text, str):
         return ""
-    plain = "".join(c for c in unicodedata.normalize("NFKD", text) if not unicodedata.combining(c))
-    return " ".join(plain.casefold().split())
+    return " ".join(strip_accents(text).casefold().split())
 
 
 _FINE = {"base": "Base", "pg": "Base", "point guard": "Base", "escolta": "Escolta", "sg": "Escolta", "shooting guard": "Escolta",

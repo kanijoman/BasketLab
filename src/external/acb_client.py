@@ -17,10 +17,10 @@ import http.client
 import json
 import re
 import time
-import unicodedata
 import urllib.error
 import urllib.parse
 import urllib.request
+from src.utils.text import strip_accents
 from typing import Any, Callable, Dict, List, Optional, TypeVar
 
 from src.external.acb_page import AcbPageError, check_page, extract_flight
@@ -50,8 +50,7 @@ class AcbBudgetExhausted(AcbFetchError):
 
 def slugify(name: str) -> str:
     """``Leyma Coruña`` -> ``leyma-coruna``: how the site writes a team or a player in its addresses."""
-    plain = "".join(c for c in unicodedata.normalize("NFKD", name.lower()) if not unicodedata.combining(c))
-    return re.sub(r"[^a-z0-9]+", "-", plain).strip("-")
+    return re.sub(r"[^a-z0-9]+", "-", strip_accents(name.lower())).strip("-")
 
 
 def match_url(home: str, away: str, match_id: int, tab: str) -> str:

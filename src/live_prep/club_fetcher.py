@@ -8,10 +8,10 @@ only public handle of a team. Public page, light use: one request per team that 
 from __future__ import annotations
 
 import logging
-import unicodedata
 from typing import Any, Callable, Optional
 
 from bs4 import BeautifulSoup
+from src.utils.text import strip_accents
 
 from .roster_fetcher import ROSTER_URL, TIMEOUT_S, _HEADERS
 
@@ -20,8 +20,7 @@ logger = logging.getLogger(__name__)
 
 def normalize_club(name: Optional[str]) -> str:
     """``" Peñas  Huesca "`` -> ``"PENAS HUESCA"``: a club name without case, accents or extra spaces."""
-    plain = "".join(c for c in unicodedata.normalize("NFKD", name or "") if not unicodedata.combining(c))
-    return " ".join(plain.upper().split())
+    return " ".join(strip_accents(name).upper().split())
 
 
 def parse_club_name(html: Any) -> Optional[str]:

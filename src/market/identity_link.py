@@ -13,32 +13,41 @@ Pure functions, no I/O. A person is its ``person_id`` (FEB rewrites the roster o
 from __future__ import annotations
 
 import re
-import unicodedata
+from collections import Counter
 from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
+
+from src.utils.text import plain_words
 
 MIN_SHARED = 2
 METHOD = "birth+name"
 _PARTICLES = frozenset({"DE", "DEL", "LA", "LAS", "LOS", "EL", "Y", "I", "DA", "DO", "DOS", "DAS", "DI", "VAN", "VON", "DER", "LE", "AL", "BEN", "BIN"})
 _MAX_CANDIDATES = 5
+_EXTERNAL_FIELDS = ("name", "birth", "full_name")
 
 
 def _words(name: Any) -> Set[str]:
-    """The words of a name that identify a person: without accents, upper case, hyphens and dots as spaces, no initials and no particles."""
-    text = "".join(c for c in unicodedata.normalize("NFKD", str(name or "").upper()) if not unicodedata.combining(c))
-    return {w for w in text.replace("-", " ").replace(".", " ").split() if len(w) > 1 and w not in _PARTICLES}
+    """The words of a name that identify a person: without accents, upper case, signs as spaces, no initials and no particles."""
+    return {w for w in plain_words(name) if len(w) > 1 and w not in _PARTICLES}
 
 
 def external_players(docs: Iterable[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """The players with minutes of canonical documents with a bio (``birth``), once each, sorted by id: ``{id, name, birth, nationality}`` and, where the source has it, ``full_name`` (ACB shows the name a player
     is known by and says the one of his papers, which is how FEB writes him: the link has the words of both, #886)."""
-    found: Dict[str, Dict[str, Any]] = {}
+    seen: Dict[str, Dict[str, Any]] = {}
     for doc in docs:
         for team in (doc.get("BOXSCORE") or {}).get("TEAM") or []:
             for player in team.get("PLAYER") or []:
-                pid = str(player.get("id"))
-                if pid not in found and player.get("birth") and player.get("name") and str(player.get("min") or "0") not in ("0", ""):
-                    found[pid] = {"id": pid, "name": player["name"], "birth": player["birth"], "nationality": player.get("nationality"), **({"full_name": player["full_name"]} if player.get("full_name") else {})}
-    return [found[k] for k in sorted(found)]
+                if player.get("birth") and player.get("name") and str(player.get("min") or "0") not in ("0", ""):
+                    entry = seen.setdefault(str(player.get("id")), {"nationality": player.get("nationality"), **{f: Counter() for f in _EXTERNAL_FIELDS}})
+                    for field in _EXTERNAL_FIELDS:
+                        if player.get(field):
+                            entry[field][player[field]] += 1
+    out = []
+    for pid in sorted(seen):
+        # the most said value, a tie to the smallest: a birth corrected in a later game wins and the order of the games does not matter
+        row = {f: sorted(c.items(), key=lambda kv: (-kv[1], str(kv[0])))[0][0] for f, c in seen[pid].items() if f in _EXTERNAL_FIELDS and c}
+        out.append({"id": pid, "name": row["name"], "birth": row["birth"], "nationality": seen[pid]["nationality"], **({"full_name": row["full_name"]} if "full_name" in row else {})})
+    return out
 
 
 def _persons_by_birth(rows: Iterable[Dict[str, Any]]) -> Dict[str, Dict[str, Set[str]]]:
@@ -50,9 +59,32 @@ def _persons_by_birth(rows: Iterable[Dict[str, Any]]) -> Dict[str, Dict[str, Set
     return out
 
 
+def _names_by_person(rows: Iterable[Dict[str, Any]]) -> Dict[str, Set[str]]:
+    """``{person_id: every name the person has been written with}`` (the words alone lose which one is the given name)."""
+    out: Dict[str, Set[str]] = {}
+    for row in rows:
+        if row.get("birth") and row.get("person_id") and row.get("name"):
+            out.setdefault(str(row["person_id"]), set()).add(str(row["name"]))
+    return out
+
+
+def _given_initials(name: Any, shared: Set[str]) -> Set[str]:
+    """The initials of the words of a name that are not the shared surnames (initials such as ``M.`` count): what is left is the given name."""
+    return {w[0] for w in plain_words(name) if w not in shared and w not in _PARTICLES}
+
+
+def _given_name_agrees(player_names: Iterable[Any], person_names: Iterable[str], shared: Iterable[str]) -> bool:
+    """The surnames do not tell sisters apart (#1126): some name of the player and some of the person must have a given name (or an initial) in common; a name with none left cannot contradict."""
+    common = set(shared)
+    mine = [_given_initials(n, common) for n in player_names if n]
+    theirs = [_given_initials(n, common) for n in person_names]
+    return any(not a or not b or a & b for a in mine for b in theirs)
+
+
 def link_players(feb_rows: Iterable[Dict[str, Any]], players: Iterable[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """The links of ``players`` to the persons of ``feb_rows`` (the roster rows of FEB: ``person_id``, ``name``, ``birth``), sorted by external id. A player with no candidate is not in the answer."""
-    by_birth = _persons_by_birth(feb_rows)
+    feb_rows = list(feb_rows)
+    by_birth, names = _persons_by_birth(feb_rows), _names_by_person(feb_rows)
     links: List[Dict[str, Any]] = []
     for player in sorted(players, key=lambda p: str(p["id"])):
         words = _words(player.get("name")) | _words(player.get("full_name"))
@@ -60,8 +92,11 @@ def link_players(feb_rows: Iterable[Dict[str, Any]], players: Iterable[Dict[str,
         for person, theirs in sorted(by_birth.get(str(player.get("birth")), {}).items()):
             shared = sorted(words & theirs)
             if shared:
-                fits.append({"feb": person, "shared": shared})
-        strong = [f for f in fits if len(f["shared"]) >= MIN_SHARED]
+                fit = {"feb": person, "shared": shared}
+                if len(shared) >= MIN_SHARED and not _given_name_agrees([player.get("name"), player.get("full_name")], names.get(person, ()), shared):
+                    fit["reason"] = "given_name"
+                fits.append(fit)
+        strong = [f for f in fits if len(f["shared"]) >= MIN_SHARED and "reason" not in f]
         base = {"external": str(player["id"]), "method": METHOD, "birth": str(player["birth"])}
         if len(strong) == 1:
             links.append({**base, "status": "linked", "feb": strong[0]["feb"], "shared": strong[0]["shared"]})
@@ -82,8 +117,7 @@ CLUB_METHOD, BIRTH_METHOD, REVIEW_METHOD = "name+club", "name+birth", "name"
 
 def _plain(text: Any) -> List[str]:
     """Upper case words without accents; every sign that is not a letter or a digit (dots, hyphens, quotes, commas) separates words."""
-    stripped = "".join(c for c in unicodedata.normalize("NFKD", str(text or "").upper()) if not unicodedata.combining(c))
-    return "".join(c if c.isalnum() else " " for c in stripped).split()
+    return plain_words(text)
 
 
 def _name_words(name: Any) -> List[str]:
@@ -112,13 +146,38 @@ def club_words(club: Any) -> Set[str]:
     return {w for w in _plain(club) if len(w) > 1 and w not in _PARTICLES and w not in _GENERIC_CLUB_WORDS}
 
 
+_BASKETBALL_WORDS = frozenset({"CB", "BC", "BALONCESTO", "BASKET", "BASQUET", "BASKETBALL"})
+
+
+def _club_kind(club: Any) -> Set[str]:
+    """The kind of club its name says (``CB`` / ``BALONCESTO`` are one: basketball; ``C.D.``, ``U.D.``... another), with the initials written apart (``C.D.``) put together."""
+    kinds, run = set(), ""
+    for word in [*_plain(club), ""]:
+        if len(word) == 1:
+            run += word
+            continue
+        for token in (run, word):
+            if token in _GENERIC_CLUB_WORDS:
+                kinds.add("BASKETBALL" if token in _BASKETBALL_WORDS else token)
+        run = ""
+    return kinds
+
+
+def _same_kind(mine: Any, theirs: Any) -> bool:
+    """A name that says its kind cannot be the club of another kind: the kinds, when both have one, must have something in common."""
+    a, b = _club_kind(mine), _club_kind(theirs)
+    return not a or not b or bool(a & b)
+
+
 def _club_match(mine: Iterable[str], theirs: Iterable[str]) -> List[str]:
     """The words that corroborate the club, of the pair of clubs with most: ``CLUB_MIN_SHARED`` in common, or every distinctive word of one of the two names in the other (``BALONCESTO LA FLECHA``); empty if none."""
     best: Set[str] = set()
-    for a in map(club_words, mine):
-        for b in map(club_words, theirs):
+    for mine_name in mine:
+        for theirs_name in theirs:
+            a, b = club_words(mine_name), club_words(theirs_name)
             shared = a & b
-            if shared and (len(shared) >= CLUB_MIN_SHARED or shared in (a, b)) and len(shared) > len(best):
+            enough = len(shared) >= CLUB_MIN_SHARED or (shared in (a, b) and _same_kind(mine_name, theirs_name))
+            if shared and enough and len(shared) > len(best):
                 best = shared
     return sorted(best)
 
@@ -151,7 +210,7 @@ def _season(value: Any) -> Optional[int]:
 
 def fbcyl_players(docs: Iterable[Dict[str, Any]], age_groups: Optional[Dict[str, str]] = None) -> List[Dict[str, Any]]:
     """The persons of FBCYL games (``stats.teams[].players[]``), one per ``uuid`` (the ``actorId`` changes in every game), sorted by id: ``{id: fbcyl:<uuid>, uuid, name, names, clubs, genders, age_groups,
-    seasons}`` over every game (``age_groups``: ``fbcyl_age_groups`` of the catalogue). A player without ``uuid`` is left out."""
+    seasons, periods}`` over every game (``periods``: the real ``[age group, season]`` pairs) (``age_groups``: ``fbcyl_age_groups`` of the catalogue). A player without ``uuid`` is left out."""
     found: Dict[str, Dict[str, Set[Any]]] = {}
     for doc in docs:
         group, season, gender = (age_groups or {}).get(str(_unwrapped(doc.get("_competition")))), _season(doc.get("_season")), doc.get("_gender")
@@ -160,11 +219,14 @@ def fbcyl_players(docs: Iterable[Dict[str, Any]], age_groups: Optional[Dict[str,
                 if not player.get("uuid") or not player.get("name"):
                     continue
                 person = found.setdefault(str(player["uuid"]), {"names": set(), "clubs": set(), "genders": set(), "age_groups": set(), "seasons": set()})
+                person.setdefault("periods", set())
                 person["names"].add(" ".join(str(player["name"]).split()))
                 for key, value in (("clubs", str(team.get("name") or "").strip()), ("genders", gender if gender in ("F", "M") else None), ("age_groups", group), ("seasons", season)):
                     if value:
                         person[key].add(value)
-    return [{"id": f"fbcyl:{uuid}", "uuid": uuid, "name": sorted(p["names"])[0], **{k: sorted(v) for k, v in p.items()}} for uuid, p in sorted(found.items())]
+                if group and season:
+                    person["periods"].add((group, season))
+    return [{"id": f"fbcyl:{uuid}", "uuid": uuid, "name": sorted(p["names"])[0], **{k: sorted(v) for k, v in p.items() if k != "periods"}, "periods": [list(x) for x in sorted(p["periods"])]} for uuid, p in sorted(found.items())]
 
 
 def feb_persons(games: Iterable[Dict[str, Any]], rosters: Iterable[Dict[str, Any]] = (), genders: Optional[Dict[str, str]] = None) -> Dict[str, Dict[str, List[str]]]:
@@ -198,10 +260,13 @@ def feb_persons(games: Iterable[Dict[str, Any]], rosters: Iterable[Dict[str, Any
 def _age_fits(player: Dict[str, Any], births: Iterable[str]) -> Optional[bool]:
     """Whether a birth of the FEB person fits a category the player plays in a season (``None`` when the birth or the category is unknown): a youth category has an upper age by regulation, a senior one a minimum."""
     years = {int(b[:4]) for b in births if str(b)[:4].isdigit()}
-    checks = [(group, season) for group in player.get("age_groups", []) for season in player.get("seasons", []) if group in AGE_LIMITS or group == "senior"]
+    if "periods" in player:
+        checks = [(g, s) for g, s in player["periods"] if g in AGE_LIMITS or g == "senior"]
+    else:                                                                       # a player without the pairs: every category with every season
+        checks = [(group, season) for group in player.get("age_groups", []) for season in player.get("seasons", []) if group in AGE_LIMITS or group == "senior"]
     if not years or not checks:
         return None
-    return any(any(y >= s - AGE_LIMITS[g] for y in years) if g in AGE_LIMITS else any(y <= s - SENIOR_MIN_AGE for y in years) for g, s in checks)
+    return all(any(y >= s - AGE_LIMITS[g] for y in years) if g in AGE_LIMITS else any(y <= s - SENIOR_MIN_AGE for y in years) for g, s in checks)
 
 
 def _could_be(player: Dict[str, Any], person: Dict[str, List[str]]) -> bool:

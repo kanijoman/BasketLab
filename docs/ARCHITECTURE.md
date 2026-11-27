@@ -74,7 +74,7 @@ Sección -> pregunta que responde (`grep -n '^#'` da el índice completo):
 - `match_derived.with_derived` aplica las cifras exactas de `DERIVED` (posesiones, rebotes y pérdidas validados) a los totales de un partido, y el informe semanal la usa en «Último partido» (#379)
 
 ### `src/utils`, `src/visualization`, `src/JSON_samples` y `apps/live-android`
-- `src/utils`: `collection_utils` (`is_fbcyl`), `numeric_utils`, `team_utils`
+- `src/utils`: `collection_utils` (`is_fbcyl`), `numeric_utils`, `team_utils`, `text` (`strip_accents`, `plain_words`: el único normalizador de nombres, con apóstrofos y Ł/Ø/ß/ı; #1128)
 - `src/visualization`: radar chart
 - `src/JSON_samples/` = documentos reales de ejemplo (FEB y FBCYL) para tests. `apps/live-android/` = app móvil/tablet del motor live (fuera de `src/`; ver [LIVE.md](LIVE.md)).
 
@@ -196,6 +196,12 @@ Sección -> pregunta que responde (`grep -n '^#'` da el índice completo):
 
 #### Enlace de identidades externas con FEB (`identity_link`, #885, #886)
 - **`identity_link` (#885, D1)**: enlaza los jugadores de una fuente externa con la persona de FEB por **fecha de nacimiento y al menos dos palabras del nombre en común** (sin partículas) y candidato único (`linked`)
+- **Reglas contra falsas fusiones (E2, #1125-#1129)**:
+  - el enlace por nacimiento exige además el **nombre de pila o su inicial** (alguno de los nombres del jugador con alguno de la persona); si no, `review` con `reason: given_name` (#1126);
+  - una sola palabra del club solo es prueba si los dos clubes son de la misma clase (`CB`/`BALONCESTO` frente a `C.D.`; #1127);
+  - en FBCYL el filtro de edad exige que encajen **todos** los pares (categoría, temporada) reales del jugador (`periods`; #1125);
+  - dos ids FBCYL enlazados al mismo id FEB en una competición y temporada no se funden: `linked_to` None y `link_conflict` con los otros (`season_rows.attach_bio`; #1129);
+  - `external_players` toma el valor más repetido (fecha corregida en un partido posterior), a igualdad el menor.
 - **ACB (#886) usa el mismo enlace**: su caja trae `name` (como se conoce al jugador: «Facu Campazzo») y `full_name` (el de su ficha: «Facundo Campazzo», como lo escribe FEB), y el enlace junta las palabras de los dos
 - la biografía que presta ahora incluye la **posición** (`external_bio.FIELDS`) y `read_external_bios` junta la de FIBA y la de ACB
 - una palabra o varios candidatos van a `review`

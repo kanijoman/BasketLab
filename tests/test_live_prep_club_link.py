@@ -98,3 +98,27 @@ def test_a_team_already_known_is_not_reseeded_by_its_club(last_season):
     before = acc.ratings.rating(NEW_OWN)
     acc.link_clubs([NEW_OWN, NEW_RIVAL], ClubLinker(carry_for(Handler(last_season), SEGUNDA), club_source()))
     assert acc.ratings.rating(NEW_OWN) == before
+
+
+def test_a_code_already_used_by_a_current_team_is_not_seeded_again_regression():
+    """#1130: the second new team of a club (another group) inherited the rating of the first one's teamCode."""
+    class Linker:
+        def code_of(self, team_id):
+            return CODE_OWN
+
+    acc = SeasonAccumulator(carry={CODE_OWN: 5.0})
+    acc._seed_ratings([{"id": NEW_OWN, "teamCode": CODE_OWN}])                 # a team of this season already has the code
+    acc.link_clubs([NEW_RIVAL], Linker())
+
+    assert acc.ratings.rating(NEW_OWN) != 0 and acc.ratings.rating(NEW_RIVAL) == 0 and NEW_RIVAL not in acc.codes
+
+
+def test_two_new_teams_of_the_same_club_seed_the_code_once():
+    class Linker:
+        def code_of(self, team_id):
+            return CODE_OWN
+
+    acc = SeasonAccumulator(carry={CODE_OWN: 5.0})
+    acc.link_clubs([NEW_OWN, NEW_RIVAL], Linker())
+
+    assert sum(1 for t in (NEW_OWN, NEW_RIVAL) if acc.ratings.rating(t) != 0) == 1

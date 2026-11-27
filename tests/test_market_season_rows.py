@@ -189,3 +189,28 @@ class TestBio:
         before = [dict(r) for r in base]
         first = attach_bio(base, roster, "2025")
         assert base == before and first == attach_bio(list(reversed(base)), list(reversed(roster)), "2025")[::-1]
+
+
+def _linked_row(person, team="t1"):
+    return {"person_id": person, "name": "X", "team_id": team, "team_name": "Club", "league": "fbcyl", "groups": ["G"], "games": 1, "minutes": 60}
+
+
+def test_two_fbcyl_uuids_linked_to_the_same_feb_person_are_not_merged_regression():
+    """#1129: both were given ``linked_to`` the same FEB id and Talent fused them silently; they cannot both be her (same season and category)."""
+    rows = [_linked_row("fbcyl:u1"), _linked_row("fbcyl:u2", team="t2"), _linked_row("fbcyl:u3")]
+    roster = [{"person_id": "feb:9", "name": "A B", "birth": "2010-01-01", "season": "2026", "team_id": "1"}]
+
+    out = {r["person_id"]: r for r in attach_bio(rows, roster, "2026", linked={"fbcyl:u1": "feb:9", "fbcyl:u2": "feb:9", "fbcyl:u3": "feb:10"})}
+
+    assert out["fbcyl:u1"]["linked_to"] is None and out["fbcyl:u2"]["linked_to"] is None
+    assert out["fbcyl:u1"]["link_conflict"] == ["fbcyl:u2"] and out["fbcyl:u2"]["link_conflict"] == ["fbcyl:u1"]
+    assert out["fbcyl:u3"]["linked_to"] == "feb:10" and out["fbcyl:u3"]["link_conflict"] == []
+
+
+def test_one_person_in_two_teams_keeps_her_link():
+    """A transfer is two rows of the SAME person_id: not a conflict."""
+    rows = [_linked_row("fbcyl:u1"), _linked_row("fbcyl:u1", team="t2")]
+
+    out = attach_bio(rows, [], "2026", linked={"fbcyl:u1": "feb:9"})
+
+    assert [r["linked_to"] for r in out] == ["feb:9", "feb:9"] and all(r["link_conflict"] == [] for r in out)
