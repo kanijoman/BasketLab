@@ -46,9 +46,8 @@ function season(games: FbcylPlayerGameRow[]): PlayerStat {
     points_per_game: ppg, ppg, mpg, assists_per_game: apg, ast_pg: apg, rebounds_per_game: perGame(s.rt, n), steals_per_game: spg, stl_pg: spg,
     blocks_per_game: bpg, blk_pg: bpg, turnovers_per_game: tpg, tov_pg: tpg, valoracion_per_game: vpg, val_pg: vpg, pllss_per_game: perGame(s.pllss, n),
     ts, efg, three_pr: threePr, ftr, true_shooting: ts, efg_percentage: efg, three_point_rate: threePr, free_throw_rate: ftr,
-    ast_pct: pct(s.assist, fga), tov_pct: pct(s.to, fga), stl_pct: pct(s.st, fga), blk_pct: pct(s.bs, fga),
+    ast_pct: pct(s.assist, fga), stl_pct: pct(s.st, fga), blk_pct: pct(s.bs, fga),
     orb_pct: pct(s.ro, s.ro + s.rd), drb_pct: pct(s.rd, s.ro + s.rd),
-    usage: n > 0 ? ((fga + 0.44 * s.p1a + s.to) / (n * 100)) * 100 : 0,
     orating: tsa > 0 ? (s.pts / tsa) * 100 : 0,
     drating: s.st + s.bs > 0 ? 120 - ((s.st + s.bs) / n) * 5 : 120,
   } as unknown as PlayerStat

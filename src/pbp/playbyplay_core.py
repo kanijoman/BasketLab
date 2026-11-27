@@ -104,8 +104,8 @@ class PlayByPlayAnalyzer:
 
         Args:
             period: Period number (1-4, or 5+ for overtime)
-            min: Minutes elapsed in period
-            sec: Seconds elapsed in minute
+            min: Minutes REMAINING in the period (FBCYL's clock counts down, #370)
+            sec: Seconds remaining in that minute
 
         Returns:
             Absolute seconds from game start

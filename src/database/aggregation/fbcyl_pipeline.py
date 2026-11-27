@@ -1123,17 +1123,6 @@ class FBCYLPipelineBuilder:
                         0
                     ]
                 },
-                # Turnover Percentage (TO% = TO / possessions approximation)
-                "tov_pct": {
-                    "$cond": [
-                        {"$gt": [{"$add": ["$total_p2a", "$total_p3a"]}, 0]},
-                        {"$multiply": [
-                            {"$divide": ["$total_to", {"$add": ["$total_p2a", "$total_p3a"]}]},
-                            100
-                        ]},
-                        0
-                    ]
-                },
                 # Steal Percentage (STL% = STL / possessions approximation)
                 "stl_pct": {
                     "$cond": [
@@ -1173,24 +1162,6 @@ class FBCYLPipelineBuilder:
                         {"$gt": [{"$add": ["$total_ro", "$total_rd"]}, 0]},
                         {"$multiply": [
                             {"$divide": ["$total_rd", {"$add": ["$total_ro", "$total_rd"]}]},
-                            100
-                        ]},
-                        0
-                    ]
-                },
-                # Usage Percentage (approximation: FGA + FTA*0.44 + TO + AST)
-                "usage": {
-                    "$cond": [
-                        {"$gt": ["$games_played", 0]},
-                        {"$multiply": [
-                            {"$divide": [
-                                {"$add": [
-                                    {"$add": ["$total_p2a", "$total_p3a"]},
-                                    {"$multiply": [FT_POSSESSION_COST, "$total_p1a"]},
-                                    "$total_to"
-                                ]},
-                                {"$multiply": ["$games_played", 100]}
-                            ]},
                             100
                         ]},
                         0
