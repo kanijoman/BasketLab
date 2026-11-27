@@ -19,6 +19,7 @@
     "paths": {
       "@/*": ["src/*"],
       "@design/*": ["../design/*"],
+      "@config/*": ["../config/*"],
       "@live-package/*": ["../apps/live-android/src/package/*"]
     },
     "types": ["vitest/globals", "@testing-library/jest-dom"]

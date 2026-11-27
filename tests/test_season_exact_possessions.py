@@ -77,7 +77,7 @@ def test_per_game_rows_use_the_derived_possessions_for_both_teams():
     assert local["possessions"] == pytest.approx(75.0)
     assert local["off_rebounds"] == 9 and local["opp_off_rebounds"] == 7
     assert local["oer_game"] == pytest.approx(80 / 75.0 * 100)
-    assert local["der_game"] == pytest.approx(70 / 75.0 * 100)   # rival points per own possession (existing convention)
+    assert local["der_game"] == pytest.approx(70 / 72.0 * 100)   # rival points per RIVAL possession, as the season DRtg (#1153)
 
 
 def test_opponent_pipeline_reads_the_derived_fields_of_the_rival():

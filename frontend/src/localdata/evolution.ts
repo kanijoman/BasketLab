@@ -3,6 +3,7 @@
 // mean over its last `window` games and the cumulative one the mean of every team's running mean (a team with fewer than i games does not count at i).
 // Parity with the API: `evolution.test.ts` against `tests/local_vectors/evolution_*.json`. One team's own series (issue #708, `get_team_evolution`): `teamEvolution`, `teamEvolution.test.ts`
 // against `team_evolution_*.json`.
+import { evaluateAll } from '@/lib/formulas'
 import type { CompetitionEvolutionPoint, EvolutionPoint } from '@/api/client'
 import { parsePlayed, type GameRow } from './aggregateTeams'
 import { pyRound } from './pyMath'
@@ -41,18 +42,20 @@ export function gameValue(row: GameRow, stat: string): number | null {
   const ast = whole(row.assists), stl = whole(row.steals), tov = whole(row.turnovers), blk = whole(row.blocks)
   const oppPts = whole(row.opponent_points), oppFg2a = whole(row.opponent_fg2_attempts), oppFg3a = whole(row.opponent_fg3_attempts)
   const oppFta = whole(row.opponent_ft_attempts), oppDrb = whole(row.opponent_def_rebounds), oppOrb = whole(row.opponent_off_rebounds), oppTov = whole(row.opponent_turnovers)
-  const fga = fg2a + fg3a, fgm = fg2m + fg3m, oppFga = oppFg2a + oppFg3a
+  const fga = fg2a + fg3a, oppFga = oppFg2a + oppFg3a
   const { poss, oppPoss } = possessionsOf(row, { fga, fta, tov, orb }, { fga: oppFga, fta: oppFta, tov: oppTov, orb: oppOrb })
 
+  // every rate of the game with the formulas of the registry (config/formulas.json, #1153); null when its denominator is 0
+  const rate = evaluateAll({ points: pts, points_against: oppPts, fg2m, fg2a, fg3m, fg3a, fta, ast, stl, blk, tov, orb, drb, opp_orb: oppOrb, opp_drb: oppDrb, poss, opp_poss: oppPoss })
   const values: Record<string, number | null> = {
     points: pts, points_allowed: oppPts, fg2_made: fg2m, fg2_attempts: fg2a, fg3_made: fg3m, fg3_attempts: fg3a, ft_made: ftm, ft_attempts: fta,
     rebounds: orb + drb, def_rebounds: drb, off_rebounds: orb, assists: ast, steals: stl, turnovers: tov, blocks: blk,
     fg2_percentage: ratio(fg2m, fg2a), fg3_percentage: ratio(fg3m, fg3a), ft_percentage: ratio(ftm, fta),
-    possessions: poss, offensive_rating: (pts / poss) * 100, defensive_rating: (oppPts / oppPoss) * 100, net_rating: (pts / poss) * 100 - (oppPts / oppPoss) * 100,
-    efg_percentage: ratio(fgm + 0.5 * fg3m, fga), true_shooting: fga + 0.44 * fta > 0 ? (pts / (2 * (fga + 0.44 * fta))) * 100 : null,
-    three_point_rate: ratio(fg3a, fga), free_throw_rate: ratio(fta, fga), assist_fg_rate: ratio(ast, fgm),
-    assist_rate: (ast / poss) * 100, turnover_rate: (tov / poss) * 100, steal_rate: (stl / oppPoss) * 100, block_rate: (blk / oppPoss) * 100,
-    off_rebound_rate: ratio(orb, orb + oppDrb), def_rebound_rate: ratio(drb, drb + oppOrb),
+    possessions: poss, offensive_rating: rate.offensive_rating, defensive_rating: rate.defensive_rating, net_rating: rate.net_rating,
+    efg_percentage: rate.efg_percentage, true_shooting: rate.true_shooting,
+    three_point_rate: rate.three_point_rate, free_throw_rate: rate.free_throw_rate, assist_fg_rate: rate.assist_fg_rate,
+    assist_rate: rate.assist_rate, turnover_rate: rate.turnover_rate, steal_rate: rate.steal_rate, block_rate: rate.block_rate,
+    off_rebound_rate: rate.offensive_rebound_rate, def_rebound_rate: rate.defensive_rebound_rate,
   }
   const value = values[stat]
   return value === undefined || value === null || Number.isNaN(value) ? null : value

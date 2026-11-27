@@ -21,6 +21,7 @@ from typing import List, Dict
 from datetime import datetime, time
 
 from .fbcyl_date_expr import parse_day_stages
+from .advanced_stats import get_all_advanced_stats
 from .fbcyl_possession_expr import game_minutes, per_40, team_possessions
 from src.live_core.four_factors import FT_POSSESSION_COST
 
@@ -361,145 +362,12 @@ class FBCYLPipelineBuilder:
             }
         })
 
-        # Stage 9: Calculate advanced metrics
+        # Stage 9: advanced metrics: the formulas of the registry (config/formulas.json, #1153), the same as FEB's season pipeline
         pipeline.append({
             "$addFields": {
-                # Offensive Rating (points per 100 possessions)
-                "offensive_rating": {
-                    "$cond": {
-                        "if": {"$gt": ["$total_possessions", 0]},
-                        "then": {"$multiply": [{"$divide": ["$points_scored", "$total_possessions"]}, 100]},
-                        "else": 0
-                    }
-                },
-                # Defensive Rating (opponent points per 100 possessions)
-                "defensive_rating": {
-                    "$cond": {
-                        "if": {"$gt": ["$opponent_possessions", 0]},
-                        "then": {"$multiply": [{"$divide": ["$points_received", "$opponent_possessions"]}, 100]},
-                        "else": 0
-                    }
-                },
-                # Net Rating
-                "net_rating": {
-                    "$subtract": [
-                        {
-                            "$cond": {
-                                "if": {"$gt": ["$total_possessions", 0]},
-                                "then": {"$multiply": [{"$divide": ["$points_scored", "$total_possessions"]}, 100]},
-                                "else": 0
-                            }
-                        },
-                        {
-                            "$cond": {
-                                "if": {"$gt": ["$opponent_possessions", 0]},
-                                "then": {"$multiply": [{"$divide": ["$points_received", "$opponent_possessions"]}, 100]},
-                                "else": 0
-                            }
-                        }
-                    ]
-                },
+                **get_all_advanced_stats(),
                 # Pace: possessions per 40 minutes of the regulation (#1155)
                 "pace": {"$divide": ["$pace_possessions", "$games_played"]},
-
-                # Four Factors (with standard names)
-                "turnover_rate": {
-                    "$cond": {
-                        "if": {"$gt": ["$total_possessions", 0]},
-                        "then": {"$multiply": [{"$divide": ["$turnovers", "$total_possessions"]}, 100]},
-                        "else": 0
-                    }
-                },
-                "offensive_rebound_rate": {
-                    "$cond": {
-                        "if": {"$gt": [{"$add": ["$rebounds_off", "$opponent_rebounds_def"]}, 0]},
-                        "then": {"$multiply": [
-                            {"$divide": ["$rebounds_off", {"$add": ["$rebounds_off", "$opponent_rebounds_def"]}]},
-                            100
-                        ]},
-                        "else": 0
-                    }
-                },
-                "free_throw_rate": {
-                    "$cond": {
-                        "if": {"$gt": [{"$add": ["$fg2_attempted", "$fg3_attempted"]}, 0]},
-                        "then": {"$multiply": [
-                            {"$divide": ["$ft_attempted", {"$add": ["$fg2_attempted", "$fg3_attempted"]}]},
-                            100
-                        ]},
-                        "else": 0
-                    }
-                },
-
-                # Additional advanced shooting metrics
-                "three_point_rate": {
-                    "$cond": {
-                        "if": {"$gt": [{"$add": ["$fg2_attempted", "$fg3_attempted"]}, 0]},
-                        "then": {"$multiply": [
-                            {"$divide": ["$fg3_attempted", {"$add": ["$fg2_attempted", "$fg3_attempted"]}]},
-                            100
-                        ]},
-                        "else": 0
-                    }
-                },
-                "true_shooting": {
-                    "$cond": {
-                        "if": {"$gt": [{"$add": [{"$add": ["$fg2_attempted", "$fg3_attempted"]}, {"$multiply": [FT_POSSESSION_COST, "$ft_attempted"]}]}, 0]},
-                        "then": {"$multiply": [
-                            {"$divide": [
-                                "$points_scored",
-                                {"$multiply": [2, {"$add": [{"$add": ["$fg2_attempted", "$fg3_attempted"]}, {"$multiply": [FT_POSSESSION_COST, "$ft_attempted"]}]}]}
-                            ]},
-                            100
-                        ]},
-                        "else": 0
-                    }
-                },
-
-                # Playmaking metrics
-                "assist_fg_rate": {
-                    "$cond": {
-                        "if": {"$gt": [{"$add": ["$fg2_made", "$fg3_made"]}, 0]},
-                        "then": {"$multiply": [
-                            {"$divide": ["$assists", {"$add": ["$fg2_made", "$fg3_made"]}]},
-                            100
-                        ]},
-                        "else": 0
-                    }
-                },
-                "assist_rate": {
-                    "$cond": {
-                        "if": {"$gt": ["$total_possessions", 0]},
-                        "then": {"$multiply": [{"$divide": ["$assists", "$total_possessions"]}, 100]},
-                        "else": 0
-                    }
-                },
-                "steal_rate": {
-                    "$cond": {
-                        "if": {"$gt": ["$total_possessions", 0]},
-                        "then": {"$multiply": [{"$divide": ["$steals", "$total_possessions"]}, 100]},
-                        "else": 0
-                    }
-                },
-                "block_rate": {
-                    "$cond": {
-                        "if": {"$gt": ["$total_possessions", 0]},
-                        "then": {"$multiply": [{"$divide": ["$blocks", "$total_possessions"]}, 100]},
-                        "else": 0
-                    }
-                },
-
-                # Rebounding metrics
-                "defensive_rebound_rate": {
-                    "$cond": {
-                        "if": {"$gt": [{"$add": ["$rebounds_def", "$opponent_rebounds_off"]}, 0]},
-                        "then": {"$multiply": [
-                            {"$divide": ["$rebounds_def", {"$add": ["$rebounds_def", "$opponent_rebounds_off"]}]},
-                            100
-                        ]},
-                        "else": 0
-                    }
-                }
             }
         })
 

@@ -24,6 +24,8 @@ export default defineConfig(({ mode }) => ({
       // design/ is shared with the live app: tokens, Tailwind preset and theme store (issue #188)
       '@design': path.resolve(__dirname, '../design'),
       // the unlocking of scoped files (decryption, invitations, rights) is the live app's: one implementation until the shared interface (#330)
+      // the team formulas are defined once, in config/formulas.json (#1153): Python reads the same file
+      '@config': path.resolve(__dirname, '../config'),
       '@live-package': path.resolve(__dirname, '../apps/live-android/src/package'),
     },
   },

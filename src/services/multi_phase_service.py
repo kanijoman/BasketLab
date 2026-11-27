@@ -15,7 +15,7 @@ from __future__ import annotations
 from typing import Any, Dict, List
 
 from src.services._team_id import with_team_id
-from src.live_core.four_factors import FT_POSSESSION_COST
+from src.stats.formulas import evaluate_all
 
 # Fields that are simple totals (sum across phases)
 _SUM_FIELDS = (
@@ -26,7 +26,7 @@ _SUM_FIELDS = (
     "ft_made", "ft_attempts",
     "rebounds_off", "rebounds_def", "total_rebounds",
     "assists", "steals", "turnovers", "blocks", "personal_fouls",
-    "total_possessions", "pace_possessions", "total_minutes",
+    "total_possessions", "opponent_possessions", "pace_possessions", "opponent_rebounds_off", "opponent_rebounds_def", "total_minutes",
     "total_points",  # player-level alias
     "valoracion",    # player valoración (PIR)
 )
@@ -221,60 +221,15 @@ def _recompute_derived(row: Dict) -> None:
         row["offensive_rebounds_per_game"] = round(orb / games, 2)
         row["defensive_rebounds_per_game"] = round(drb / games, 2)
 
-    # Collect shooting totals for advanced stats
-    fg2m = row.get("fg2_made", 0) or 0
-    fg2a = row.get("fg2_attempts", 0) or 0
-    fg3m = row.get("fg3_made", 0) or 0
-    fg3a = row.get("fg3_attempts", 0) or 0
-    fta  = row.get("ft_attempts", 0) or 0
-    fgm  = fg2m + fg3m
-    fga  = fg2a + fg3a
-    tov  = row.get("turnovers", 0) or 0
-    ast  = row.get("assists", 0) or 0
-    stl  = row.get("steals", 0) or 0
-    blk  = row.get("blocks", 0) or 0
-    # Use total_points (player rows) or points_scored (team rows)
-    pts  = row.get("points_scored") or row.get("total_points", 0) or 0
-    poss = row.get("total_possessions", 0) or 0
-    opp_pts = row.get("points_received", 0) or 0
-
-    # Offensive / Defensive / Net rating (per 100 possessions)
-    if poss:
-        row["offensive_rating"] = round(pts / poss * 100, 2)
-        row["defensive_rating"] = round(opp_pts / poss * 100, 2)
-        row["net_rating"] = round((pts - opp_pts) / poss * 100, 2)
-
-    # eFG%
-    if fga:
-        row["efg_percentage"] = round((fg2m + 1.5 * fg3m) / fga * 100, 2)
-        row["three_point_rate"] = round(fg3a / fga * 100, 2)
-
-    # TOV% (four-factors formula)
-    tov_denom = fga + FT_POSSESSION_COST * fta + tov
-    if tov_denom:
-        row["turnover_rate"] = round(tov / tov_denom * 100, 2)
-
-    # Free-throw rate
-    if fga:
-        row["free_throw_rate"] = round(fta / fga * 100, 2)
-
-    # True shooting %
-    ts_denom = 2 * (fga + FT_POSSESSION_COST * fta)
-    if ts_denom and pts:
-        row["true_shooting"] = round(pts / ts_denom * 100, 2)
-
-    # Assist / field-goal rate
-    if fgm:
-        row["assist_fg_rate"] = round(ast / fgm * 100, 2)
-
-    # Rates per 100 possessions
-    if poss:
-        row["assist_rate"] = round(ast / poss * 100, 2)
-        row["steal_rate"]  = round(stl / poss * 100, 2)
-        row["block_rate"]  = round(blk / poss * 100, 2)
-
-    # Rebound share rates (within own team totals — opponent data not available)
-    reb_total = orb + drb
-    if reb_total:
-        row["offensive_rebound_rate"] = round(orb / reb_total * 100, 2)
-        row["defensive_rebound_rate"] = round(drb / reb_total * 100, 2)
+    # The rates: the formulas of the registry (config/formulas.json, #1153) over the totals of every phase. The rival's totals (possessions, rebounds) are summed too: a phase that
+    # lacks them leaves its rates out (None), never a different formula.
+    counters = {
+        "points": row.get("points_scored") or row.get("total_points", 0) or 0, "points_against": row.get("points_received", 0) or 0,
+        "fg2m": row.get("fg2_made", 0) or 0, "fg2a": row.get("fg2_attempts", 0) or 0, "fg3m": row.get("fg3_made", 0) or 0, "fg3a": row.get("fg3_attempts", 0) or 0,
+        "fta": row.get("ft_attempts", 0) or 0, "ast": row.get("assists", 0) or 0, "stl": row.get("steals", 0) or 0, "blk": row.get("blocks", 0) or 0,
+        "tov": row.get("turnovers", 0) or 0, "orb": orb, "drb": drb, "opp_orb": row.get("opponent_rebounds_off", 0) or 0, "opp_drb": row.get("opponent_rebounds_def", 0) or 0,
+        "poss": row.get("total_possessions", 0) or 0, "opp_poss": row.get("opponent_possessions", 0) or 0,
+    }
+    for name, value in evaluate_all(counters).items():
+        if value is not None:
+            row[name] = round(value, 2)

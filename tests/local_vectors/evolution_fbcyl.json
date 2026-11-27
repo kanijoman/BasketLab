@@ -2235,33 +2235,33 @@
   {
    "points": [
     {
-     "competition_cumulative": 23.2,
-     "competition_rolling": 23.2,
+     "competition_cumulative": 20.3,
+     "competition_rolling": 20.3,
      "game_number": 1
     },
     {
-     "competition_cumulative": 23.13,
-     "competition_rolling": 23.13,
+     "competition_cumulative": 20.17,
+     "competition_rolling": 20.17,
      "game_number": 2
     },
     {
-     "competition_cumulative": 22.63,
-     "competition_rolling": 22.63,
+     "competition_cumulative": 20.72,
+     "competition_rolling": 20.72,
      "game_number": 3
     },
     {
-     "competition_cumulative": 22.56,
-     "competition_rolling": 22.35,
+     "competition_cumulative": 20.71,
+     "competition_rolling": 20.84,
      "game_number": 4
     },
     {
-     "competition_cumulative": 22.43,
-     "competition_rolling": 21.96,
+     "competition_cumulative": 20.54,
+     "competition_rolling": 20.79,
      "game_number": 5
     },
     {
-     "competition_cumulative": 21.29,
-     "competition_rolling": 19.96,
+     "competition_cumulative": 19.43,
+     "competition_rolling": 18.15,
      "game_number": 6
     }
    ],
@@ -2271,33 +2271,33 @@
   {
    "points": [
     {
-     "competition_cumulative": 23.2,
-     "competition_rolling": 23.2,
+     "competition_cumulative": 20.3,
+     "competition_rolling": 20.3,
      "game_number": 1
     },
     {
-     "competition_cumulative": 23.13,
-     "competition_rolling": 23.13,
+     "competition_cumulative": 20.17,
+     "competition_rolling": 20.17,
      "game_number": 2
     },
     {
-     "competition_cumulative": 22.63,
-     "competition_rolling": 22.63,
+     "competition_cumulative": 20.72,
+     "competition_rolling": 20.72,
      "game_number": 3
     },
     {
-     "competition_cumulative": 22.56,
-     "competition_rolling": 22.56,
+     "competition_cumulative": 20.71,
+     "competition_rolling": 20.71,
      "game_number": 4
     },
     {
-     "competition_cumulative": 22.43,
-     "competition_rolling": 22.43,
+     "competition_cumulative": 20.54,
+     "competition_rolling": 20.54,
      "game_number": 5
     },
     {
-     "competition_cumulative": 21.29,
-     "competition_rolling": 20.91,
+     "competition_cumulative": 19.43,
+     "competition_rolling": 19.26,
      "game_number": 6
     }
    ],

@@ -70,6 +70,7 @@ Sección -> pregunta que responde (`grep -n '^#'` da el índice completo):
   - `league_zones` (#765: `league_zone_distribution`, los conteos por zona de cada equipo o jugador en las zonas del `ZoneAnalyzer`, con los que los PNG del informe semanal y del scouting individual colorean con la misma regla que la web)
 
 ### `src/stats`: calculadoras, `match_derived`
+- `formulas` (#1153): el registro de las tasas de equipo, que lee `config/formulas.json` (evaluar, y construir la expresión de Mongo de los pipelines); su gemelo del navegador es `frontend/src/lib/formulas.ts` (alias `@config` en Vite/tsconfig) y el vector compartido `tests/formulas/vector.json`.
 - calculadoras (StatsCalculator, avanzadas, jugador)
 - `match_derived.with_derived` aplica las cifras exactas de `DERIVED` (posesiones, rebotes y pérdidas validados) a los totales de un partido, y el informe semanal la usa en «Último partido» (#379)
 

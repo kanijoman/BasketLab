@@ -135,13 +135,16 @@ export function matchesFilters(r: Pick<GameRow, 'is_local' | 'won' | 'starttime'
   return true
 }
 
+import { evaluateAll } from '@/lib/formulas'
+
 type Sums = Record<(typeof SUMMED)[number], number>
 
 function derive(id: string, name: string, games: number, home: number, matches: GameRow['match_id'][], s: Sums, fbcyl: boolean): LocalTeamStat {
-  const fga = s.fg2a + s.fg3a
   const reb = fbcyl ? s.reb : s.def + s.off                       // FBCYL reports its own total of rebounds
-  const ortg = s.possessions === 0 ? 0 : (s.points / s.possessions) * 100
-  const drtg = s.oppPossessions === 0 ? 0 : (s.received / s.oppPossessions) * 100
+  // every rate with the formulas of the registry (config/formulas.json, #1153), 0 when its denominator is 0 as the pipelines' safe divide
+  const rate = evaluateAll({ points: s.points, points_against: s.received, fg2m: s.fg2m, fg2a: s.fg2a, fg3m: s.fg3m, fg3a: s.fg3a, fta: s.fta, ast: s.assists, stl: s.steals, blk: s.blocks,
+    tov: s.turnovers, orb: s.off, drb: s.def, opp_orb: s.oppOff, opp_drb: s.oppDef, poss: s.possessions, opp_poss: s.oppPossessions })
+  const r = (name: string) => rate[name] ?? 0
   return {
     _id: id, team_id: id, team_name: name,
     total_games: games, games_home: home, games_away: games - home,
@@ -156,13 +159,13 @@ function derive(id: string, name: string, games: number, home: number, matches: 
     offensive_rebounds_per_game: s.off / games, defensive_rebounds_per_game: s.def / games,
     assists_per_game: s.assists / games, steals_per_game: s.steals / games, turnovers_per_game: s.turnovers / games, blocks_per_game: s.blocks / games,
     fg2_percentage: pct(s.fg2m, s.fg2a), fg3_percentage: pct(s.fg3m, s.fg3a), ft_percentage: pct(s.ftm, s.fta),
-    efg_percentage: pct(s.fg2m + 1.5 * s.fg3m, fga), turnover_rate: pct(s.turnovers, s.possessions),
-    offensive_rebound_rate: pct(s.off, s.off + s.oppDef), free_throw_rate: pct(s.fta, fga),
-    three_point_rate: pct(s.fg3a, fga), true_shooting: pct(s.points, 2 * (fga + 0.44 * s.fta)),
-    assist_fg_rate: pct(s.assists, s.fg2m + s.fg3m),
-    assist_rate: div(s.assists * 100, s.possessions), steal_rate: div(s.steals * 100, s.possessions), block_rate: div(s.blocks * 100, s.possessions),
-    defensive_rebound_rate: pct(s.def, s.def + s.oppOff),
-    offensive_rating: ortg, defensive_rating: drtg, net_rating: fbcyl || s.possessions !== 0 ? ortg - drtg : 0,
+    efg_percentage: r('efg_percentage'), turnover_rate: r('turnover_rate'),
+    offensive_rebound_rate: r('offensive_rebound_rate'), free_throw_rate: r('free_throw_rate'),
+    three_point_rate: r('three_point_rate'), true_shooting: r('true_shooting'),
+    assist_fg_rate: r('assist_fg_rate'),
+    assist_rate: r('assist_rate'), steal_rate: r('steal_rate'), block_rate: r('block_rate'),
+    defensive_rebound_rate: r('defensive_rebound_rate'),
+    offensive_rating: r('offensive_rating'), defensive_rating: r('defensive_rating'), net_rating: r('net_rating'),
   }
 }
 

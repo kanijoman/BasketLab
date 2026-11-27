@@ -395,7 +395,7 @@ class TestAdvancedStatsRegression:
 
     def _team_row(self, games=10, pts=800, opp_pts=720, poss=950,
                   fg2m=200, fg2a=400, fg3m=80, fg3a=220, ftm=100, fta=130,
-                  orb=80, drb=200, ast=150, stl=60, blk=30, tov=100):
+                  orb=80, drb=200, ast=150, stl=60, blk=30, tov=100, opp_poss=None, opp_orb=70, opp_drb=190):
         """Build a realistic FEB-style aggregated team row."""
         return {
             "team_name": "TestTeam",
@@ -404,7 +404,8 @@ class TestAdvancedStatsRegression:
             "games_lost": 3,
             "points_scored": pts,
             "points_received": opp_pts,
-            "total_possessions": poss,
+            "total_possessions": poss, "opponent_possessions": poss if opp_poss is None else opp_poss,
+            "opponent_rebounds_off": opp_orb, "opponent_rebounds_def": opp_drb,
             "fg2_made": fg2m, "fg2_attempts": fg2a,
             "fg3_made": fg3m, "fg3_attempts": fg3a,
             "ft_made": ftm, "ft_attempts": fta,
@@ -429,14 +430,29 @@ class TestAdvancedStatsRegression:
         assert row.get("offensive_rating") == 80.0
 
     def test_defensive_rating_computed(self):
-        """defensive_rating = points_received / total_possessions * 100."""
+        """defensive_rating = points_received / the RIVAL's possessions * 100 (#1153)."""
         row = self._merged(opp_pts=720, poss=1000)
         assert row.get("defensive_rating") == 72.0
 
+    def test_defensive_rating_divides_by_the_rival_possessions_regression(self):
+        """Multifase divided the points the team received by its OWN possessions; the season table (and every other page) by the rival's."""
+        row = self._merged(opp_pts=720, poss=1000, opp_poss=900)
+        assert row.get("defensive_rating") == 80.0
+
     def test_net_rating_computed(self):
-        """net_rating = (pts - opp_pts) / poss * 100."""
-        row = self._merged(pts=800, opp_pts=720, poss=1000)
-        assert row.get("net_rating") == 8.0
+        """net_rating = offensive_rating - defensive_rating (each over its own possessions)."""
+        row = self._merged(pts=800, opp_pts=720, poss=1000, opp_poss=900)
+        assert row.get("net_rating") == round(80.0 - 80.0, 2)
+
+    def test_the_rebound_rates_use_the_rival_rebounds_regression(self):
+        """ORB% = ORB / (ORB + rival DRB) and DRB% = DRB / (DRB + rival ORB); Multifase used the team's own rebounds as the denominator."""
+        row = self._merged(orb=80, drb=200, opp_orb=70, opp_drb=190)
+        assert row.get("offensive_rebound_rate") == round(80 / (80 + 190) * 100, 2)
+        assert row.get("defensive_rebound_rate") == round(200 / (200 + 70) * 100, 2)
+
+    def test_steals_and_blocks_are_per_rival_possession_regression(self):
+        row = self._merged(stl=60, blk=30, poss=1000, opp_poss=900)
+        assert row.get("steal_rate") == round(60 / 900 * 100, 2) and row.get("block_rate") == round(30 / 900 * 100, 2)
 
     def test_efg_percentage_computed(self):
         """efg_percentage = (fg2m + 1.5*fg3m) / fga * 100."""

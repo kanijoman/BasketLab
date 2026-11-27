@@ -35,7 +35,7 @@ describe('aggregateTeams: the team tables from the rows of the contract (issue #
   it('a team with no possessions has zero ratings rather than NaN (the pipeline divides safely)', () => {
     const lone = rows.filter(r => r.team_id === rows[0].team_id).slice(0, 1).map(r => ({ ...r, possessions: 0, opponent_possessions: 0 }))
     const [team] = aggregateTeams(lone, {}).team_stats
-    expect([team.offensive_rating, team.defensive_rating, team.net_rating, team.turnover_rate]).toEqual([0, 0, 0, 0])
+    expect([team.offensive_rating, team.defensive_rating, team.net_rating, team.assist_rate, team.steal_rate]).toEqual([0, 0, 0, 0, 0])          // the rates over possessions; TOV% is over FGA + 0.44 FTA + TOV (#1153)
   })
 
   it('the ratings divide by the real possessions of a game with overtime and only the pace stays per 40 minutes (#1154)', () => {

@@ -1,190 +1,54 @@
-"""Advanced statistics calculations for MongoDB aggregation pipeline."""
+"""Advanced statistics of a team season for the MongoDB aggregation pipelines.
+
+Every rate is defined ONCE in ``config/formulas.json`` (#1153; ``src.stats.formulas``): these functions only say where the counters of a season ``$group`` are. The field names the
+pipelines of a league publish (``fg2_made``, ``rebounds_off``, ``total_possessions``...) map to the counters of the registry; the possessions are the REAL ones (#1154).
+"""
 
 from typing import Dict
-from ..utils import safe_divide
-from src.live_core.four_factors import FT_POSSESSION_COST
+
+from src.stats.formulas import mongo_expression
+
+# the counters of the registry -> the fields of the season ``$group`` of FEB's pipelines
+SEASON_FIELDS: Dict[str, str] = {
+    "points": "$points_scored", "points_against": "$points_received",
+    "fg2m": "$fg2_made", "fg2a": "$fg2_attempted", "fg3m": "$fg3_made", "fg3a": "$fg3_attempted", "fta": "$ft_attempted",
+    "ast": "$assists", "stl": "$steals", "blk": "$blocks", "tov": "$turnovers",
+    "orb": "$rebounds_off", "drb": "$rebounds_def", "opp_orb": "$opponent_rebounds_off", "opp_drb": "$opponent_rebounds_def",
+    "poss": "$total_possessions", "opp_poss": "$opponent_possessions",
+}
 
 
-def _percentage_metric(numerator, denominator) -> Dict:
-    """
-    Create a percentage metric (value * 100).
-
-    Args:
-        numerator: Numerator expression
-        denominator: Denominator expression
-
-    Returns:
-        MongoDB expression for percentage calculation
-    """
-    return {
-        "$multiply": [
-            safe_divide(numerator, denominator),
-            100
-        ]
-    }
-
-
-def _rate_per_100_possessions(value: str) -> Dict:
-    """
-    Calculate a rate per 100 possessions.
-
-    Args:
-        value: Field name for the value to calculate rate for (with or without $ prefix)
-
-    Returns:
-        MongoDB expression for rate per 100 possessions
-    """
-    # Ensure the value has the $ prefix
-    field_ref = value if value.startswith("$") else f"${value}"
-
-    return {
-        "$multiply": [
-            safe_divide(
-                {"$multiply": [field_ref, 100]},
-                "$total_possessions"
-            ),
-            1
-        ]
-    }
+def _rates(*names: str, fields: Dict[str, str] = SEASON_FIELDS) -> dict:
+    return {name: mongo_expression(name, fields) for name in names}
 
 
 def get_four_factors() -> dict:
-    """
-    Calculate Dean Oliver's Four Factors of Basketball Success:
-    - eFG%: Effective Field Goal Percentage
-    - TOV%: Turnover Rate
-    - ORB%: Offensive Rebound Rate
-    - FTr: Free Throw Rate
-
-    Returns:
-        Dictionary with field definitions for Four Factors
-    """
-    total_fga = {"$add": ["$fg2_attempted", "$fg3_attempted"]}
-
-    return {
-        "efg_percentage": _percentage_metric(
-            {"$add": ["$fg2_made", {"$multiply": [1.5, "$fg3_made"]}]},
-            total_fga
-        ),
-        "turnover_rate": _percentage_metric("$turnovers", "$total_possessions"),
-        "offensive_rebound_rate": _percentage_metric(
-            "$rebounds_off",
-            {"$add": ["$rebounds_off", "$opponent_rebounds_def"]}
-        ),
-        "free_throw_rate": _percentage_metric("$ft_attempted", total_fga)
-    }
+    """Dean Oliver's Four Factors: eFG%, TOV% (TOV / (FGA + 0.44 FTA + TOV)), ORB% (against the rival's defensive rebounds) and FTr."""
+    return _rates("efg_percentage", "turnover_rate", "offensive_rebound_rate", "free_throw_rate")
 
 
 def get_advanced_shooting_metrics() -> dict:
-    """
-    Calculate advanced shooting metrics:
-    - 3Pr: Three Point Rate (% of FGA that are 3-pointers)
-    - TS%: True Shooting Percentage
-
-    Returns:
-        Dictionary with field definitions for advanced shooting metrics
-    """
-    total_fga = {"$add": ["$fg2_attempted", "$fg3_attempted"]}
-
-    return {
-        "three_point_rate": _percentage_metric("$fg3_attempted", total_fga),
-        "true_shooting": _percentage_metric(
-            "$points_scored",
-            {"$multiply": [2, {"$add": [total_fga, {"$multiply": [FT_POSSESSION_COST, "$ft_attempted"]}]}]}
-        )
-    }
+    """3Pr (share of the FGA that are threes) and TS%."""
+    return _rates("three_point_rate", "true_shooting")
 
 
 def get_playmaking_metrics() -> dict:
-    """
-    Calculate playmaking and ball control metrics:
-    - AST%: Assist Rate (% of made field goals that were assisted)
-    - ROB%: Steal Rate
-    - TAP%: Block Rate
-
-    Returns:
-        Dictionary with field definitions for playmaking metrics
-    """
-    total_fg_made = {"$add": ["$fg2_made", "$fg3_made"]}
-
-    return {
-        "assist_fg_rate": _percentage_metric("$assists", total_fg_made),
-        "assist_rate": _rate_per_100_possessions("$assists"),
-        "steal_rate": _rate_per_100_possessions("$steals"),
-        "block_rate": _rate_per_100_possessions("$blocks")
-    }
+    """AST% (assisted share of the made field goals), assists per 100 own possessions, and steals and blocks per 100 RIVAL possessions (decided 27/11/2026, #1153)."""
+    return _rates("assist_fg_rate", "assist_rate", "steal_rate", "block_rate")
 
 
 def get_rebounding_metrics() -> dict:
-    """
-    Calculate rebounding metrics:
-    - DRB%: Defensive Rebound Rate
-
-    Formula: DRB% = (Team Defensive Rebounds / (Team Defensive Rebounds + Opponent Offensive Rebounds)) × 100
-
-    Returns:
-        Dictionary with field definitions for rebounding metrics
-    """
-    return {
-        "defensive_rebound_rate": _percentage_metric(
-            "$rebounds_def",
-            {"$add": ["$rebounds_def", "$opponent_rebounds_off"]}
-        )
-    }
+    """DRB%: the team's defensive rebounds over those plus the rival's offensive ones."""
+    return _rates("defensive_rebound_rate")
 
 
 def get_efficiency_ratings() -> dict:
-    """
-    Calculate efficiency ratings:
-    - OER: Offensive Efficiency Rating (points per 100 possessions)
-    - DER: Defensive Efficiency Rating (points allowed per 100 possessions)
-    - Net Rating: Difference between OER and DER
-
-    Returns:
-        Dictionary with field definitions for efficiency ratings
-    """
-    offensive_rating = {
-        "$cond": [
-            {"$eq": ["$total_possessions", 0]},
-            0,
-            {"$multiply": [
-                {"$divide": ["$points_scored", "$total_possessions"]},
-                100
-            ]}
-        ]
-    }
-
-    defensive_rating = {
-        "$cond": [
-            {"$eq": ["$opponent_possessions", 0]},
-            0,
-            {"$multiply": [
-                {"$divide": ["$points_received", "$opponent_possessions"]},
-                100
-            ]}
-        ]
-    }
-
-    return {
-        "offensive_rating": offensive_rating,
-        "defensive_rating": defensive_rating,
-        "net_rating": {
-            "$cond": [
-                {"$eq": ["$total_possessions", 0]},
-                0,
-                {"$subtract": [offensive_rating, defensive_rating]}
-            ]
-        }
-    }
+    """ORtg (points per 100 own possessions), DRtg (points allowed per 100 RIVAL possessions) and their difference."""
+    return _rates("offensive_rating", "defensive_rating", "net_rating")
 
 
 def get_all_advanced_stats() -> dict:
-    """
-    Get all advanced statistics combined.
-
-    Returns:
-        Dictionary with all advanced statistics field definitions
-    """
+    """All the advanced statistics of a season."""
     stats = {}
     stats.update(get_four_factors())
     stats.update(get_advanced_shooting_metrics())

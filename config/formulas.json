@@ -1,0 +1,20 @@
+{
+  "_doc": "The ONLY definition of the team rates (#1153). Each formula is scale * (num) / (den), num and den being linear combinations of counters; net_rating is a difference. Python (src/stats/formulas.py), the browser (frontend/src/lib/formulas.ts) and the Mongo pipelines (formulas.mongo_expression) read it; tests/formulas/vector.json (textbook expressions, independent of this file) checks all three. Counters: points, points_against, fg2m, fg2a, fg3m, fg3a, fta, ast, stl, blk, tov, orb, drb, opp_orb, opp_drb (the rival's rebounds), poss and opp_poss (the REAL possessions of the team and of its rival, #1154). The cost of a free throw (0.44) is the tracker's (live_core.four_factors.FT_POSSESSION_COST).",
+  "counters": ["points", "points_against", "fg2m", "fg2a", "fg3m", "fg3a", "fta", "ast", "stl", "blk", "tov", "orb", "drb", "opp_orb", "opp_drb", "poss", "opp_poss"],
+  "formulas": {
+    "offensive_rating": {"num": {"points": 1}, "den": {"poss": 1}, "scale": 100},
+    "defensive_rating": {"num": {"points_against": 1}, "den": {"opp_poss": 1}, "scale": 100},
+    "net_rating": {"minus": ["offensive_rating", "defensive_rating"]},
+    "efg_percentage": {"num": {"fg2m": 1, "fg3m": 1.5}, "den": {"fg2a": 1, "fg3a": 1}, "scale": 100},
+    "turnover_rate": {"num": {"tov": 1}, "den": {"fg2a": 1, "fg3a": 1, "fta": 0.44, "tov": 1}, "scale": 100},
+    "offensive_rebound_rate": {"num": {"orb": 1}, "den": {"orb": 1, "opp_drb": 1}, "scale": 100},
+    "defensive_rebound_rate": {"num": {"drb": 1}, "den": {"drb": 1, "opp_orb": 1}, "scale": 100},
+    "free_throw_rate": {"num": {"fta": 1}, "den": {"fg2a": 1, "fg3a": 1}, "scale": 100},
+    "three_point_rate": {"num": {"fg3a": 1}, "den": {"fg2a": 1, "fg3a": 1}, "scale": 100},
+    "true_shooting": {"num": {"points": 1}, "den": {"fg2a": 2, "fg3a": 2, "fta": 0.88}, "scale": 100},
+    "assist_fg_rate": {"num": {"ast": 1}, "den": {"fg2m": 1, "fg3m": 1}, "scale": 100},
+    "assist_rate": {"num": {"ast": 1}, "den": {"poss": 1}, "scale": 100},
+    "steal_rate": {"num": {"stl": 1}, "den": {"opp_poss": 1}, "scale": 100},
+    "block_rate": {"num": {"blk": 1}, "den": {"opp_poss": 1}, "scale": 100}
+  }
+}

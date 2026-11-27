@@ -48,3 +48,13 @@ def test_the_fbcyl_pipeline_reads_the_exact_possessions_too_regression():
     proj = next(stage["$project"] for stage in pipeline if "$project" in stage and "pts" in stage["$project"])
 
     assert "DERIVED.TEAM.possessions" in str(proj["poss"]) and "DERIVED.TEAM.possessions" in str(proj["opp_poss"])
+
+
+def test_the_turnover_rate_of_a_game_is_the_four_factors_one_regression():
+    """#1153: Evolución divided the turnovers by the possessions; the Four Factors (and Multifase, Live and the consistency) by FGA + 0.44 FTA + TOV."""
+    service = EvolutionService(MagicMock())
+    row = service._feb_doc_to_row({"pts": 80, "fg2a": 40, "fg3a": 20, "fta": 25, "orb": 9, "tov": 12, "poss": 75.0,
+                                   "opp_pts": 70, "opp_fg2a": 40, "opp_fg3a": 15, "opp_fta": 20, "opp_orb": 6, "opp_tov": 12, "opp_poss": 72.0})
+
+    assert service._compute_stat(row, "turnover_rate") == pytest.approx(12 / (60 + 0.44 * 25 + 12) * 100)
+    assert service._compute_stat(row, "steal_rate") == pytest.approx(0.0)
