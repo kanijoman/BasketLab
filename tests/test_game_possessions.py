@@ -102,6 +102,33 @@ def test_turnovers_include_team_turnovers_and_fall_back_when_the_pbp_has_fewer()
     assert (more["tov"], more["tov_source"]) == (2, "pbp") and (fewer["tov"], fewer["tov_source"]) == (5, "boxscore")
 
 
+def test_a_line_repeated_by_the_feed_is_counted_once_regression():
+    """Game 2536129 repeats a line with the same number and second (#1123): a duplicated turnover must not inflate the pbp count."""
+    turnover = _line(1, "A", "lose", "P: PÉRDIDA (Pérdidas: 1)", "09:50")
+    other = _line(2, "A", "lose", "P: PÉRDIDA (Pérdidas: 2)", "09:40")
+
+    single = team_game_possessions(_game([turnover, other], a_box={"to": 0}))["A"]
+    repeated = team_game_possessions(_game([turnover, dict(turnover), other], a_box={"to": 0}))["A"]
+
+    assert (single["tov"], repeated["tov"]) == (2, 2)
+
+
+def test_two_lines_with_the_same_number_and_different_content_are_both_kept():
+    first = _line(1, "A", "lose", "P: PÉRDIDA (Pérdidas: 1)", "09:50")
+    second = _line(1, "A", "lose", "Q: PÉRDIDA (Pérdidas: 1)", "09:50", player="q")
+
+    assert team_game_possessions(_game([first, second], a_box={"to": 0}))["A"]["tov"] == 2
+
+
+def test_rebounds_that_exceed_the_box_total_are_flagged_regression():
+    """Offensive from the pbp (player rebounds the box does not have) plus defensive from the box can exceed the real total (#1123)."""
+    coherent = team_game_possessions(_rebound_game(2, 0, 0, box_ro=2, box_rd=0))["A"]
+    inflated = team_game_possessions(_rebound_game(3, 0, 0, box_ro=1, box_rd=0))["A"]
+
+    assert coherent["rebounds_coherent"] is True
+    assert inflated["rebounds_coherent"] is False
+
+
 # ---------------------------------------------------------------- possessions: pbp or estimate
 
 def test_possessions_come_from_the_pbp_when_it_is_reliable_and_agrees_with_the_estimate():

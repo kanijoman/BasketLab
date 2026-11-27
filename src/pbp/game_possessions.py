@@ -4,6 +4,10 @@ Rebounds: the pbp counts players and teams (the official box score does not cred
 rebounding team is the one that missed. It is valid when it is not fewer than the box score (``ro`` / ``rd``), checked
 for offensive and defensive separately; otherwise the box score value is used and flagged (``*_source``).
 
+``rebounds_coherent`` flags when the validated ``orb + drb`` exceeds the box rebounds plus the team rebounds of the pbp (the per-metric
+choice can mix a pbp side with a box side; #1123). Informative: the per-metric rule (#351) is unchanged. Lines repeated verbatim by the feed
+are dropped before counting (``game_events``).
+
 Possessions: the exact count of the tracker, unless the game is not ``reliable`` by its impact (#390): more than
 ``UNKNOWN_ORIGIN_MAX_PCT`` of the points scored in possessions of unknown origin (the feed lacks the event that ended the rival's
 possession), or a count that differs from the estimate (FGA - ORB + TOV + 0.44 FTA, with the validated rebounds and turnovers) by
@@ -132,6 +136,7 @@ def analyse_game(game_doc: Dict[str, Any]) -> Optional[GameAnalysis]:
             "orb": orb, "orb_source": orb_source, "team_orb": counts["orb_team"],
             "drb": drb, "drb_source": drb_source, "team_drb": counts["drb_team"],
             "tov": tov, "tov_source": tov_source,
+            "rebounds_coherent": orb + drb <= _int(box.get("ro")) + _int(box.get("rd")) + counts["orb_team"] + counts["drb_team"],
             "possessions_pbp": quality.counted.get(tid, 0),
             "possessions_estimate": estimate_possessions(fga, orb, tov, fta),
             "quality_level": quality.level, "breaks_raw": quality.breaks_raw, "game_minutes": minutes,

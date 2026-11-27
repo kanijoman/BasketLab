@@ -14,4 +14,17 @@ def game_events(game_data: Dict, is_fbcyl: bool) -> List[Event]:
     lines = (game_data.get("PLAYBYPLAY") or {}).get("LINES") or []
     # the real feed always has a line number; without one the position in the list is the order
     numbered = [line if line.get("num") not in (None, "") else {**line, "num": str(i + 1)} for i, line in enumerate(lines)]
+    numbered = _without_repeats(numbered)
     return [e for e in (parse_line(line) for line in numbered) if e is not None]
+
+
+def _without_repeats(lines: List[Dict]) -> List[Dict]:
+    """Drop the lines the feed repeats verbatim (game 2536129: same number, same second): they would be counted twice.
+    Same number with different content is a correction of the feed and both lines stay."""
+    seen, kept = set(), []
+    for line in lines:
+        key = tuple(sorted((k, str(v)) for k, v in line.items()))
+        if key not in seen:
+            seen.add(key)
+            kept.append(line)
+    return kept
