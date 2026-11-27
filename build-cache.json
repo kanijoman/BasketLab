@@ -1,0 +1,1959 @@
+{
+ "epoch": 1,
+ "competitions": {
+  "FIBA_EuroBasket_2025_": {
+   "fingerprint": "cdec6fcaf3acc91a9758fe3e4ca4363988099039ca787ea3adecf2cddd2fc2c2",
+   "sections": [
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "FIBA_EuroBasket_Women_2025_": {
+   "fingerprint": "c62ab65d77509e7e0c3a08daef34b055f57eb5c8e4411357a007d24198726716",
+   "sections": [
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "FIBA_U16_EuroBasket_2024_": {
+   "fingerprint": "60a9fce81d715abbc296fe3d12f0bdd662480e0937d3339a65dd2d6dd06b1846",
+   "sections": [
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "FIBA_U16_EuroBasket_2025_": {
+   "fingerprint": "4fd2d7dabffe91b22fbbb6b497184026ca966bfba5ed526479825e7acc8234d2",
+   "sections": [
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "FIBA_U16_EuroBasket_2026_": {
+   "fingerprint": "334050ea5ab464ae3e21be19f77c4fcae325a3f15b6de49a8cd93d8295df55f5",
+   "sections": [
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "FIBA_U16_EuroBasket_Women_2024_": {
+   "fingerprint": "2b47caeb2c95c91ac9a61cc6e7168dc87b14dc697a7311116c602092fc33b19e",
+   "sections": [
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "FIBA_U16_EuroBasket_Women_2025_": {
+   "fingerprint": "9f231c2000f91c24cc3fe3d233904115f318a73e6aa99902ef1adfde897f7da9",
+   "sections": [
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "FIBA_U16_EuroBasket_Women_2026_": {
+   "fingerprint": "aa4b39c4f26126467a80d42ef5205fd1e82b60577965a3cd0bc894bcd5fde55b",
+   "sections": [
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "FIBA_U18_EuroBasket_2024_": {
+   "fingerprint": "444ebbd24251714980e09df9b5ff7ca4f2da5c85f7089d47e0fc080409c1ee17",
+   "sections": [
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "FIBA_U18_EuroBasket_2025_": {
+   "fingerprint": "4f2a4f3407b093e822b7816e9dd72c48825ed6e9578c4f092d52419d530229ca",
+   "sections": [
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "FIBA_U18_EuroBasket_2026_": {
+   "fingerprint": "5de947903e2e520a10cdca0231d8a4889bdeade5c594ce55c3de7f39347d779f",
+   "sections": [
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "FIBA_U18_EuroBasket_Women_2024_": {
+   "fingerprint": "f0cd53d97d4414e19000f6f963558e0b6ea6137213dc2c1923319a2386e3e6f5",
+   "sections": [
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "FIBA_U18_EuroBasket_Women_2025_": {
+   "fingerprint": "be8aebc2ecd123c5e631ce413e843ff4a79350fab684000243f016983f9a342f",
+   "sections": [
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "FIBA_U18_EuroBasket_Women_2026_": {
+   "fingerprint": "7506d613c865b96cada8fea48594e54517c87fe045c6631700c6a23671ea7c3b",
+   "sections": [
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "FIBA_U19_World_Cup_2025_": {
+   "fingerprint": "5007273804559a48499f022476b217d3f03d4ebffcc97299767ca376d4de875d",
+   "sections": [
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "FIBA_U19_World_Cup_Women_2025_": {
+   "fingerprint": "600747cfa3c4a61c4e1222b5618886567a61830534a2cf2c411a6f3e19affd6f",
+   "sections": [
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "FIBA_U20_EuroBasket_2024_": {
+   "fingerprint": "13648c77efe89e107c329ec4a0483b9b87df8c7ab2783fae4b9d71453efd2b2a",
+   "sections": [
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "FIBA_U20_EuroBasket_2025_": {
+   "fingerprint": "652badd20ea55a2ae586748b9480aaa81ff8ffed8d81549934f57550756c4ee2",
+   "sections": [
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "FIBA_U20_EuroBasket_2026_": {
+   "fingerprint": "ac1fe724336f9ab4cd95e34fd4f5d87d925b485650553d02f4a6e8e8d65cfb84",
+   "sections": [
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "FIBA_U20_EuroBasket_Women_2024_": {
+   "fingerprint": "2e25a6a2926085764cfb1d7b52b29d43ef165d1d14bb452fd74fe9e5ec024383",
+   "sections": [
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "FIBA_U20_EuroBasket_Women_2025_": {
+   "fingerprint": "de89229349fa942cccd6c6e12cde19c3f86c0d9f1d152d68def3e7c3f7ec2b02",
+   "sections": [
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "FIBA_U20_EuroBasket_Women_2026_": {
+   "fingerprint": "940bb184b898f67400cd72b352077c9a614cc8c4b4c23dd2fe270c5a0125efaf",
+   "sections": [
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "NCAA_D1_Men_2025_A-10": {
+   "fingerprint": "43c29f5ab70f54ad8fcfbf3bc1757f7ad0534242f208b2e8b89fe389c193c8a7",
+   "sections": [
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "NCAA_D1_Men_2025_ACC": {
+   "fingerprint": "4a22e32e71b1b8f307191f1595c8630fc53192707558895cb3bf491dd95aaddb",
+   "sections": [
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "NCAA_D1_Men_2025_Am_East": {
+   "fingerprint": "130acb1494ec42e886b6c84e331a6959e9060279254f994a307b51a3cb026287",
+   "sections": [
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "NCAA_D1_Men_2025_American": {
+   "fingerprint": "db629432f9a330a18a6d650df45674431e02d803503e6c07c8a3311a416713d4",
+   "sections": [
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "NCAA_D1_Men_2025_Atlantic_Sun": {
+   "fingerprint": "66d169a6cd09a4ed0a0ed593b90cc665926cbba16087783f9a292c48bf215f87",
+   "sections": [
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "NCAA_D1_Men_2025_Big_12": {
+   "fingerprint": "3801551a7e861903a69183c445918373b737baada55942b361bc60241ca88287",
+   "sections": [
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "NCAA_D1_Men_2025_Big_East": {
+   "fingerprint": "da5dab984cc399a258a7675080dae9a504e53d505678abacbfc207bc993383df",
+   "sections": [
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "NCAA_D1_Men_2025_Big_Sky": {
+   "fingerprint": "3ab4eb02c8e0086af9b2ad101f8d5795485ea25e6fa221e3ac4c7039d3ce2587",
+   "sections": [
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "NCAA_D1_Men_2025_Big_South": {
+   "fingerprint": "0a3d8aeb20bcc8c1a7a38bdd03954f900725a45cae29fda93bf5fb44b5b0ce97",
+   "sections": [
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "NCAA_D1_Men_2025_Big_Ten": {
+   "fingerprint": "4101a2f4a475f9f3ade41b9923bd2893be8047e5b7a3f1d46314e0a405ff3779",
+   "sections": [
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "NCAA_D1_Men_2025_Big_West": {
+   "fingerprint": "06ef27ae131b9533fe466394dff65cd5e4c760d2f5c4c810ef7990f996fc7714",
+   "sections": [
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "NCAA_D1_Men_2025_CAA": {
+   "fingerprint": "bacf453d2b0580c01ebb4c5cd948c1aff06426b98d3ef1b21ba9624cd389c88f",
+   "sections": [
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "NCAA_D1_Men_2025_CUSA": {
+   "fingerprint": "8dcae4d267e3a5f1eb2df124a6361438740263f728f7ac08e83a8c376378927d",
+   "sections": [
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "NCAA_D1_Men_2025_Horizon": {
+   "fingerprint": "d30b4e818179e788c2a9b326436f25335a455e08088e50625d9aaea63e095ded",
+   "sections": [
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "NCAA_D1_Men_2025_Ivy": {
+   "fingerprint": "19726845792711a61773c1a5dc6e4d4e8250b33c7761b6c5e2dff45d2d9dd4e3",
+   "sections": [
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "NCAA_D1_Men_2025_MAC": {
+   "fingerprint": "c9c959855cb66e8df991f3baa1be9308041cae22896bb92db0ac7901cf2ed81f",
+   "sections": [
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "NCAA_D1_Men_2025_MEAC": {
+   "fingerprint": "de9a8b804eae7add7f3cb6512c5616607b0a3af605d286af9c1c3b6b89ee1110",
+   "sections": [
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "NCAA_D1_Men_2025_MVC": {
+   "fingerprint": "4db5bcbc3790b46548eeb57707ed1f3bdd48f965d43788d7af43b6fef2144902",
+   "sections": [
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "NCAA_D1_Men_2025_Metro": {
+   "fingerprint": "8790aad9acad24b9c61943a1ea11e6d5214ac4cd3de97896ed051b5332a79d8e",
+   "sections": [
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "NCAA_D1_Men_2025_Mountain_West": {
+   "fingerprint": "05518ec8a831f2109a8e66d3b97849743e963c9838c90f0e935919cea1757588",
+   "sections": [
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "NCAA_D1_Men_2025_NEC": {
+   "fingerprint": "76f627fe31ddf9d891984737748d701f58d08033c9bfc3e24a33914a5c1e1c29",
+   "sections": [
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "NCAA_D1_Men_2025_OVC": {
+   "fingerprint": "70a431bd0fc8c56d3110a504e9731525b8b76c0f7ddc47cff0f90f143d66f142",
+   "sections": [
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "NCAA_D1_Men_2025_Patriot": {
+   "fingerprint": "a0340ce16de73fcf4ae581fb0e566c908aa988a5b7aaada27e24e89892e4d105",
+   "sections": [
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "NCAA_D1_Men_2025_SEC": {
+   "fingerprint": "9c351b4bcbf38a5a7db5c7e059342c6f4e31e017dc79fea6c925cae4e9d9550a",
+   "sections": [
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "NCAA_D1_Men_2025_SWAC": {
+   "fingerprint": "2ac54578aa097d4dab1dabe7942857d67889754ffbc048cf42e5761177f45752",
+   "sections": [
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "NCAA_D1_Men_2025_SoCon": {
+   "fingerprint": "2a2f6c480a9d308da6ee13dc0f9c067f0c6e91481e93490b9d2e019a96eb0d48",
+   "sections": [
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "NCAA_D1_Men_2025_Southland": {
+   "fingerprint": "45125fc2cb34380028caf214c82d6c5751c6d19c7ea8445301bb279cded5f439",
+   "sections": [
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "NCAA_D1_Men_2025_Summit": {
+   "fingerprint": "bc7e65a54fcb28a798410f388cb4081808700a572e8a46db62cf64041792fea3",
+   "sections": [
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "NCAA_D1_Men_2025_Sun_Belt": {
+   "fingerprint": "dbbe8709bfe0e64a7faae02898fcf94e2b802f4846fe2905fab7f3e42f93ffbb",
+   "sections": [
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "NCAA_D1_Men_2025_UAC": {
+   "fingerprint": "3bf61b6c9c25bd67d2d6bd64ad1f4c95195456a992d99ee801f3bc278e1bedf4",
+   "sections": [
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "NCAA_D1_Men_2025_WCC": {
+   "fingerprint": "c981f3ee6f62ddc4f392d91d2c68a3a124cac94b0e5d21782f00429bdfaefd6e",
+   "sections": [
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "NCAA_D1_Women_2025_A-10": {
+   "fingerprint": "e2cf552a559935351b3e9b7006f6a976ce902fe4c2fa02ac98f6c8938d0b5cc8",
+   "sections": [
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "NCAA_D1_Women_2025_ACC": {
+   "fingerprint": "c217bdb24bfa2528835ef389692807a01c43ba1dba3ba70b52faa7298c4bb29b",
+   "sections": [
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "NCAA_D1_Women_2025_Am_East": {
+   "fingerprint": "713e6b83854ac3c2644918bc076dd2cc9cda4919ea8b4f0e5371d2bf6a65f67a",
+   "sections": [
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "NCAA_D1_Women_2025_American": {
+   "fingerprint": "eaee4f095dc2bc10fa81c0ecfd2d95388458ad717bc95037355fd16686822917",
+   "sections": [
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "NCAA_D1_Women_2025_Atlantic_Sun": {
+   "fingerprint": "da178de7b72e604bcbe4d257e4289a229c3565429f21d2eacb463ff31128b09c",
+   "sections": [
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "NCAA_D1_Women_2025_Big_12": {
+   "fingerprint": "2b757e22ff6c3a6abc4e2d460a1a3d5ff681cdfb55330195b1b527ee5f0eb6fa",
+   "sections": [
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "NCAA_D1_Women_2025_Big_East": {
+   "fingerprint": "dd1bb7bded6484c941fa892293ae86406d372a754f838d3abac4ee978543bc04",
+   "sections": [
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "NCAA_D1_Women_2025_Big_Sky": {
+   "fingerprint": "639cf06eab829b224e7dbb8574f5c80344d40a07904f0dc29ce2579f0587ec43",
+   "sections": [
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "NCAA_D1_Women_2025_Big_South": {
+   "fingerprint": "8e25a411c6a79bd198d180613b86e90f8e9f1f153e7ed9e85b82211724169d54",
+   "sections": [
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "NCAA_D1_Women_2025_Big_Ten": {
+   "fingerprint": "d4206d2f53075a1daa928bf6e0845df1e80a041a1baa97724cf646e203dc33f3",
+   "sections": [
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "NCAA_D1_Women_2025_Big_West": {
+   "fingerprint": "8809eb8dfd8a8eed4793139cc77d2aa7ef81a42d8ee14eede312ee048520f6a8",
+   "sections": [
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "NCAA_D1_Women_2025_CAA": {
+   "fingerprint": "d1ba62c38deba94613d9f3cfbe43d1c5c1a3587dde6dcf4b953f84a420495203",
+   "sections": [
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "NCAA_D1_Women_2025_CUSA": {
+   "fingerprint": "4c3ea56af97df428e7bf7592eb8e921239c84671ad6fbfa7663148cb5ce73923",
+   "sections": [
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "NCAA_D1_Women_2025_Horizon": {
+   "fingerprint": "7eccfb7be4f3d4482578b730e320a964667fee9a35f2c6e2791c8367ef95c6e6",
+   "sections": [
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "NCAA_D1_Women_2025_Ivy": {
+   "fingerprint": "e571b66646f7071415438d1f15ddb333f66630ae22aaa937d4497f78bb77c4ef",
+   "sections": [
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "NCAA_D1_Women_2025_MAC": {
+   "fingerprint": "219d184dc4923ae2bc101afd3312be47403d32e4fc834b2d16e9247baecf261d",
+   "sections": [
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "NCAA_D1_Women_2025_MEAC": {
+   "fingerprint": "58fe51bb6e6bf737f005bfcb6553a69072b50a2b52cc077d25659143ae541c22",
+   "sections": [
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "NCAA_D1_Women_2025_MVC": {
+   "fingerprint": "e40707c40303b114f60341580e6682ffa9d40fad537ff1edfe5e85a119ce8c87",
+   "sections": [
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "NCAA_D1_Women_2025_Metro": {
+   "fingerprint": "d2cd2171502138320a894e1e71c9ff8a9768b4391b1236895928135fa59c36ff",
+   "sections": [
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "NCAA_D1_Women_2025_Mountain_West": {
+   "fingerprint": "bb964cf45d3cb2779e9ff98aa858114ff35603a10852596690c199bbe522392f",
+   "sections": [
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "NCAA_D1_Women_2025_NEC": {
+   "fingerprint": "00b0b68ec53065b7da99e94bd13d10b78b66e3037c69efa8d34f94795b06d088",
+   "sections": [
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "NCAA_D1_Women_2025_OVC": {
+   "fingerprint": "1442435b115a7d885d9d7d46c130ea6cdc2700e4227a66bea6587b7bc99f5f6e",
+   "sections": [
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  },
+  "NCAA_D1_Women_2025_Patriot": {
+   "fingerprint": "c6b732685554a8cbac1383d3647e158b66f45dc1c35318cd46ed4ef95476b2ba",
+   "sections": [
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "75dea434a2291b9b",
+    "rotations": "5712f4e3c547e540",
+    "matches": "e10f053df050eb79",
+    "possessions": "cb03315451c7e306",
+    "possession_csv": "cb03315451c7e306",
+    "lineups": "240862e69b914d08",
+    "inout": "29c50563663bd4f2",
+    "consistency": "ada38821e96f6405",
+    "rival_adjusted": "98c7b2287c923657",
+    "assist_connections": "dd29c4fd550a6354"
+   }
+  }
+ }
+}
