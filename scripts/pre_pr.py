@@ -3,7 +3,7 @@
 ``python scripts/pre_pr.py [--base origin/main]`` runs them and exits 1 if one that blocks fails; ``--hook`` is the way the harness calls it: it reads the JSON of the tool call
 on stdin, does nothing unless the command is ``gh pr create``, and stops it with exit code 2 (what the harness reads as a stop, with stderr shown to the agent).
 
-Blocking (deterministic): not on main, rebased on the base, ruff clean, ``tests/test_docs_consistency.py``. Warnings (they inform, never stop): uncommitted changes (the red proof
+Blocking (deterministic): not on main, rebased on the base, ruff clean, ``tests/test_docs_consistency.py`` and the repo-wide guards ``tests/test_no_*.py`` (no hosting platform, no Atlas, no LLMs, no secrets). Warnings (they inform, never stop): uncommitted changes (the red proof
 compares COMMITS) and the red proof itself. Standard library only; the tests are ``tests/test_pre_pr.py``.
 """
 from __future__ import annotations
@@ -91,7 +91,7 @@ def checks(repo: Path, base: str) -> List[Callable[[], Result]]:
         lambda: _branch(repo),
         lambda: _rebase(repo, base),
         lambda: _command_check(repo, "ruff", True, py, "-m", "ruff", "check", "--no-cache"),
-        lambda: _command_check(repo, "docs coherentes", True, py, "-m", "pytest", "-q", "--no-cov", "tests/test_docs_consistency.py"),
+        lambda: _command_check(repo, "docs y guardas del repo", True, py, "-m", "pytest", "-q", "--no-cov", "tests/test_docs_consistency.py", *sorted(str(f.relative_to(repo)).replace(chr(92), "/") for f in (repo / "tests").glob("test_no_*.py"))),
         lambda: _clean_tree(repo),
         lambda: _red_proof(repo, base),
     ]
