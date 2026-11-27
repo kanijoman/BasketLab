@@ -18,6 +18,8 @@ Sin LLMs externos (eliminados): los informes automáticos serán por reglas, ver
 | [docs/DECISIONS.md](docs/DECISIONS.md) | dudas si algo ya está decidido (no re-debatir): razón, fecha y excepciones |
 | [docs/UI.md](docs/UI.md) | toques la UI de la web: componentes base, vocabulario de color, tema |
 
+Los docs no se leen enteros (LIVE ≈ 54k tokens): `grep -n '^#' docs/X.md` da el índice, cada uno empieza con un `## Mapa del documento`, y se lee solo la sección (`Read` con offset/límite). La historia (incidentes, «antes X, ahora Y») vive en `docs/evaluaciones/2026-11-27_historia-*.md`: al documentar, el doc dice lo que **es**.
+
 ## ❌ TDD ES OBLIGATORIO — NUNCA SALTAR ESTE PASO
 > **Si modificas código sin haber escrito antes el test que falla → PARA. Escribe el test primero.**
 
